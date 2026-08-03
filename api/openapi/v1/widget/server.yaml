@@ -1,0 +1,6 @@
+package: widget
+output: gen/rest/v1/go/widget/widget.gen.go
+generate:
+  chi-server: true
+  strict-server: true
+  models: false
