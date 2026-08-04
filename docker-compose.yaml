@@ -1,5 +1,6 @@
 include:
   - path: deployment/database/postgres.yaml
+  - path: deployment/migrations/go-migrate.yaml
 
 
 networks:
