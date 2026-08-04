@@ -1,0 +1,615 @@
+openapi: 3.0.0
+
+info:
+  title: Admin API
+  version: 1.0.0
+
+tags:
+  - name: Scenarios
+  - name: Steps
+  - name: Publishing
+  - name: Analytics
+
+paths:
+  /admin/scenarios:
+    post:
+      tags:
+        - Scenarios
+      summary: Create scenario
+      operationId: createScenario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateScenarioRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scenario"
+        "400":
+          description: Неверный запрос
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "409":
+          description: Конфлик при запросе
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+    get:
+      tags:
+        - Scenarios
+      summary: List scenarios
+      operationId: listScenarios
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Scenario"
+        "400":
+          description: Неверный запрос
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+
+  /admin/scenarios/{id}:
+    parameters:
+      - $ref: "#/components/parameters/ScenarioId"
+    get:
+      tags:
+        - Scenarios
+      summary: Get scenario
+      operationId: getScenario
+      responses:
+        "200":
+          description: Scenario
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scenario"
+        "404":
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+    patch:
+      tags:
+        - Scenarios
+      summary: Update scenario
+      operationId: updateScenario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateScenarioRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scenario"
+        "400":
+          description: Ошибка при запросе
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "404":
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "409":
+          description: Конфликт при запросе
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Не прошёл валидацию
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+
+  /admin/scenarios/{id}/publish:
+    post:
+      tags:
+        - Publishing
+      summary: Publish scenario
+      operationId: publishScenario
+      parameters:
+        - $ref: "#/components/parameters/ScenarioId"
+      responses:
+        "200":
+          description: Published
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScenarioVersion"
+        "404":
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "409":
+          description: Конфликт при запросе
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+
+  /admin/scenarios/{id}/unpublish:
+    post:
+      tags:
+        - Publishing
+      summary: Unpublish scenario
+      operationId: unpublishScenario
+      parameters:
+        - $ref: "#/components/parameters/ScenarioId"
+      responses:
+        "204":
+          description: Unpublished
+        "404":
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "409":
+          description: Конфликт при запросе
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+
+  /admin/scenarios/{id}/steps:
+    post:
+      tags:
+        - Steps
+      summary: Create step
+      operationId: createStep
+      parameters:
+        - $ref: "#/components/parameters/ScenarioId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStepRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Step"
+        "404":
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Не прошёл валидацию
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+
+  /admin/scenarios/{id}/steps/{stepId}:
+    patch:
+      tags:
+        - Steps
+      summary: Update step
+      operationId: updateStep
+      parameters:
+        - $ref: "#/components/parameters/ScenarioId"
+        - name: stepId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStepRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Step"
+        "404":
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Не прошёл валидацию
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+    delete:
+      tags:
+        - Steps
+      summary: Delete step
+      operationId: deleteStep
+      parameters:
+        - $ref: "#/components/parameters/ScenarioId"
+        - name: stepId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+
+  /admin/scenarios/{id}/steps/order:
+    put:
+      tags:
+        - Steps
+      summary: Reorder steps
+      operationId: reorderSteps
+      parameters:
+        - $ref: "#/components/parameters/ScenarioId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderStepsRequest"
+      responses:
+        "204":
+          description: Updated
+        "404":
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Не прошёл валидацию
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+
+  /admin/analytics/{scenarioId}:
+    get:
+      tags:
+        - Analytics
+      summary: Scenario analytics
+      operationId: getAnalytics
+      parameters:
+        - name: scenarioId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Analytics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsResponse"
+        "404":
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Не прошёл валидацию
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+
+components:
+  parameters:
+    ScenarioId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum:
+                # HTTP 400
+                - INVALID_REQUEST
+                - INVALID_PARAMETER
+                - INVALID_BODY
+
+                # HTTP 404
+                - SCENARIO_NOT_FOUND
+                - STEP_NOT_FOUND
+
+                # HTTP 409
+                - SCENARIO_ALREADY_PUBLISHED
+                - SCENARIO_ALREADY_UNPUBLISHED
+                - SCENARIO_HAS_NO_STEPS
+                - SCENARIO_STATE_CONFLICT
+                - STEP_ORDER_CONFLICT
+
+                # HTTP 422
+                - INVALID_SCENARIO_NAME
+                - INVALID_SCENARIO_URL
+                - INVALID_STEP_SELECTOR
+                - INVALID_STEP_TITLE
+                - INVALID_STEP_BODY
+            message:
+              type: string
+
+    InternalErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum:
+                # HTTP 500
+                - INTERNAL_ERROR
+            message:
+              type: string
+
+    ReorderStepsRequest:
+      type: object
+      required:
+        - order
+      properties:
+        order:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/StepOrder"
+
+    StepOrder:
+      type: object
+      required:
+        - stepId
+        - orderNum
+      properties:
+        stepId:
+          type: string
+          format: uuid
+        orderNum:
+          type: integer
+          minimum: 1
+
+    AnalyticsResponse:
+      type: object
+      required:
+        - totalViews
+        - completed
+        - dismissed
+      properties:
+        totalViews:
+          type: integer
+          minimum: 0
+          description: Total number of scenario views
+        completed:
+          type: integer
+          minimum: 0
+          description: Number of completed scenarios
+        dismissed:
+          type: integer
+          minimum: 0
+          description: Number of dismissed scenarios
+
+    ScenarioStatus:
+      type: string
+      enum:
+        - draft
+        - published
+        - archived
+
+    EventType:
+      type: string
+      enum:
+        - step_viewed
+        - step_completed
+        - scenario_completed
+        - scenario_dismissed
+
+    Scenario:
+      type: object
+      required:
+        - id
+        - projectId
+        - name
+        - url
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        url:
+          type: string
+        status:
+          $ref: "#/components/schemas/ScenarioStatus"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateScenarioRequest:
+      type: object
+      required:
+        - projectId
+        - name
+        - url
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        url:
+          type: string
+
+    UpdateScenarioRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+
+    ScenarioVersion:
+      type: object
+      required:
+        - id
+        - version
+        - isActive
+      properties:
+        id:
+          type: string
+          format: uuid
+        version:
+          type: integer
+          minimum: 1
+        isActive:
+          type: boolean
+
+    Step:
+      type: object
+      required:
+        - id
+        - orderNum
+        - selector
+        - title
+        - body
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderNum:
+          type: integer
+          minimum: 1
+        selector:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+
+    CreateStepRequest:
+      type: object
+      required:
+        - selector
+        - title
+        - body
+      properties:
+        selector:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+
+    UpdateStepRequest:
+      type: object
+      properties:
+        selector:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
