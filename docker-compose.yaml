@@ -1,0 +1,7 @@
+include:
+  - path: deployment/database/postgres.yaml
+
+
+networks:
+  interactive_onboarding:
+    driver: bridge
