@@ -57,3 +57,4 @@ jobs:
         with:
           version: v2.12
           working-directory: services/${{ matrix.service }}
+          args: --config=${{ github.workspace }}/.golangci.yaml
