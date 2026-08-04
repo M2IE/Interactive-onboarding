@@ -1,1 +1,5 @@
-package widget
+package main
+
+func main() {
+
+}

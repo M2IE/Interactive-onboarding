@@ -1,1 +1,5 @@
-package admin
+package main
+
+func main() {
+
+}
