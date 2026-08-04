@@ -1,5 +1,1 @@
 package admin
-
-func main() {
-
-}
