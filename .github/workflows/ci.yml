@@ -1,0 +1,59 @@
+name: CI
+run-name: "CI: ${{ github.event.head_commit.message || github.event.pull_request.title }} (@${{ github.actor }})"
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [admin, widget]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: services/${{ matrix.service }}/go.mod
+          cache: true
+          cache-dependency-path: services/${{ matrix.service }}/go.sum
+
+      - name: Build
+        working-directory: services/${{ matrix.service }}
+        run: go build ./...
+
+      - name: Vet
+        working-directory: services/${{ matrix.service }}
+        run: go vet ./...
+
+      - name: Test
+        working-directory: services/${{ matrix.service }}
+        run: go test -race -count=1 ./...
+
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [admin, widget]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: services/${{ matrix.service }}/go.mod
+
+      - name: Linter
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.12
+          working-directory: services/${{ matrix.service }}
