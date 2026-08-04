@@ -1,0 +1,4 @@
+package: admin
+output: gen/rest/v1/go/admin/dto.gen.go
+generate:
+  models: true

@@ -1,0 +1,6 @@
+package: admin
+output: gen/rest/v1/go/admin/admin.gen.go
+generate:
+  chi-server: true
+  strict-server: true
+  models: false

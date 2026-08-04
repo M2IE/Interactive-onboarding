@@ -1,0 +1,4 @@
+package: widget
+output: gen/rest/v1/go/widget/dto.gen.go
+generate:
+  models: true
