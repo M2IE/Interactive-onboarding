@@ -21,44 +21,66 @@ func NewHandler(s IService) apiv1.ServerInterface {
 
 // Scenario analytics
 // (GET /admin/analytics/{scenarioId})
-func (h Handler) GetAnalytics(ctx context.Context, request apiv1.GetAnalyticsRequestObject) (apiv1.GetAnalyticsResponseObject, error)
+func (h Handler) GetAnalytics(ctx context.Context, request apiv1.GetAnalyticsRequestObject) (apiv1.GetAnalyticsResponseObject, error) {
+	return nil, nil
+}
 
 // List scenarios
 // (GET /admin/scenarios)
-func (h Handler) ListScenarios(ctx context.Context, request apiv1.ListScenariosRequestObject) (apiv1.ListScenariosResponseObject, error)
+func (h Handler) ListScenarios(ctx context.Context, request apiv1.ListScenariosRequestObject) (apiv1.ListScenariosResponseObject, error) {
+	return nil, nil
+}
 
 // Create scenario
 // (POST /admin/scenarios)
-func (h Handler) CreateScenario(ctx context.Context, request apiv1.CreateScenarioRequestObject) (apiv1.CreateScenarioResponseObject, error)
+func (h Handler) CreateScenario(ctx context.Context, request apiv1.CreateScenarioRequestObject) (apiv1.CreateScenarioResponseObject, error) {
+	return nil, nil
+}
 
 // Get scenario
 // (GET /admin/scenarios/{id})
-func (h Handler) GetScenario(ctx context.Context, request apiv1.GetScenarioRequestObject) (apiv1.GetScenarioResponseObject, error)
+func (h Handler) GetScenario(ctx context.Context, request apiv1.GetScenarioRequestObject) (apiv1.GetScenarioResponseObject, error) {
+	return nil, nil
+}
 
 // Update scenario
 // (PATCH /admin/scenarios/{id})
-func (h Handler) UpdateScenario(ctx context.Context, request apiv1.UpdateScenarioRequestObject) (apiv1.UpdateScenarioResponseObject, error)
+func (h Handler) UpdateScenario(ctx context.Context, request apiv1.UpdateScenarioRequestObject) (apiv1.UpdateScenarioResponseObject, error) {
+	return nil, nil
+}
 
 // Publish scenario
 // (POST /admin/scenarios/{id}/publish)
-func (h Handler) PublishScenario(ctx context.Context, request apiv1.PublishScenarioRequestObject) (apiv1.PublishScenarioResponseObject, error)
+func (h Handler) PublishScenario(ctx context.Context, request apiv1.PublishScenarioRequestObject) (apiv1.PublishScenarioResponseObject, error) {
+	return nil, nil
+}
 
 // Create step
 // (POST /admin/scenarios/{id}/steps)
-func (h Handler) CreateStep(ctx context.Context, request apiv1.CreateStepRequestObject) (apiv1.CreateStepResponseObject, error)
+func (h Handler) CreateStep(ctx context.Context, request apiv1.CreateStepRequestObject) (apiv1.CreateStepResponseObject, error) {
+	return nil, nil
+}
 
 // Reorder steps
 // (PUT /admin/scenarios/{id}/steps/order)
-func (h Handler) ReorderSteps(ctx context.Context, request apiv1.ReorderStepsRequestObject) (apiv1.ReorderStepsResponseObject, error)
+func (h Handler) ReorderSteps(ctx context.Context, request apiv1.ReorderStepsRequestObject) (apiv1.ReorderStepsResponseObject, error) {
+	return nil, nil
+}
 
 // Delete step
 // (DELETE /admin/scenarios/{id}/steps/{stepId})
-func (h Handler) DeleteStep(ctx context.Context, request apiv1.DeleteStepRequestObject) (apiv1.DeleteStepResponseObject, error)
+func (h Handler) DeleteStep(ctx context.Context, request apiv1.DeleteStepRequestObject) (apiv1.DeleteStepResponseObject, error) {
+	return nil, nil
+}
 
 // Update step
 // (PATCH /admin/scenarios/{id}/steps/{stepId})
-func (h Handler) UpdateStep(ctx context.Context, request apiv1.UpdateStepRequestObject) (apiv1.UpdateStepResponseObject, error)
+func (h Handler) UpdateStep(ctx context.Context, request apiv1.UpdateStepRequestObject) (apiv1.UpdateStepResponseObject, error) {
+	return nil, nil
+}
 
 // Unpublish scenario
 // (POST /admin/scenarios/{id}/unpublish)
-func (h Handler) UnpublishScenario(ctx context.Context, request apiv1.UnpublishScenarioRequestObject) (apiv1.UnpublishScenarioResponseObject, error)
+func (h Handler) UnpublishScenario(ctx context.Context, request apiv1.UnpublishScenarioRequestObject) (apiv1.UnpublishScenarioResponseObject, error) {
+	return nil, nil
+}
