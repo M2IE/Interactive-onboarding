@@ -1,0 +1,8 @@
+DROP TABLE IF EXISTS event;
+DROP TABLE IF EXISTS step;
+DROP TABLE IF EXISTS scenario_version;
+DROP TABLE IF EXISTS scenario;
+DROP TABLE IF EXISTS project;
+
+DROP TYPE IF EXISTS event_type;
+DROP TYPE IF EXISTS scenario_status;
