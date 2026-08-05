@@ -10,17 +10,17 @@ import (
 	"github.com/google/uuid"
 )
 
-type IPublishInfrastucture interface {
+type IPublishInfrastructure interface {
 	GetScenario(ctx context.Context, db database.Querier, id uuid.UUID) (*domain.Scenario, error)
 	UpdateScenarioStatus(ctx context.Context, db database.Querier, id uuid.UUID, status domain.ScenarioStatus) error
 }
 
 type PublishService struct {
-	infra     IPublishInfrastucture
+	infra     IPublishInfrastructure
 	txManager database.Database
 }
 
-func NewPublshService(infra IPublishInfrastucture, txManager database.Database) *PublishService {
+func NewPublishService(infra IPublishInfrastructure, txManager database.Database) *PublishService {
 	return &PublishService{
 		infra:     infra,
 		txManager: txManager,

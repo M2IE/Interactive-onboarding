@@ -86,8 +86,8 @@ func (m *mockInfra) UpdateScenarioStatus(ctx context.Context, db database.Querie
 	return m.updateStatusErr
 }
 
-func newSvc(infra IPublishInfrastucture, db database.Database) *PublishService {
-	return NewPublshService(infra, db)
+func newSvc(infra IPublishInfrastructure, db database.Database) *PublishService {
+	return NewPublishService(infra, db)
 }
 
 // ── Publish ──────────────────────────────────────────────────────────────────

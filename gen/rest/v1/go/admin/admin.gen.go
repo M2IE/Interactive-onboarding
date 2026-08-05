@@ -789,7 +789,7 @@ type PublishScenarioResponseObject interface {
 	VisitPublishScenarioResponse(w http.ResponseWriter) error
 }
 
-type PublishScenario200JSONResponse ScenarioVersion
+type PublishScenario200JSONResponse Scenario
 
 func (response PublishScenario200JSONResponse) VisitPublishScenarioResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")

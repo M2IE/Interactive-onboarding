@@ -6,7 +6,7 @@ import (
 )
 
 type IInfrastructure interface {
-	publishes.IPublishInfrastucture
+	publishes.IPublishInfrastructure
 }
 
 type Service struct {
@@ -15,6 +15,6 @@ type Service struct {
 
 func NewService(infra IInfrastructure, txManager database.Database) *Service {
 	return &Service{
-		publishes.NewPublshService(infra, txManager),
+		publishes.NewPublishService(infra, txManager),
 	}
 }
