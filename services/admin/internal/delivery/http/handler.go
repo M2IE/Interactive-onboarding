@@ -4,18 +4,20 @@ import (
 	"context"
 
 	apiv1 "github.com/M2IE/Interactive-onboarding/gen/rest/v1/go/admin"
+	"github.com/M2IE/Interactive-onboarding/services/admin/internal/delivery/http/publishes"
 )
 
 type IService interface {
+	publishes.IPublishService
 }
 
 type Handler struct {
-	service IService
+	*publishes.PublishHandler
 }
 
 func NewHandler(s IService) apiv1.ServerInterface {
 	return apiv1.NewStrictHandler(Handler{
-		service: s,
+		PublishHandler: publishes.NewPublishHandler(s),
 	}, nil)
 }
 
@@ -49,12 +51,6 @@ func (h Handler) UpdateScenario(ctx context.Context, request apiv1.UpdateScenari
 	return nil, nil
 }
 
-// Publish scenario
-// (POST /admin/scenarios/{id}/publish)
-func (h Handler) PublishScenario(ctx context.Context, request apiv1.PublishScenarioRequestObject) (apiv1.PublishScenarioResponseObject, error) {
-	return nil, nil
-}
-
 // Create step
 // (POST /admin/scenarios/{id}/steps)
 func (h Handler) CreateStep(ctx context.Context, request apiv1.CreateStepRequestObject) (apiv1.CreateStepResponseObject, error) {
@@ -76,11 +72,5 @@ func (h Handler) DeleteStep(ctx context.Context, request apiv1.DeleteStepRequest
 // Update step
 // (PATCH /admin/scenarios/{id}/steps/{stepId})
 func (h Handler) UpdateStep(ctx context.Context, request apiv1.UpdateStepRequestObject) (apiv1.UpdateStepResponseObject, error) {
-	return nil, nil
-}
-
-// Unpublish scenario
-// (POST /admin/scenarios/{id}/unpublish)
-func (h Handler) UnpublishScenario(ctx context.Context, request apiv1.UnpublishScenarioRequestObject) (apiv1.UnpublishScenarioResponseObject, error) {
 	return nil, nil
 }

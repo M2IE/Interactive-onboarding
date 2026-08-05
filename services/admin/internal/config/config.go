@@ -1,0 +1,15 @@
+package config
+
+import (
+	pkgconfig "github.com/M2IE/Interactive-onboarding/pkg/configs"
+	"github.com/caarlos0/env/v11"
+)
+
+type Config struct {
+	ServicePort string `env:"ADMIN_SERVICE_PORT"`
+	pkgconfig.PostgresConfig
+}
+
+func Load() (Config, error) {
+	return env.ParseAs[Config]()
+}
