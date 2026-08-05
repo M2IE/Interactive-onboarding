@@ -7,38 +7,50 @@ package gen
 
 import (
 	"context"
-	"time"
 
 	"github.com/google/uuid"
 )
 
-const getScenario = `-- name: GetScenario :one
-SELECT s.id, s.project_id, s.name, s.url, s.status, s.created_at, s.updated_at,
-       COALESCE(sv.id, s.id)::uuid AS version_id,
-       COALESCE(sv.version, 0)::int AS version,
-       COALESCE(sv.is_active, false)::bool AS is_active
-FROM scenario s
-LEFT JOIN scenario_version sv ON sv.scenario_id = s.id AND sv.is_active = true
-WHERE s.id = $1
-FOR UPDATE OF s
+const archiveByProjectAndStatus = `-- name: ArchiveByProjectAndStatus :execrows
+UPDATE scenario SET status = 'archived', updated_at = now()
+WHERE project_id = $1 AND status = $2 AND url = $3
 `
 
-type GetScenarioRow struct {
-	ID        uuid.UUID      `db:"id"`
+type ArchiveByProjectAndStatusParams struct {
+	ProjectID uuid.UUID      `db:"project_id"`
+	Status    ScenarioStatus `db:"status"`
+	Url       string         `db:"url"`
+}
+
+func (q *Queries) ArchiveByProjectAndStatus(ctx context.Context, db DBTX, arg ArchiveByProjectAndStatusParams) (int64, error) {
+	result, err := db.ExecContext(ctx, archiveByProjectAndStatus, arg.ProjectID, arg.Status, arg.Url)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const createScenario = `-- name: CreateScenario :one
+INSERT INTO scenario (project_id, name, url, status)
+VALUES ($1, $2, $3, $4)
+RETURNING id, project_id, name, url, status, created_at, updated_at
+`
+
+type CreateScenarioParams struct {
 	ProjectID uuid.UUID      `db:"project_id"`
 	Name      string         `db:"name"`
 	Url       string         `db:"url"`
 	Status    ScenarioStatus `db:"status"`
-	CreatedAt time.Time      `db:"created_at"`
-	UpdatedAt time.Time      `db:"updated_at"`
-	VersionID uuid.UUID      `db:"version_id"`
-	Version   int32          `db:"version"`
-	IsActive  bool           `db:"is_active"`
 }
 
-func (q *Queries) GetScenario(ctx context.Context, db DBTX, id uuid.UUID) (GetScenarioRow, error) {
-	row := db.QueryRowContext(ctx, getScenario, id)
-	var i GetScenarioRow
+func (q *Queries) CreateScenario(ctx context.Context, db DBTX, arg CreateScenarioParams) (Scenario, error) {
+	row := db.QueryRowContext(ctx, createScenario,
+		arg.ProjectID,
+		arg.Name,
+		arg.Url,
+		arg.Status,
+	)
+	var i Scenario
 	err := row.Scan(
 		&i.ID,
 		&i.ProjectID,
@@ -47,23 +59,39 @@ func (q *Queries) GetScenario(ctx context.Context, db DBTX, id uuid.UUID) (GetSc
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.VersionID,
-		&i.Version,
-		&i.IsActive,
 	)
 	return i, err
 }
 
-const updateScenarioStatus = `-- name: UpdateScenarioStatus :exec
+const getScenario = `-- name: GetScenario :one
+SELECT id, project_id, name, url, status, created_at, updated_at FROM scenario WHERE id = $1 FOR UPDATE
+`
+
+func (q *Queries) GetScenario(ctx context.Context, db DBTX, id uuid.UUID) (Scenario, error) {
+	row := db.QueryRowContext(ctx, getScenario, id)
+	var i Scenario
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Url,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateScenarioStatusById = `-- name: UpdateScenarioStatusById :exec
 UPDATE scenario SET status = $2, updated_at = now() WHERE id = $1
 `
 
-type UpdateScenarioStatusParams struct {
+type UpdateScenarioStatusByIdParams struct {
 	ID     uuid.UUID      `db:"id"`
 	Status ScenarioStatus `db:"status"`
 }
 
-func (q *Queries) UpdateScenarioStatus(ctx context.Context, db DBTX, arg UpdateScenarioStatusParams) error {
-	_, err := db.ExecContext(ctx, updateScenarioStatus, arg.ID, arg.Status)
+func (q *Queries) UpdateScenarioStatusById(ctx context.Context, db DBTX, arg UpdateScenarioStatusByIdParams) error {
+	_, err := db.ExecContext(ctx, updateScenarioStatusById, arg.ID, arg.Status)
 	return err
 }

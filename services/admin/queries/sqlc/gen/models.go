@@ -101,14 +101,14 @@ func (ns NullScenarioStatus) Value() (driver.Value, error) {
 }
 
 type Event struct {
-	ID        uuid.UUID      `db:"id"`
-	ProjectID uuid.UUID      `db:"project_id"`
-	VersionID uuid.UUID      `db:"version_id"`
-	StepID    uuid.NullUUID  `db:"step_id"`
-	SessionID string         `db:"session_id"`
-	Type      EventType      `db:"type"`
-	EventKey  sql.NullString `db:"event_key"`
-	CreatedAt time.Time      `db:"created_at"`
+	ID         uuid.UUID      `db:"id"`
+	ProjectID  uuid.UUID      `db:"project_id"`
+	StepID     uuid.NullUUID  `db:"step_id"`
+	SessionID  string         `db:"session_id"`
+	Type       EventType      `db:"type"`
+	EventKey   sql.NullString `db:"event_key"`
+	CreatedAt  time.Time      `db:"created_at"`
+	ScenarioID uuid.NullUUID  `db:"scenario_id"`
 }
 
 type Project struct {
@@ -128,19 +128,11 @@ type Scenario struct {
 	UpdatedAt time.Time      `db:"updated_at"`
 }
 
-type ScenarioVersion struct {
-	ID          uuid.UUID    `db:"id"`
-	ScenarioID  uuid.UUID    `db:"scenario_id"`
-	Version     int32        `db:"version"`
-	IsActive    bool         `db:"is_active"`
-	PublishedAt sql.NullTime `db:"published_at"`
-}
-
 type Step struct {
-	ID        uuid.UUID `db:"id"`
-	VersionID uuid.UUID `db:"version_id"`
-	OrderNum  int32     `db:"order_num"`
-	Selector  string    `db:"selector"`
-	Title     string    `db:"title"`
-	Body      string    `db:"body"`
+	ID         uuid.UUID `db:"id"`
+	ScenarioID uuid.UUID `db:"scenario_id"`
+	OrderNum   int32     `db:"order_num"`
+	Selector   string    `db:"selector"`
+	Title      string    `db:"title"`
+	Body       string    `db:"body"`
 }

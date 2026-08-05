@@ -1,12 +1,14 @@
 -- name: GetScenario :one
-SELECT s.id, s.project_id, s.name, s.url, s.status, s.created_at, s.updated_at,
-       COALESCE(sv.id, s.id)::uuid AS version_id,
-       COALESCE(sv.version, 0)::int AS version,
-       COALESCE(sv.is_active, false)::bool AS is_active
-FROM scenario s
-LEFT JOIN scenario_version sv ON sv.scenario_id = s.id AND sv.is_active = true
-WHERE s.id = $1
-FOR UPDATE OF s;
+SELECT * FROM scenario WHERE id = $1 FOR UPDATE;
 
--- name: UpdateScenarioStatus :exec
+-- name: CreateScenario :one
+INSERT INTO scenario (project_id, name, url, status)
+VALUES ($1, $2, $3, $4)
+RETURNING id, project_id, name, url, status, created_at, updated_at;
+
+-- name: UpdateScenarioStatusById :exec
 UPDATE scenario SET status = $2, updated_at = now() WHERE id = $1;
+
+-- name: ArchiveByProjectAndStatus :execrows
+UPDATE scenario SET status = 'archived', updated_at = now()
+WHERE project_id = $1 AND status = $2 AND url = $3;

@@ -11,8 +11,11 @@ import (
 )
 
 type Querier interface {
-	GetScenario(ctx context.Context, db DBTX, id uuid.UUID) (GetScenarioRow, error)
-	UpdateScenarioStatus(ctx context.Context, db DBTX, arg UpdateScenarioStatusParams) error
+	ArchiveByProjectAndStatus(ctx context.Context, db DBTX, arg ArchiveByProjectAndStatusParams) (int64, error)
+	CopyStepsToScenario(ctx context.Context, db DBTX, arg CopyStepsToScenarioParams) error
+	CreateScenario(ctx context.Context, db DBTX, arg CreateScenarioParams) (Scenario, error)
+	GetScenario(ctx context.Context, db DBTX, id uuid.UUID) (Scenario, error)
+	UpdateScenarioStatusById(ctx context.Context, db DBTX, arg UpdateScenarioStatusByIdParams) error
 }
 
 var _ Querier = (*Queries)(nil)

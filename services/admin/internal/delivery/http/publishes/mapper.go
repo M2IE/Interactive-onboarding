@@ -9,11 +9,15 @@ import (
 
 // ENTITY = Domain / DTO
 
-func ToDTOScenarioVersion(v *domain.Scenario) apiv1.ScenarioVersion {
-	return apiv1.ScenarioVersion{
-		Id:       v.VersionID,
-		IsActive: v.IsActive,
-		Version:  v.Version,
+func ToDTOScenario(v *domain.Scenario) apiv1.Scenario {
+	return apiv1.Scenario{
+		Id:        v.ID,
+		ProjectId: v.ProjectID,
+		Url:       v.URL,
+		Name:      v.Name,
+		Status:    apiv1.ScenarioStatus(v.Status),
+		CreatedAt: &v.CreatedAt,
+		UpdatedAt: &v.UpdatedAt,
 	}
 }
 

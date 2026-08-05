@@ -34,8 +34,24 @@ func (p *PublishInfrastructure) GetScenario(ctx context.Context, db database.Que
 	return toDomainScenario(&row), nil
 }
 
+func (p *PublishInfrastructure) CreateScenario(ctx context.Context, db database.Querier, projectID uuid.UUID, name, url string, status domain.ScenarioStatus) (*domain.Scenario, error) {
+	row, err := p.q.CreateScenario(ctx, p.querier(db), toGenCreateScenarioParams(projectID, name, url, status))
+	if err != nil {
+		return nil, err
+	}
+	return toDomainScenario(&row), nil
+}
+
 func (p *PublishInfrastructure) UpdateScenarioStatus(ctx context.Context, db database.Querier, id uuid.UUID, status domain.ScenarioStatus) error {
-	return p.q.UpdateScenarioStatus(ctx, p.querier(db), toGenUpdateStatusParams(id, status))
+	return p.q.UpdateScenarioStatusById(ctx, p.querier(db), toGenUpdateStatusParams(id, status))
+}
+
+func (p *PublishInfrastructure) ArchiveByProjectAndStatus(ctx context.Context, db database.Querier, projectID uuid.UUID, status domain.ScenarioStatus, url string) (int64, error) {
+	return p.q.ArchiveByProjectAndStatus(ctx, p.querier(db), toGenArchiveParams(projectID, status, url))
+}
+
+func (p *PublishInfrastructure) CopyStepsToScenario(ctx context.Context, db database.Querier, destScenarioID, srcScenarioID uuid.UUID) error {
+	return p.q.CopyStepsToScenario(ctx, p.querier(db), toGenCopyStepsParams(destScenarioID, srcScenarioID))
 }
 
 func (p *PublishInfrastructure) querier(db database.Querier) database.Querier {

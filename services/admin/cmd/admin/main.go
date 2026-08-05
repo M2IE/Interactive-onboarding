@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 
 	apiv1 "github.com/M2IE/Interactive-onboarding/gen/rest/v1/go/admin"
@@ -17,16 +17,16 @@ import (
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("Config did not parsed", "error", err)
 	}
 
 	db, err := database.New(context.Background(), database.Postgres, cfg.DSN())
 	if err != nil {
-		log.Fatalf("Database connection error: %v", err)
+		slog.Error("Database connection error", "error", err)
 	}
 	defer func() {
 		if err = db.Close(); err != nil {
-			log.Fatalf("error while closing db: %v", err)
+			slog.Error("error while closing db", "error", err)
 		}
 	}()
 
@@ -41,6 +41,6 @@ func main() {
 		},
 	})
 
-	log.Printf("admin-service listening on %s", cfg.ServicePort)
-	log.Fatal(http.ListenAndServe(cfg.ServicePort, r))
+	slog.Info("admin-service listening on port", "info", cfg.ServicePort)
+	slog.Error("error while listening server", "error", http.ListenAndServe(cfg.ServicePort, r))
 }

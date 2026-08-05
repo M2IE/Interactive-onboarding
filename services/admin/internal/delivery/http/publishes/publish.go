@@ -27,7 +27,7 @@ func (h PublishHandler) PublishScenario(ctx context.Context, request apiv1.Publi
 		return ToPublishErrorResponse(err), nil
 	}
 
-	return apiv1.PublishScenario200JSONResponse(ToDTOScenarioVersion(scenario)), nil
+	return apiv1.PublishScenario200JSONResponse(ToDTOScenario(scenario)), nil
 }
 
 func (h PublishHandler) UnpublishScenario(ctx context.Context, request apiv1.UnpublishScenarioRequestObject) (apiv1.UnpublishScenarioResponseObject, error) {
