@@ -15,6 +15,8 @@ type Querier interface {
 	CopyStepsToScenario(ctx context.Context, db DBTX, arg CopyStepsToScenarioParams) error
 	CreateScenario(ctx context.Context, db DBTX, arg CreateScenarioParams) (Scenario, error)
 	GetScenario(ctx context.Context, db DBTX, id uuid.UUID) (Scenario, error)
+	ListScenarios(ctx context.Context, db DBTX, arg ListScenariosParams) ([]ListScenariosRow, error)
+	UpdateScenario(ctx context.Context, db DBTX, arg UpdateScenarioParams) (Scenario, error)
 	UpdateScenarioStatusById(ctx context.Context, db DBTX, arg UpdateScenarioStatusByIdParams) error
 }
 

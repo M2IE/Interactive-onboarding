@@ -1,6 +1,8 @@
 package scenarios
 
 import (
+	"errors"
+
 	apiv1 "github.com/M2IE/Interactive-onboarding/gen/rest/v1/go/admin"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 )
@@ -67,17 +69,74 @@ func ToDomainScenariosList(v apiv1.ListScenariosParams) domain.ListScenarios {
 }
 
 func ToListErrorResponse(err error) apiv1.ListScenariosResponseObject {
-	return nil
+	return apiv1.ListScenarios500JSONResponse{
+		Error: struct {
+			Code    apiv1.InternalErrorResponseErrorCode `json:"code"`
+			Message string                               `json:"message"`
+		}{Code: apiv1.INTERNALERROR, Message: err.Error()},
+	}
 }
 
 func ToGetErrorResponse(err error) apiv1.GetScenarioResponseObject {
-	return nil
+	switch {
+	case errors.Is(err, domain.ErrScenarioNotFound):
+		return apiv1.GetScenario404JSONResponse{
+			Error: struct {
+				Code    apiv1.ErrorResponseErrorCode `json:"code"`
+				Message string                       `json:"message"`
+			}{Code: apiv1.SCENARIONOTFOUND, Message: err.Error()},
+		}
+	default:
+		return apiv1.GetScenario500JSONResponse{
+			Error: struct {
+				Code    apiv1.InternalErrorResponseErrorCode `json:"code"`
+				Message string                               `json:"message"`
+			}{Code: apiv1.INTERNALERROR, Message: err.Error()},
+		}
+	}
 }
 
 func ToCreateErrorResponse(err error) apiv1.CreateScenarioResponseObject {
-	return nil
+	switch {
+	case errors.Is(err, domain.ErrScenarioDraftAlreadyExists):
+		return apiv1.CreateScenario409JSONResponse{
+			Error: struct {
+				Code    apiv1.ErrorResponseErrorCode `json:"code"`
+				Message string                       `json:"message"`
+			}{Code: apiv1.SCENARIOSTATECONFLICT, Message: err.Error()},
+		}
+	default:
+		return apiv1.CreateScenario500JSONResponse{
+			Error: struct {
+				Code    apiv1.InternalErrorResponseErrorCode `json:"code"`
+				Message string                               `json:"message"`
+			}{Code: apiv1.INTERNALERROR, Message: err.Error()},
+		}
+	}
 }
 
 func ToUpdateErrorResponse(err error) apiv1.UpdateScenarioResponseObject {
-	return nil
+	switch {
+	case errors.Is(err, domain.ErrScenarioNotFound):
+		return apiv1.UpdateScenario404JSONResponse{
+			Error: struct {
+				Code    apiv1.ErrorResponseErrorCode `json:"code"`
+				Message string                       `json:"message"`
+			}{Code: apiv1.SCENARIONOTFOUND, Message: err.Error()},
+		}
+	case errors.Is(err, domain.ErrScenarioNotEditable):
+		return apiv1.UpdateScenario409JSONResponse{
+			Error: struct {
+				Code    apiv1.ErrorResponseErrorCode `json:"code"`
+				Message string                       `json:"message"`
+			}{Code: apiv1.SCENARIOSTATECONFLICT, Message: err.Error()},
+		}
+	default:
+		return apiv1.UpdateScenario500JSONResponse{
+			Error: struct {
+				Code    apiv1.InternalErrorResponseErrorCode `json:"code"`
+				Message string                               `json:"message"`
+			}{Code: apiv1.INTERNALERROR, Message: err.Error()},
+		}
+	}
 }
