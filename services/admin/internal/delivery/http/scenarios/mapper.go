@@ -29,7 +29,7 @@ func ToDTOsScenarios(v []domain.Scenario) []apiv1.Scenario {
 func ToDomainScenarioCreate(v apiv1.CreateScenarioJSONRequestBody) domain.CreateScenario {
 	return domain.CreateScenario{
 		Name:      v.Name,
-		ProjectId: v.ProjectId,
+		ProjectID: v.ProjectId,
 		Url:       v.Url,
 	}
 }
@@ -38,6 +38,31 @@ func ToDomainScenarioUpdate(v apiv1.UpdateScenarioJSONRequestBody) domain.Update
 	return domain.UpdateScenario{
 		Name: v.Name,
 		Url:  v.Url,
+	}
+}
+
+func ToDomainScenariosList(v apiv1.ListScenariosParams) domain.ListScenarios {
+	page := 1
+	if v.Page != nil && *v.Page >= 1 {
+		page = *v.Page
+	}
+
+	size := 20
+	if v.Size != nil {
+		size = *v.Size
+	}
+
+	switch {
+	case size < 1:
+		size = 1
+	case size > 100:
+		size = 100
+	}
+
+	return domain.ListScenarios{
+		ProjectID: v.ProjectId,
+		Page:      page,
+		Size:      size,
 	}
 }
 

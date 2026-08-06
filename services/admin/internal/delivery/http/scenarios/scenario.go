@@ -8,7 +8,7 @@ import (
 )
 
 type IScenarioService interface {
-	List(ctx context.Context) ([]domain.Scenario, error)
+	List(ctx context.Context, command domain.ListScenarios) ([]domain.Scenario, error)
 	Create(ctx context.Context, command domain.CreateScenario) (*domain.Scenario, error)
 	GetByID(ctx context.Context, scenarioID uuid.UUID) (*domain.Scenario, error)
 	Update(ctx context.Context, scenarioID uuid.UUID, command domain.UpdateScenario) (*domain.Scenario, error)
@@ -22,8 +22,8 @@ func NewScenarioHandler(s IScenarioService) *ScenarioHandler {
 	return &ScenarioHandler{service: s}
 }
 
-func (h *ScenarioHandler) List(ctx context.Context, _ apiv1.ListScenariosRequestObject) (apiv1.ListScenariosResponseObject, error) {
-	scenarios, err := h.service.List(ctx)
+func (h *ScenarioHandler) List(ctx context.Context, request apiv1.ListScenariosRequestObject) (apiv1.ListScenariosResponseObject, error) {
+	scenarios, err := h.service.List(ctx, ToDomainScenariosList(request.Params))
 	if err != nil {
 		return ToListErrorResponse(err), nil
 	}
