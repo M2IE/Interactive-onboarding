@@ -26,3 +26,164 @@ func (q *Queries) CopyStepsToScenario(ctx context.Context, db DBTX, arg CopyStep
 	_, err := db.ExecContext(ctx, copyStepsToScenario, arg.DestScenarioID, arg.SrcScenarioID)
 	return err
 }
+
+const createStep = `-- name: CreateStep :one
+INSERT INTO step (id, scenario_id, order_num, selector, title, body)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, scenario_id, order_num, selector, title, body
+`
+
+type CreateStepParams struct {
+	ID         uuid.UUID `db:"id"`
+	ScenarioID uuid.UUID `db:"scenario_id"`
+	OrderNum   int32     `db:"order_num"`
+	Selector   string    `db:"selector"`
+	Title      string    `db:"title"`
+	Body       string    `db:"body"`
+}
+
+func (q *Queries) CreateStep(ctx context.Context, db DBTX, arg CreateStepParams) (Step, error) {
+	row := db.QueryRowContext(ctx, createStep,
+		arg.ID,
+		arg.ScenarioID,
+		arg.OrderNum,
+		arg.Selector,
+		arg.Title,
+		arg.Body,
+	)
+	var i Step
+	err := row.Scan(
+		&i.ID,
+		&i.ScenarioID,
+		&i.OrderNum,
+		&i.Selector,
+		&i.Title,
+		&i.Body,
+	)
+	return i, err
+}
+
+const decrementOrdersAfter = `-- name: DecrementOrdersAfter :exec
+UPDATE step
+SET order_num = order_num - 1
+WHERE scenario_id = $1 AND order_num > $2
+`
+
+type DecrementOrdersAfterParams struct {
+	ScenarioID uuid.UUID `db:"scenario_id"`
+	OrderNum   int32     `db:"order_num"`
+}
+
+func (q *Queries) DecrementOrdersAfter(ctx context.Context, db DBTX, arg DecrementOrdersAfterParams) error {
+	_, err := db.ExecContext(ctx, decrementOrdersAfter, arg.ScenarioID, arg.OrderNum)
+	return err
+}
+
+const deleteStep = `-- name: DeleteStep :exec
+DELETE FROM step WHERE id = $1
+`
+
+func (q *Queries) DeleteStep(ctx context.Context, db DBTX, id uuid.UUID) error {
+	_, err := db.ExecContext(ctx, deleteStep, id)
+	return err
+}
+
+const getMaxOrderByScenario = `-- name: GetMaxOrderByScenario :one
+SELECT COALESCE(MAX(order_num), 0) FROM step WHERE scenario_id = $1
+`
+
+func (q *Queries) GetMaxOrderByScenario(ctx context.Context, db DBTX, scenarioID uuid.UUID) (interface{}, error) {
+	row := db.QueryRowContext(ctx, getMaxOrderByScenario, scenarioID)
+	var coalesce interface{}
+	err := row.Scan(&coalesce)
+	return coalesce, err
+}
+
+const getStepByID = `-- name: GetStepByID :one
+SELECT id, scenario_id, order_num, selector, title, body FROM step WHERE id = $1
+`
+
+func (q *Queries) GetStepByID(ctx context.Context, db DBTX, id uuid.UUID) (Step, error) {
+	row := db.QueryRowContext(ctx, getStepByID, id)
+	var i Step
+	err := row.Scan(
+		&i.ID,
+		&i.ScenarioID,
+		&i.OrderNum,
+		&i.Selector,
+		&i.Title,
+		&i.Body,
+	)
+	return i, err
+}
+
+const getStepsByScenario = `-- name: GetStepsByScenario :many
+SELECT id, scenario_id, order_num, selector, title, body FROM step WHERE scenario_id = $1 ORDER BY order_num
+`
+
+func (q *Queries) GetStepsByScenario(ctx context.Context, db DBTX, scenarioID uuid.UUID) ([]Step, error) {
+	rows, err := db.QueryContext(ctx, getStepsByScenario, scenarioID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Step
+	for rows.Next() {
+		var i Step
+		if err := rows.Scan(
+			&i.ID,
+			&i.ScenarioID,
+			&i.OrderNum,
+			&i.Selector,
+			&i.Title,
+			&i.Body,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateStep = `-- name: UpdateStep :exec
+UPDATE step
+SET selector = $1, title = $2, body = $3
+WHERE id = $4
+`
+
+type UpdateStepParams struct {
+	Selector string    `db:"selector"`
+	Title    string    `db:"title"`
+	Body     string    `db:"body"`
+	ID       uuid.UUID `db:"id"`
+}
+
+func (q *Queries) UpdateStep(ctx context.Context, db DBTX, arg UpdateStepParams) error {
+	_, err := db.ExecContext(ctx, updateStep,
+		arg.Selector,
+		arg.Title,
+		arg.Body,
+		arg.ID,
+	)
+	return err
+}
+
+const updateStepOrder = `-- name: UpdateStepOrder :exec
+UPDATE step SET order_num = $1 WHERE id = $2
+`
+
+type UpdateStepOrderParams struct {
+	OrderNum int32     `db:"order_num"`
+	ID       uuid.UUID `db:"id"`
+}
+
+func (q *Queries) UpdateStepOrder(ctx context.Context, db DBTX, arg UpdateStepOrderParams) error {
+	_, err := db.ExecContext(ctx, updateStepOrder, arg.OrderNum, arg.ID)
+	return err
+}
