@@ -37,21 +37,26 @@ type mockInfra struct {
 	updateID        uuid.UUID
 	updateName      *string
 	updateURL       *string
+	updateCalled    bool
 	listSize        int
 	listPage        int
 	listProjectID   *uuid.UUID
 
-	// responses
-	scenarioResp *domain.Scenario
-	scenarioErr  error
-	listResp     []domain.Scenario
-	listTotal    int64
-	listErr      error
+	// responses (per-method, чтобы Get и Update в одном сервис-методе не мешали друг другу)
+	getResp    *domain.Scenario
+	getErr     error
+	createResp *domain.Scenario
+	createErr  error
+	updateResp *domain.Scenario
+	updateErr  error
+	listResp   []domain.Scenario
+	listTotal  int64
+	listErr    error
 }
 
 func (m *mockInfra) Get(_ context.Context, _ database.Querier, id uuid.UUID) (*domain.Scenario, error) {
 	m.getID = id
-	return m.scenarioResp, m.scenarioErr
+	return m.getResp, m.getErr
 }
 
 func (m *mockInfra) Create(_ context.Context, _ database.Querier, projectID uuid.UUID, name, url string, status domain.ScenarioStatus) (*domain.Scenario, error) {
@@ -59,14 +64,15 @@ func (m *mockInfra) Create(_ context.Context, _ database.Querier, projectID uuid
 	m.createName = name
 	m.createURL = url
 	m.createStatus = status
-	return m.scenarioResp, m.scenarioErr
+	return m.createResp, m.createErr
 }
 
 func (m *mockInfra) Update(_ context.Context, _ database.Querier, id uuid.UUID, name, url *string) (*domain.Scenario, error) {
+	m.updateCalled = true
 	m.updateID = id
 	m.updateName = name
 	m.updateURL = url
-	return m.scenarioResp, m.scenarioErr
+	return m.updateResp, m.updateErr
 }
 
 func (m *mockInfra) List(_ context.Context, _ database.Querier, size, page int, projectID *uuid.UUID) ([]domain.Scenario, int64, error) {
@@ -80,7 +86,7 @@ func (m *mockInfra) List(_ context.Context, _ database.Querier, size, page int, 
 
 func TestCreate_Success(t *testing.T) {
 	want := testScenario(domain.ScenarioStatusDraft)
-	infra := &mockInfra{scenarioResp: want}
+	infra := &mockInfra{createResp: want}
 	svc := NewScenarioService(infra)
 
 	got, err := svc.Create(context.Background(), domain.CreateScenario{
@@ -104,7 +110,7 @@ func TestCreate_Success(t *testing.T) {
 }
 
 func TestCreate_DraftAlreadyExists(t *testing.T) {
-	infra := &mockInfra{scenarioErr: domain.ErrScenarioDraftAlreadyExists}
+	infra := &mockInfra{createErr: domain.ErrScenarioDraftAlreadyExists}
 	svc := NewScenarioService(infra)
 
 	_, err := svc.Create(context.Background(), domain.CreateScenario{ProjectID: testProjectID, Name: "x", Url: "/x"})
@@ -118,7 +124,7 @@ func TestCreate_DraftAlreadyExists(t *testing.T) {
 
 func TestGetByID_Success(t *testing.T) {
 	want := testScenario(domain.ScenarioStatusPublished)
-	infra := &mockInfra{scenarioResp: want}
+	infra := &mockInfra{getResp: want}
 	svc := NewScenarioService(infra)
 
 	got, err := svc.GetByID(context.Background(), testScenarioID)
@@ -135,7 +141,7 @@ func TestGetByID_Success(t *testing.T) {
 }
 
 func TestGetByID_NotFound(t *testing.T) {
-	infra := &mockInfra{scenarioErr: domain.ErrScenarioNotFound}
+	infra := &mockInfra{getErr: domain.ErrScenarioNotFound}
 	svc := NewScenarioService(infra)
 
 	_, err := svc.GetByID(context.Background(), testScenarioID)
@@ -148,8 +154,12 @@ func TestGetByID_NotFound(t *testing.T) {
 // ── Update ───────────────────────────────────────────────────────────────────
 
 func TestUpdate_Success(t *testing.T) {
-	want := testScenario(domain.ScenarioStatusDraft)
-	infra := &mockInfra{scenarioResp: want}
+	// Get возвращает draft → проверка проходит → вызывается Update.
+	updated := testScenario(domain.ScenarioStatusDraft)
+	infra := &mockInfra{
+		getResp:    testScenario(domain.ScenarioStatusDraft),
+		updateResp: updated,
+	}
 	svc := NewScenarioService(infra)
 
 	name := "New name"
@@ -158,8 +168,11 @@ func TestUpdate_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got.ID != want.ID {
-		t.Errorf("result ID = %s, want %s", got.ID, want.ID)
+	if !infra.updateCalled {
+		t.Error("infra.Update was not called")
+	}
+	if got.ID != updated.ID {
+		t.Errorf("result ID = %s, want %s", got.ID, updated.ID)
 	}
 	if infra.updateID != testScenarioID {
 		t.Errorf("updateID = %s, want %s", infra.updateID, testScenarioID)
@@ -170,7 +183,8 @@ func TestUpdate_Success(t *testing.T) {
 }
 
 func TestUpdate_NotEditable(t *testing.T) {
-	infra := &mockInfra{scenarioErr: domain.ErrScenarioNotEditable}
+	// Get возвращает published → сервис должен вернуть NotEditable и НЕ звать Update.
+	infra := &mockInfra{getResp: testScenario(domain.ScenarioStatusPublished)}
 	svc := NewScenarioService(infra)
 
 	_, err := svc.Update(context.Background(), testScenarioID, domain.UpdateScenario{})
@@ -178,16 +192,41 @@ func TestUpdate_NotEditable(t *testing.T) {
 	if !errors.Is(err, domain.ErrScenarioNotEditable) {
 		t.Errorf("err = %v, want ErrScenarioNotEditable", err)
 	}
+	if infra.updateCalled {
+		t.Error("infra.Update must NOT be called for a non-draft scenario")
+	}
 }
 
 func TestUpdate_NotFound(t *testing.T) {
-	infra := &mockInfra{scenarioErr: domain.ErrScenarioNotFound}
+	// Get возвращает NotFound → сервис пробрасывает и не зовёт Update.
+	infra := &mockInfra{getErr: domain.ErrScenarioNotFound}
 	svc := NewScenarioService(infra)
 
 	_, err := svc.Update(context.Background(), testScenarioID, domain.UpdateScenario{})
 
 	if !errors.Is(err, domain.ErrScenarioNotFound) {
 		t.Errorf("err = %v, want ErrScenarioNotFound", err)
+	}
+	if infra.updateCalled {
+		t.Error("infra.Update must NOT be called when Get failed")
+	}
+}
+
+func TestUpdate_UpdateFails(t *testing.T) {
+	// Get прошёл (draft), но сам Update упал (например, строка исчезла в гонке).
+	infra := &mockInfra{
+		getResp:   testScenario(domain.ScenarioStatusDraft),
+		updateErr: domain.ErrScenarioNotFound,
+	}
+	svc := NewScenarioService(infra)
+
+	_, err := svc.Update(context.Background(), testScenarioID, domain.UpdateScenario{})
+
+	if !errors.Is(err, domain.ErrScenarioNotFound) {
+		t.Errorf("err = %v, want ErrScenarioNotFound", err)
+	}
+	if !infra.updateCalled {
+		t.Error("infra.Update should have been called")
 	}
 }
 

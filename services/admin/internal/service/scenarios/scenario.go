@@ -33,6 +33,15 @@ func (s *ScenarioService) Create(ctx context.Context, command domain.CreateScena
 }
 
 func (s *ScenarioService) Update(ctx context.Context, scenarioID uuid.UUID, command domain.UpdateScenario) (*domain.Scenario, error) {
+	scenario, err := s.infra.Get(ctx, nil, scenarioID)
+	if err != nil {
+		return nil, err
+	}
+
+	if scenario.Status != domain.ScenarioStatusDraft {
+		return nil, domain.ErrScenarioNotEditable
+	}
+
 	return s.infra.Update(ctx, nil, scenarioID, command.Name, command.Url)
 }
 

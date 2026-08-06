@@ -63,15 +63,6 @@ func (s *ScenarioInfrastructure) List(ctx context.Context, db database.Querier, 
 }
 
 func (s *ScenarioInfrastructure) Update(ctx context.Context, db database.Querier, id uuid.UUID, name, url *string) (*domain.Scenario, error) {
-	scenario, err := s.Get(ctx, db, id)
-	if err != nil {
-		return nil, err
-	}
-
-	if scenario.Status != domain.ScenarioStatusDraft {
-		return nil, domain.ErrScenarioNotEditable
-	}
-
 	row, err := s.q.UpdateScenario(ctx, s.querier(db), toGenUpdateScenarioParams(id, name, url))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
