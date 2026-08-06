@@ -46,7 +46,8 @@ type AnalyticsResponse struct {
 	Completed int `json:"completed"`
 
 	// Dismissed Number of dismissed scenarios
-	Dismissed int `json:"dismissed"`
+	Dismissed int             `json:"dismissed"`
+	Steps     []StepAnalytics `json:"steps"`
 
 	// TotalViews Total number of scenario views
 	TotalViews int `json:"totalViews"`
@@ -114,6 +115,15 @@ type Step struct {
 	OrderNum int                `json:"orderNum"`
 	Selector string             `json:"selector"`
 	Title    string             `json:"title"`
+}
+
+// StepAnalytics defines model for StepAnalytics.
+type StepAnalytics struct {
+	Completed int                `json:"completed"`
+	OrderNum  int                `json:"orderNum"`
+	StepId    openapi_types.UUID `json:"stepId"`
+	Title     string             `json:"title"`
+	Views     int                `json:"views"`
 }
 
 // StepOrder defines model for StepOrder.

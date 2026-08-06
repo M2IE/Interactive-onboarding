@@ -178,6 +178,15 @@ export interface components {
             completed: number;
             /** @description Number of dismissed scenarios */
             dismissed: number;
+            steps: components["schemas"]["StepAnalytics"][];
+        };
+        StepAnalytics: {
+            /** Format: uuid */
+            stepId: string;
+            title: string;
+            orderNum: number;
+            views: number;
+            completed: number;
         };
         /** @enum {string} */
         ScenarioStatus: "draft" | "published" | "archived";

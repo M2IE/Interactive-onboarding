@@ -472,6 +472,7 @@ components:
         - totalViews
         - completed
         - dismissed
+        - steps
       properties:
         totalViews:
           type: integer
@@ -485,6 +486,34 @@ components:
           type: integer
           minimum: 0
           description: Number of dismissed scenarios
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/StepAnalytics"
+
+    StepAnalytics:
+      type: object
+      required:
+        - stepId
+        - title
+        - orderNum
+        - views
+        - completed
+      properties:
+        stepId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        orderNum:
+          type: integer
+          minimum: 1
+        views:
+          type: integer
+          minimum: 0
+        completed:
+          type: integer
+          minimum: 0
 
     ScenarioStatus:
       type: string
