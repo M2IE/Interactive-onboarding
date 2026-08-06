@@ -33,7 +33,7 @@ const Postgres Type = "postgres"
 func New(ctx context.Context, dbType Type, dsn string) (Database, error) {
 	switch dbType {
 	case Postgres:
-		return NewPostgres(ctx, dsn)
+		return newPostgres(ctx, dsn)
 	default:
 		return nil, fmt.Errorf("unsupported database type: %s", dbType)
 	}

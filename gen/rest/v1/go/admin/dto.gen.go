@@ -40,6 +40,11 @@ const (
 	Published ScenarioStatus = "published"
 )
 
+// AnalyticsReportResponse defines model for AnalyticsReportResponse.
+type AnalyticsReportResponse struct {
+	Url string `json:"url"`
+}
+
 // AnalyticsResponse defines model for AnalyticsResponse.
 type AnalyticsResponse struct {
 	// Completed Number of completed scenarios

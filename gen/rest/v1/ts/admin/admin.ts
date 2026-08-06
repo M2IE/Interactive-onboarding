@@ -145,6 +145,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/analytics/{scenarioId}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate analytics PDF report */
+        post: operations["GenerateAnalyticsReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -162,6 +179,9 @@ export interface components {
                 code: "INTERNAL_ERROR";
                 message: string;
             };
+        };
+        AnalyticsReportResponse: {
+            url: string;
         };
         ReorderStepsRequest: {
             order: components["schemas"]["StepOrder"][];
@@ -777,6 +797,46 @@ export interface operations {
             };
             /** @description Не прошёл валидацию */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalErrorResponse"];
+                };
+            };
+        };
+    };
+    GenerateAnalyticsReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scenarioId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Report URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalyticsReportResponse"];
+                };
+            };
+            /** @description Не найден */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

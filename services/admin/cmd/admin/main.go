@@ -7,6 +7,8 @@ import (
 
 	apiv1 "github.com/M2IE/Interactive-onboarding/gen/rest/v1/go/admin"
 	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/pdfengine"
+	"github.com/M2IE/Interactive-onboarding/pkg/s3"
 	config "github.com/M2IE/Interactive-onboarding/services/admin/internal/config"
 	delivery "github.com/M2IE/Interactive-onboarding/services/admin/internal/delivery/http"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/infrastructure"
@@ -20,9 +22,10 @@ func main() {
 		slog.Error("Config did not parsed", "error", err)
 	}
 
-	db, err := database.New(context.Background(), database.Postgres, cfg.DSN())
+	db, err := database.New(context.Background(), database.Postgres, cfg.PostgresConfig.DSN())
 	if err != nil {
 		slog.Error("Database connection error", "error", err)
+		return
 	}
 	defer func() {
 		if err = db.Close(); err != nil {
@@ -30,9 +33,21 @@ func main() {
 		}
 	}()
 
+	s3Client, err := s3.New(context.Background(), s3.TypeRustFS, cfg.ConfigRustFS)
+	if err != nil {
+		slog.Error("s3 client error", "error", err)
+		return
+	}
+
+	pdfEngine, err := pdfengine.New(pdfengine.SignintechGoPDF)
+	if err != nil {
+		slog.Error("pdf engine error", "error", err)
+		return
+	}
+
 	q := queries.New()
 	infra := infrastructure.NewInfrastructure(db, q)
-	service := service.NewService(infra, db)
+	service := service.NewService(infra, db, s3Client, pdfEngine, cfg.S3Bucket)
 	handler := delivery.NewHandler(service)
 
 	r := apiv1.HandlerWithOptions(handler, apiv1.ChiServerOptions{

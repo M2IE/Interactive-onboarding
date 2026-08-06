@@ -43,7 +43,7 @@ func (p *PostgresDB) Begin() (Tx, error) {
 	return p.db.Begin()
 }
 
-func NewPostgres(ctx context.Context, dsn string) (*PostgresDB, error) {
+func newPostgres(ctx context.Context, dsn string) (*PostgresDB, error) {
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create postgres pool: %w", err)

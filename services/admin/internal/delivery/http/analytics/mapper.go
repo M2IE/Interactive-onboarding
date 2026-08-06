@@ -45,3 +45,22 @@ func ToAnalyticsErrorResponse(err error) apiv1.GetAnalyticsResponseObject {
 		}
 	}
 }
+
+func ToAnalyticsReportErrorResponse(err error) apiv1.GenerateAnalyticsReportResponseObject {
+	switch {
+	case errors.Is(err, domain.ErrScenarioNotFound):
+		return apiv1.GenerateAnalyticsReport404JSONResponse{
+			Error: struct {
+				Code    apiv1.ErrorResponseErrorCode `json:"code"`
+				Message string                       `json:"message"`
+			}{Code: apiv1.SCENARIONOTFOUND, Message: err.Error()},
+		}
+	default:
+		return apiv1.GenerateAnalyticsReport500JSONResponse{
+			Error: struct {
+				Code    apiv1.InternalErrorResponseErrorCode `json:"code"`
+				Message string                               `json:"message"`
+			}{Code: apiv1.INTERNALERROR, Message: err.Error()},
+		}
+	}
+}

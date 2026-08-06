@@ -10,6 +10,7 @@ import (
 
 type IAnalyticsService interface {
 	GetAnalytics(ctx context.Context, scenarioID uuid.UUID) (*domain.Analytics, error)
+	GenerateReport(ctx context.Context, scenarioID uuid.UUID) (string, error)
 }
 
 type AnalyticsHandler struct {
@@ -29,4 +30,13 @@ func (h AnalyticsHandler) GetAnalytics(ctx context.Context, request apiv1.GetAna
 	}
 
 	return apiv1.GetAnalytics200JSONResponse(ToDTOAnalytics(analytics)), nil
+}
+
+func (h AnalyticsHandler) GenerateAnalyticsReport(ctx context.Context, request apiv1.GenerateAnalyticsReportRequestObject) (apiv1.GenerateAnalyticsReportResponseObject, error) {
+	url, err := h.s.GenerateReport(ctx, request.ScenarioId)
+	if err != nil {
+		return ToAnalyticsReportErrorResponse(err), nil
+	}
+
+	return apiv1.GenerateAnalyticsReport200JSONResponse{Url: url}, nil
 }

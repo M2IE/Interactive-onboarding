@@ -377,6 +377,37 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/InternalErrorResponse" }
 
+  /admin/analytics/{scenarioId}/report:
+    post:
+      tags:
+        - Analytics
+      summary: Generate analytics PDF report
+      operationId: GenerateAnalyticsReport
+      parameters:
+        - name: scenarioId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Report URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsReportResponse"
+        "404":
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+
 components:
   parameters:
     ScenarioId:
@@ -437,10 +468,17 @@ components:
             code:
               type: string
               enum:
-                # HTTP 500
                 - INTERNAL_ERROR
             message:
               type: string
+
+    AnalyticsReportResponse:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
 
     ReorderStepsRequest:
       type: object
