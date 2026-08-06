@@ -206,12 +206,6 @@ export interface components {
             name?: string;
             url?: string;
         };
-        ScenarioVersion: {
-            /** Format: uuid */
-            id: string;
-            version: number;
-            isActive: boolean;
-        };
         Step: {
             /** Format: uuid */
             id: string;
@@ -467,7 +461,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ScenarioVersion"];
+                    "application/json": components["schemas"]["Scenario"];
                 };
             };
             /** @description Не найден */

@@ -2,6 +2,22 @@ include:
   - path: deployment/database/postgres.yaml
   - path: deployment/migrations/go-migrate.yaml
 
+services:
+  admin_service:
+    container_name: admin_service
+    build:
+      context: .
+      dockerfile: services/admin/Dockerfile
+    image: admin_service:0.1
+    env_file:
+      - ./.env
+
+    networks:
+      - interactive_onboarding
+    depends_on:
+      db_scenarios:
+        condition: service_healthy
+
 
 networks:
   interactive_onboarding:

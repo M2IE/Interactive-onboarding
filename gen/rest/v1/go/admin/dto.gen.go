@@ -107,13 +107,6 @@ type Scenario struct {
 // ScenarioStatus defines model for ScenarioStatus.
 type ScenarioStatus string
 
-// ScenarioVersion defines model for ScenarioVersion.
-type ScenarioVersion struct {
-	Id       openapi_types.UUID `json:"id"`
-	IsActive bool               `json:"isActive"`
-	Version  int                `json:"version"`
-}
-
 // Step defines model for Step.
 type Step struct {
 	Body     string             `json:"body"`
