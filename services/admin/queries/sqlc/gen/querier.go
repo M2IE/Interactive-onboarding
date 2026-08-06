@@ -14,7 +14,9 @@ type Querier interface {
 	ArchiveByProjectAndStatus(ctx context.Context, db DBTX, arg ArchiveByProjectAndStatusParams) (int64, error)
 	CopyStepsToScenario(ctx context.Context, db DBTX, arg CopyStepsToScenarioParams) error
 	CreateScenario(ctx context.Context, db DBTX, arg CreateScenarioParams) (Scenario, error)
+	GetAnalytics(ctx context.Context, db DBTX, scenarioID uuid.NullUUID) (GetAnalyticsRow, error)
 	GetScenario(ctx context.Context, db DBTX, id uuid.UUID) (Scenario, error)
+	GetStepAnalytics(ctx context.Context, db DBTX, scenarioID uuid.NullUUID) ([]GetStepAnalyticsRow, error)
 	UpdateScenarioStatusById(ctx context.Context, db DBTX, arg UpdateScenarioStatusByIdParams) error
 }
 
