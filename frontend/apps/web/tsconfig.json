@@ -1,0 +1,24 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["vite/client"],
+    "noEmit": true
+  },
+  "include": [
+    "src",
+    "../../packages/shared/src",
+    "../../packages/ui/src",
+    "../../packages/onboarding-sdk/src"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "../../packages/**/src/**/*.test.ts",
+    "../../packages/**/src/**/*.test.tsx"
+  ],
+  "references": [
+    { "path": "../../packages/shared" },
+    { "path": "../../packages/ui" },
+    { "path": "../../packages/onboarding-sdk" }
+  ]
+}
