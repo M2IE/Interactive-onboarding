@@ -237,7 +237,11 @@ export type $defs = Record<string, never>;
 export interface operations {
     listScenarios: {
         parameters: {
-            query?: never;
+            query?: {
+                projectId?: string;
+                size?: number;
+                page?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
