@@ -61,9 +61,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Scenario"
+                $ref: "#/components/schemas/ScenarioList"
         "400":
           description: Неверный запрос
           content:
@@ -528,6 +526,20 @@ components:
         updatedAt:
           type: string
           format: date-time
+
+    ScenarioList:
+      type: object
+      required:
+        - items
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Scenario"
+        total:
+          type: integer
+          format: int64
 
     CreateScenarioRequest:
       type: object
