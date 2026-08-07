@@ -22,7 +22,7 @@ type ServerInterface interface {
 	GetAnalytics(w http.ResponseWriter, r *http.Request, scenarioId openapi_types.UUID)
 	// List scenarios
 	// (GET /admin/scenarios)
-	ListScenarios(w http.ResponseWriter, r *http.Request)
+	ListScenarios(w http.ResponseWriter, r *http.Request, params ListScenariosParams)
 	// Create scenario
 	// (POST /admin/scenarios)
 	CreateScenario(w http.ResponseWriter, r *http.Request)
@@ -64,7 +64,7 @@ func (_ Unimplemented) GetAnalytics(w http.ResponseWriter, r *http.Request, scen
 
 // List scenarios
 // (GET /admin/scenarios)
-func (_ Unimplemented) ListScenarios(w http.ResponseWriter, r *http.Request) {
+func (_ Unimplemented) ListScenarios(w http.ResponseWriter, r *http.Request, params ListScenariosParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -159,8 +159,37 @@ func (siw *ServerInterfaceWrapper) GetAnalytics(w http.ResponseWriter, r *http.R
 // ListScenarios operation middleware
 func (siw *ServerInterfaceWrapper) ListScenarios(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListScenariosParams
+
+	// ------------- Optional query parameter "projectId" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "projectId", r.URL.Query(), &params.ProjectId)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectId", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "size" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "size", r.URL.Query(), &params.Size)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "size", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "page", r.URL.Query(), &params.Page)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListScenarios(w, r)
+		siw.Handler.ListScenarios(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -597,6 +626,7 @@ func (response GetAnalytics500JSONResponse) VisitGetAnalyticsResponse(w http.Res
 }
 
 type ListScenariosRequestObject struct {
+	Params ListScenariosParams
 }
 
 type ListScenariosResponseObject interface {
@@ -1131,8 +1161,10 @@ func (sh *strictHandler) GetAnalytics(w http.ResponseWriter, r *http.Request, sc
 }
 
 // ListScenarios operation middleware
-func (sh *strictHandler) ListScenarios(w http.ResponseWriter, r *http.Request) {
+func (sh *strictHandler) ListScenarios(w http.ResponseWriter, r *http.Request, params ListScenariosParams) {
 	var request ListScenariosRequestObject
+
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.ListScenarios(ctx, request.(ListScenariosRequestObject))

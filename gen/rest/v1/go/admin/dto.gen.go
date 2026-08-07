@@ -144,6 +144,13 @@ type UpdateStepRequest struct {
 // ScenarioId defines model for ScenarioId.
 type ScenarioId = openapi_types.UUID
 
+// ListScenariosParams defines parameters for ListScenarios.
+type ListScenariosParams struct {
+	ProjectId *openapi_types.UUID `form:"projectId,omitempty" json:"projectId,omitempty"`
+	Size      *int                `form:"size,omitempty" json:"size,omitempty"`
+	Page      *int                `form:"page,omitempty" json:"page,omitempty"`
+}
+
 // CreateScenarioJSONRequestBody defines body for CreateScenario for application/json ContentType.
 type CreateScenarioJSONRequestBody = CreateScenarioRequest
 

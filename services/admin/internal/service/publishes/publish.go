@@ -2,7 +2,6 @@ package publishes
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 
 	"github.com/M2IE/Interactive-onboarding/pkg/database"
@@ -88,9 +87,6 @@ func (s *PublishService) Unpublish(ctx context.Context, scenarioID uuid.UUID) (e
 
 	scenario, err := s.infra.GetScenario(ctx, tx, scenarioID)
 	if err != nil {
-		if errors.Is(err, domain.ErrScenarioNotFound) {
-			return domain.ErrScenarioNotFound
-		}
 		return err
 	}
 	if scenario.Status != domain.ScenarioStatusPublished {
