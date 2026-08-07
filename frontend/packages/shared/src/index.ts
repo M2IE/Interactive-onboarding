@@ -12,20 +12,9 @@ export type OnboardingEventType =
   | 'scenario_dismissed'
   | 'target_not_found'
 
-export type PageDefinition = {
-  id: string
-  projectId: string
-  name: string
-  description: string
-  path: string
-  type: 'prod' | 'dev' | 'test'
-}
-
 export type OnboardingStep = {
   id: string
   versionId: string
-  pageId: string
-  pagePath: string
   order: number
   selector: string
   title: string
@@ -42,15 +31,16 @@ export type OnboardingScenario = {
   projectId: string
   projectKey: string
   flowKey: string
+  flowOrder: number
   name: string
   description: string
+  url: string
   status: ScenarioStatus
   version: number
   versionId: string
   createdAt: string
   updatedAt: string
   publishedAt?: string
-  pages: PageDefinition[]
   steps: OnboardingStep[]
 }
 
@@ -68,7 +58,8 @@ export type WidgetConfig = {
   scenarioName: string
   version: number
   versionId: string
-  pagePath: string
+  pageUrl: string
+  stepOffset: number
   totalSteps: number
   steps: OnboardingStep[]
 }

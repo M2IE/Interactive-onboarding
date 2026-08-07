@@ -2,9 +2,11 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type {
   OnboardingScenario,
   OnboardingStep,
-  PageDefinition,
 } from '@interactive-onboarding/shared'
-import { defaultScenario } from '@/entities/scenario/defaultScenario'
+import {
+  defaultScenario,
+  defaultScenarios,
+} from '@/entities/scenario/defaultScenario'
 import { readScenarios } from '@/shared/api/mockOnboardingApi'
 
 export type ScenarioEditorWorkflow =
@@ -22,7 +24,7 @@ export type ScenarioEditorState = {
 
 type UpdateScenarioMetaPayload = {
   scenarioId: string
-  patch: Pick<Partial<OnboardingScenario>, 'name' | 'description'>
+  patch: Pick<Partial<OnboardingScenario>, 'name' | 'description' | 'url'>
 }
 
 type UpdateStepPayload = {
@@ -86,7 +88,7 @@ const scenarioEditorSlice = createSlice({
       },
     },
     restoreDemoScenario(state) {
-      state.scenarios = [defaultScenario]
+      state.scenarios = defaultScenarios
       state.selectedScenarioId = defaultScenario.id
       state.selectedStepId = defaultScenario.steps[0]?.id
       state.workflow = { status: 'ready' }
@@ -122,7 +124,7 @@ const scenarioEditorSlice = createSlice({
         return
       }
 
-      applyStepPatch(step, action.payload.patch, scenario.pages)
+      applyStepPatch(step, action.payload.patch)
       markScenarioDraft(scenario)
     },
     addStep: {
@@ -211,23 +213,18 @@ function applyScenarioPatch(
     scenario.description = patch.description
   }
 
+  if (patch.url !== undefined) {
+    scenario.url = patch.url
+  }
+
   markScenarioDraft(scenario)
 }
 
 function applyStepPatch(
   step: OnboardingStep,
   patch: Partial<OnboardingStep>,
-  pages: PageDefinition[],
 ) {
   Object.assign(step, patch)
-
-  if (patch.pagePath) {
-    const page = pages.find((item) => item.path === patch.pagePath)
-
-    if (page) {
-      step.pageId = page.id
-    }
-  }
 }
 
 function markScenarioDraft(scenario: OnboardingScenario) {
@@ -244,21 +241,32 @@ function createScenarioDraft(now: Date): OnboardingScenario {
   const versionId = `scenario-draft-${timestamp}-v1`
 
   return {
-    ...defaultScenario,
     id: `scenario-${timestamp}`,
+    projectId: defaultScenario.projectId,
+    projectKey: defaultScenario.projectKey,
+    flowKey: `custom-flow-${timestamp}`,
+    flowOrder: 1,
     name: 'Новый сценарий онбординга',
     description: 'Черновик сценария для новой точки входа',
+    url: `/demo/custom-${timestamp}`,
     status: 'draft',
     version: 1,
     versionId,
     createdAt: isoDate,
     updatedAt: isoDate,
     publishedAt: undefined,
-    steps: defaultScenario.steps.map((step, index) => ({
-      ...step,
-      id: `draft-step-${timestamp}-${index}`,
-      versionId,
-    })),
+    steps: [
+      {
+        id: `draft-step-${timestamp}`,
+        versionId,
+        order: 1,
+        selector: '[data-onboarding-id="target"]',
+        title: 'Новый шаг',
+        body: 'Опишите, какую проблему пользователя решает эта подсказка.',
+        placement: 'right',
+        completion: 'next_button',
+      },
+    ],
   }
 }
 
@@ -266,7 +274,6 @@ function createStep(
   scenario: OnboardingScenario,
   payload: AddStepPayload,
 ): OnboardingStep {
-  const fallbackPage = scenario.pages[0] ?? defaultScenario.pages[0]
   const nextOrder =
     scenario.steps.length === 0
       ? 1
@@ -275,8 +282,6 @@ function createStep(
   return {
     id: payload.stepId,
     versionId: scenario.versionId,
-    pageId: fallbackPage.id,
-    pagePath: fallbackPage.path,
     order: nextOrder,
     selector: '[data-onboarding-id="profile-create-button"]',
     title: 'Новый шаг',

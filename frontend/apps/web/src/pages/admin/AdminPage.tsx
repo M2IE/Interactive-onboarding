@@ -1,51 +1,90 @@
 import { Button } from '@interactive-onboarding/ui'
 import {
+  BarChart3,
+  BookOpenCheck,
+  MonitorPlay,
+  Plus,
+  RotateCcw,
+  Send,
+  UserRound,
+} from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import {
   ScenarioAnalytics,
   useScenarioAnalytics,
 } from '@/features/scenario-analytics'
 import { ScenarioEditor, useScenarioEditor } from '@/features/scenario-editor'
-import { useCurrentPath } from '@/shared/hooks/useCurrentPath'
+import { appRoutes } from '@/shared/config/routes'
 import { AvitoLogo } from '@/shared/ui/AvitoLogo'
 
 export function AdminPage() {
-  const path = useCurrentPath()
-  const isAnalytics = path === '/admin/analytics'
+  const location = useLocation()
+  const navigate = useNavigate()
+  const isAnalytics = location.pathname === appRoutes.adminAnalytics
   const editor = useScenarioEditor()
   const analytics = useScenarioAnalytics(editor.activeScenario)
 
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar">
-        <AvitoLogo />
+        <div className="admin-sidebar__brand">
+          <AvitoLogo />
+          <span>Onboarding</span>
+        </div>
+
         <nav aria-label="Разделы админки">
-          <a className={!isAnalytics ? 'is-active' : undefined} href="/admin">
-            Сценарии
-          </a>
-          <a
+          <Link className={!isAnalytics ? 'is-active' : undefined} to={appRoutes.admin}>
+            <BookOpenCheck aria-hidden="true" size={19} />
+            <span>Сценарии</span>
+          </Link>
+          <Link
             className={isAnalytics ? 'is-active' : undefined}
-            href="/admin/analytics"
+            to={appRoutes.adminAnalytics}
           >
-            Аналитика
-          </a>
-          <a href="/demo/profile">Демо сайт</a>
+            <BarChart3 aria-hidden="true" size={19} />
+            <span>Аналитика</span>
+          </Link>
+          <Link to={appRoutes.demo.profile}>
+            <MonitorPlay aria-hidden="true" size={19} />
+            <span>Демо сайт</span>
+          </Link>
         </nav>
+
+        <div className="admin-sidebar__profile">
+          <span aria-hidden="true">
+            <UserRound size={18} />
+          </span>
+          <div>
+            <strong>Администратор</strong>
+            <small>Product team</small>
+          </div>
+        </div>
       </aside>
 
       <main className="admin-content">
         <header className="admin-topbar">
-          <div>
-            <p>Onboarding Control</p>
-            <h1>
-              {isAnalytics ? 'Аналитика прохождения' : 'Фабрика сценариев'}
-            </h1>
-          </div>
-          <div className="admin-topbar__actions">
-            <Button onClick={editor.restoreDemoScenario}>Сбросить демо</Button>
+          <h1>{isAnalytics ? 'Аналитика прохождения' : 'Фабрика сценариев'}</h1>
+          <div
+            className={`admin-topbar__actions${isAnalytics ? ' is-compact' : ''}`}
+          >
+            <Button
+              icon={<RotateCcw aria-hidden="true" size={17} />}
+              onClick={editor.restoreDemoScenario}
+              variant="ghost"
+            >
+              Сбросить
+            </Button>
             {!isAnalytics && (
-              <Button onClick={editor.createDraft}>Создать сценарий</Button>
+              <Button
+                icon={<Plus aria-hidden="true" size={18} />}
+                onClick={editor.createDraft}
+              >
+                Создать сценарий
+              </Button>
             )}
             {!isAnalytics && (
               <Button
+                icon={<Send aria-hidden="true" size={17} />}
                 onClick={editor.publishActiveScenario}
                 variant="primary"
               >
@@ -71,6 +110,9 @@ export function AdminPage() {
             scenarios={editor.scenarios}
             workflow={editor.workflow}
             onAddStep={editor.addStep}
+            onOpenDemo={() =>
+              navigate(editor.activeScenario?.url ?? appRoutes.demo.profile)
+            }
             onSelectScenario={editor.selectScenario}
             onSelectStep={editor.selectStep}
             onUpdateScenarioMeta={editor.updateScenarioMeta}

@@ -55,7 +55,11 @@ export function useScenarioEditor() {
     restoreDemoScenario: () => dispatch(restoreDemoScenario()),
     selectScenario: (scenarioId: string) => dispatch(selectScenario(scenarioId)),
     selectStep: (stepId: string) => dispatch(selectStep(stepId)),
-    updateScenarioMeta: (patch: { name?: string; description?: string }) => {
+    updateScenarioMeta: (patch: {
+      name?: string
+      description?: string
+      url?: string
+    }) => {
       if (activeScenario) {
         dispatch(updateScenarioMeta({ scenarioId: activeScenario.id, patch }))
       }

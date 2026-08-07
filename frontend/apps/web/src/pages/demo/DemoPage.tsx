@@ -1,23 +1,32 @@
 import { OnboardingProvider } from "@interactive-onboarding/onboarding-sdk/react";
+import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { ClassifiedShell } from "@/widgets/classified-shell/ClassifiedShell";
 import { mockOnboardingClient } from "@/shared/api/mockOnboardingApi";
-import { useCurrentPath } from "@/shared/hooks/useCurrentPath";
+import { appRoutes } from '@/shared/config/routes'
 
 export function DemoPage() {
-  const path = useCurrentPath();
+  const location = useLocation()
+  const navigate = useNavigate()
 
   return (
     <>
       <ClassifiedShell>
-        {path === "/demo/profile" && <ProfileScreen />}
-        {path === "/demo/new" && <CategoryScreen />}
-        {path === "/demo/new/transport" && <TransportScreen />}
-        {path === "/demo/new/auto" && <AutoFormScreen />}
+        <Routes>
+          <Route element={<ProfileScreen />} path="profile" />
+          <Route element={<CategoryScreen />} path="new" />
+          <Route element={<TransportScreen />} path="new/transport" />
+          <Route element={<AutoFormScreen />} path="new/auto" />
+          <Route
+            element={<Navigate replace to={appRoutes.demo.profile} />}
+            path="*"
+          />
+        </Routes>
       </ClassifiedShell>
 
       <OnboardingProvider
         apiClient={mockOnboardingClient}
-        pageUrl={path}
+        navigate={navigate}
+        pageUrl={location.pathname}
         projectKey="avito-demo"
         userId="demo-user-1"
       />
@@ -35,11 +44,11 @@ function ProfileScreen() {
           <strong>0,0</strong> Нет отзывов
         </p>
         <nav aria-label="Разделы профиля">
-          <a href="/demo/profile">Мои объявления</a>
-          <a href="/demo/profile">Заказы</a>
-          <a href="/demo/profile">Избранное</a>
-          <a href="/demo/profile">Сообщения</a>
-          <a href="/demo/profile">Кошелек</a>
+          <Link to={appRoutes.demo.profile}>Мои объявления</Link>
+          <Link to={appRoutes.demo.profile}>Заказы</Link>
+          <Link to={appRoutes.demo.profile}>Избранное</Link>
+          <Link to={appRoutes.demo.profile}>Сообщения</Link>
+          <Link to={appRoutes.demo.profile}>Кошелек</Link>
         </nav>
       </aside>
 
@@ -52,13 +61,13 @@ function ProfileScreen() {
           <div className="empty-illustration">□</div>
           <h2>Объявлений пока нет</h2>
           <p>Но это легко исправить - разместите первое</p>
-          <a
+          <Link
             className="avito-button avito-button--dark"
             data-onboarding-id="profile-create-button"
-            href="/demo/new"
+            to={appRoutes.demo.newListing}
           >
             Разместить объявление
-          </a>
+          </Link>
         </div>
       </section>
     </main>
@@ -67,16 +76,16 @@ function ProfileScreen() {
 
 function CategoryScreen() {
   const categories = [
-    ["Транспорт", "/demo/new/transport", "category-transport"],
-    ["Недвижимость", "/demo/new", "category-real-estate"],
-    ["Работа", "/demo/new", "category-job"],
-    ["Услуги", "/demo/new", "category-services"],
-    ["Личные вещи", "/demo/new", "category-personal"],
-    ["Для дома и дачи", "/demo/new", "category-home"],
-    ["Электроника", "/demo/new", "category-electronics"],
-    ["Хобби и отдых", "/demo/new", "category-hobby"],
-    ["Животные", "/demo/new", "category-pets"],
-    ["Готовый бизнес и оборудование", "/demo/new", "category-business"],
+    ['Транспорт', appRoutes.demo.transport, 'category-transport'],
+    ['Недвижимость', appRoutes.demo.newListing, 'category-real-estate'],
+    ['Работа', appRoutes.demo.newListing, 'category-job'],
+    ['Услуги', appRoutes.demo.newListing, 'category-services'],
+    ['Личные вещи', appRoutes.demo.newListing, 'category-personal'],
+    ['Для дома и дачи', appRoutes.demo.newListing, 'category-home'],
+    ['Электроника', appRoutes.demo.newListing, 'category-electronics'],
+    ['Хобби и отдых', appRoutes.demo.newListing, 'category-hobby'],
+    ['Животные', appRoutes.demo.newListing, 'category-pets'],
+    ['Готовый бизнес и оборудование', appRoutes.demo.newListing, 'category-business'],
   ] as const;
 
   return (
@@ -84,10 +93,10 @@ function CategoryScreen() {
       <h1>Новое объявление</h1>
       <div className="category-list">
         {categories.map(([label, href, onboardingId]) => (
-          <a data-onboarding-id={onboardingId} href={href} key={label}>
+          <Link data-onboarding-id={onboardingId} key={label} to={href}>
             <span>{label}</span>
             <span aria-hidden="true">›</span>
-          </a>
+          </Link>
         ))}
       </div>
     </main>
@@ -100,54 +109,54 @@ function TransportScreen() {
       <h1>Новое объявление</h1>
       <div className="transport-grid">
         <div className="category-list">
-          <a className="is-selected" href="/demo/new/transport">
+          <Link className="is-selected" to={appRoutes.demo.transport}>
             <span>Транспорт</span>
             <span aria-hidden="true">›</span>
-          </a>
-          <a href="/demo/new">
+          </Link>
+          <Link to={appRoutes.demo.newListing}>
             <span>Недвижимость</span>
             <span aria-hidden="true">›</span>
-          </a>
-          <a href="/demo/new">
+          </Link>
+          <Link to={appRoutes.demo.newListing}>
             <span>Работа</span>
             <span aria-hidden="true">›</span>
-          </a>
-          <a href="/demo/new">
+          </Link>
+          <Link to={appRoutes.demo.newListing}>
             <span>Услуги</span>
             <span aria-hidden="true">›</span>
-          </a>
+          </Link>
         </div>
         <div className="category-list">
-          <a className="is-selected" href="/demo/new/transport">
+          <Link className="is-selected" to={appRoutes.demo.transport}>
             <span>Автомобили</span>
             <span aria-hidden="true">›</span>
-          </a>
-          <a href="/demo/new/transport">
+          </Link>
+          <Link to={appRoutes.demo.transport}>
             <span>Мотоциклы и мототехника</span>
             <span aria-hidden="true">›</span>
-          </a>
-          <a href="/demo/new/transport">
+          </Link>
+          <Link to={appRoutes.demo.transport}>
             <span>Грузовики и спецтехника</span>
             <span aria-hidden="true">›</span>
-          </a>
-          <a href="/demo/new/transport">
+          </Link>
+          <Link to={appRoutes.demo.transport}>
             <span>Запчасти и аксессуары</span>
             <span aria-hidden="true">›</span>
-          </a>
+          </Link>
         </div>
         <div className="category-list">
-          <a
+          <Link
             className="is-selected"
             data-onboarding-id="transport-used-car"
-            href="/demo/new/auto"
+            to={appRoutes.demo.auto}
           >
             <span>С пробегом</span>
             <span aria-hidden="true">›</span>
-          </a>
-          <a href="/demo/new/auto">
+          </Link>
+          <Link to={appRoutes.demo.auto}>
             <span>Новый</span>
             <span aria-hidden="true">›</span>
-          </a>
+          </Link>
         </div>
       </div>
     </main>
@@ -157,9 +166,9 @@ function TransportScreen() {
 function AutoFormScreen() {
   return (
     <main className="classified-page classified-page--form">
-      <a className="back-link" href="/demo/new/transport">
+      <Link className="back-link" to={appRoutes.demo.transport}>
         ←
-      </a>
+      </Link>
       <div className="form-heading">
         <h1>Новое объявление</h1>
         <p>Транспорт · Автомобили · С пробегом</p>

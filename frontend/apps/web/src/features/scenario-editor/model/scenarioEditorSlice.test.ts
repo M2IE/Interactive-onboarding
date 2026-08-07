@@ -6,6 +6,7 @@ import {
   buildInitialScenarioEditorState,
   publishScenario,
   scenarioEditorReducer,
+  updateScenarioMeta,
   updateStep,
 } from './scenarioEditorSlice'
 
@@ -55,6 +56,23 @@ describe('scenarioEditorReducer', () => {
     expect(addedStep).toBeDefined()
     expect(addedStep && 'primaryActionLabel' in addedStep).toBe(false)
     expect(addedStep && 'backActionLabel' in addedStep).toBe(false)
+    expect(addedStep && 'pagePath' in addedStep).toBe(false)
+  })
+
+  it('stores a custom page path on the scenario', () => {
+    const scenario = cloneScenario()
+    const state = buildInitialScenarioEditorState([scenario])
+
+    const nextState = scenarioEditorReducer(
+      state,
+      updateScenarioMeta({
+        scenarioId: scenario.id,
+        patch: { url: '/custom/listing/create' },
+      }),
+    )
+
+    expect(nextState.scenarios[0].url).toBe('/custom/listing/create')
+    expect(nextState.scenarios[0].steps[0]).not.toHaveProperty('pagePath')
   })
 })
 
