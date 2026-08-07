@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"time"
 
+	"io"
+
 	"github.com/M2IE/Interactive-onboarding/pkg/database"
 	"github.com/M2IE/Interactive-onboarding/pkg/pdfengine"
 	"github.com/M2IE/Interactive-onboarding/pkg/s3"
@@ -69,4 +71,8 @@ func (a *AnalyticsInfrastructure) UploadAnalytics(ctx context.Context, scenarioI
 	}
 
 	return key, nil
+}
+
+func (a *AnalyticsInfrastructure) DownloadAnalytics(ctx context.Context, filename string) (io.ReadCloser, error) {
+	return a.s3.Download(ctx, a.s3ReportBucket, filename)
 }

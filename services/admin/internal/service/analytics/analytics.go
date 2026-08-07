@@ -2,7 +2,6 @@ package analytics
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"log/slog"
 
@@ -18,6 +17,7 @@ type IAnalyticsInfrastructure interface {
 
 	// S3
 	UploadAnalytics(ctx context.Context, scenarioID uuid.UUID, analytics *domain.Analytics) (string, error)
+	DownloadAnalytics(ctx context.Context, filename string) (io.ReadCloser, error)
 }
 
 type AnalyticsService struct {
@@ -72,12 +72,6 @@ func (s *AnalyticsService) GenerateReport(ctx context.Context, scenarioID uuid.U
 	return s.infra.UploadAnalytics(ctx, scenarioID, analytics)
 }
 
-	key := fmt.Sprintf("%s_%s.pdf", scenarioID.String(), time.Now())
-	url, err := s.s3.Upload(ctx, s.bucket, key, bytes.NewReader(pdfBytes), "application/pdf")
-	if err != nil {
-		slog.Error("failed to upload report to s3", "error", err)
-		return "", fmt.Errorf("upload report: %w", err)
-	}
-
-	return url, nil
+func (s *AnalyticsService) DownloadReport(ctx context.Context, filename string) (io.ReadCloser, error) {
+	return s.infra.DownloadAnalytics(ctx, filename)
 }
