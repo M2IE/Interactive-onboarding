@@ -1,0 +1,220 @@
+openapi: 3.0.0
+info:
+  title: Widget API
+  description: API для виджета онбординга
+  version: 1.0.0
+tags:
+  - name: Widget
+    description: Операции для виджета
+paths:
+  /widget/scenario:
+    get:
+      summary: Получить сценарий для виджета
+      description: Возвращает шаги для текущей страницы
+      tags:
+        - Widget
+      operationId: getWidgetScenario
+      parameters:
+        - name: projectKey
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Ключ проекта (уникальный идентификатор проекта).
+        - name: pageUrl
+          in: query
+          required: true
+          schema:
+            type: string
+          description: URL страницы, на которой находится виджет.
+      responses:
+        '200':
+          description: Успешный ответ с шагами и метаданными.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WidgetScenarioResponse'
+        '204':
+          description: На странице нет Published сценария.
+        '400':
+          description: Некорректные параметры запроса.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Сценарий для указанного URL и проекта не найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalErrorResponse'
+
+  /widget/event:
+    post:
+      summary: Отправить событие
+      description: Принимает событие от виджета (просмотр шага, завершение шага, закрытие сценария).
+      tags:
+        - Widget
+      operationId: postWidgetEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WidgetEventRequest'
+      responses:
+        '204':
+          description: Событие успешно обработано (без тела ответа).
+        '400':
+          description: Некорректный запрос (невалидный JSON, отсутствуют обязательные поля).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Сессия не найдена.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Неверный тип события или недостающие поля для данного типа.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalErrorResponse'
+
+components:
+  parameters: {}
+  schemas:
+    Step:
+      type: object
+      required:
+        - id
+        - orderNum
+        - selector
+        - title
+        - body
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Идентификатор шага.
+        orderNum:
+          type: integer
+          minimum: 1
+          description: Порядковый номер шага в сценарии.
+        selector:
+          type: string
+          description: CSS-селектор элемента.
+        title:
+          type: string
+          description: Заголовок подсказки.
+        body:
+          type: string
+          description: Текст подсказки.
+
+    Scenario:
+      type: object
+      required:
+        - id
+        - name
+        - steps
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Идентификатор текущего сценария.
+        name:
+          type: string
+          description: Название сценария.
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/Step'
+          description: Шаги, которые нужно показать.
+
+    WidgetScenarioResponse:
+      type: object
+      properties:
+        scenario:
+          $ref: '#/components/schemas/Scenario'
+
+    WidgetEventRequest:
+      type: object
+      required:
+        - session_id
+        - type
+      properties:
+        session_id:
+          type: string
+          format: uuid
+          description: Идентификатор сессии (из cookie или localStorage).
+        type:
+          type: string
+          enum:
+            - step_viewed
+            - step_completed
+            - scenario_dismissed
+          description: |
+            Тип события:
+              - step_viewed - пользователь увидел шаг.
+              - step_completed - пользователь завершил шаг.
+              - scenario_dismissed - пользователь закрыл виджет во время прохождения сценария.
+        step_id:
+          type: string
+          format: uuid
+          description: Идентификатор шага (обязателен для step_viewed, step_completed; для остальных не передаётся или игнорируется).
+        event_key:
+          type: string
+          description: Уникальный ключ события. Если не передан, бекенд сгенерирует сам.
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum:
+                - INVALID_REQUEST
+                - INVALID_PARAMETER
+                - INVALID_BODY
+                - SCENARIO_NOT_FOUND
+                - SESSION_NOT_FOUND
+                - INVALID_EVENT_TYPE
+                - MISSING_REQUIRED_FIELD
+            message:
+              type: string
+
+    InternalErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum:
+                - INTERNAL_ERROR
+            message:
+              type: string
