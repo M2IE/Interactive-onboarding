@@ -382,7 +382,7 @@ paths:
       tags:
         - Analytics
       summary: Generate analytics PDF report
-      operationId: GenerateAnalyticsReport
+      operationId: generateAnalyticsReport
       parameters:
         - name: scenarioId
           in: path
@@ -397,6 +397,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AnalyticsReportResponse"
+        "404":
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+    get:
+      tags:
+        - Analytics
+      summary: Download analytics PDF report
+      operationId: getAnalyticsReport
+      parameters:
+        - name: scenarioId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: filename
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: PDF report
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
         "404":
           description: Не найден
           content:

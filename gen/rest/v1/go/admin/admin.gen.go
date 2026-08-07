@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -20,6 +21,9 @@ type ServerInterface interface {
 	// Scenario analytics
 	// (GET /admin/analytics/{scenarioId})
 	GetAnalytics(w http.ResponseWriter, r *http.Request, scenarioId openapi_types.UUID)
+	// Download analytics PDF report
+	// (GET /admin/analytics/{scenarioId}/report)
+	GetAnalyticsReport(w http.ResponseWriter, r *http.Request, scenarioId openapi_types.UUID, params GetAnalyticsReportParams)
 	// Generate analytics PDF report
 	// (POST /admin/analytics/{scenarioId}/report)
 	GenerateAnalyticsReport(w http.ResponseWriter, r *http.Request, scenarioId openapi_types.UUID)
@@ -62,6 +66,12 @@ type Unimplemented struct{}
 // Scenario analytics
 // (GET /admin/analytics/{scenarioId})
 func (_ Unimplemented) GetAnalytics(w http.ResponseWriter, r *http.Request, scenarioId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Download analytics PDF report
+// (GET /admin/analytics/{scenarioId}/report)
+func (_ Unimplemented) GetAnalyticsReport(w http.ResponseWriter, r *http.Request, scenarioId openapi_types.UUID, params GetAnalyticsReportParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -156,6 +166,49 @@ func (siw *ServerInterfaceWrapper) GetAnalytics(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetAnalytics(w, r, scenarioId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAnalyticsReport operation middleware
+func (siw *ServerInterfaceWrapper) GetAnalyticsReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "scenarioId" -------------
+	var scenarioId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "scenarioId", chi.URLParam(r, "scenarioId"), &scenarioId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scenarioId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetAnalyticsReportParams
+
+	// ------------- Required query parameter "filename" -------------
+
+	if paramValue := r.URL.Query().Get("filename"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "filename"})
+		return
+	}
+
+	err = runtime.BindQueryParameter("form", true, true, "filename", r.URL.Query(), &params.Filename)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "filename", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAnalyticsReport(w, r, scenarioId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -553,6 +606,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/admin/analytics/{scenarioId}", wrapper.GetAnalytics)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/analytics/{scenarioId}/report", wrapper.GetAnalyticsReport)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/admin/analytics/{scenarioId}/report", wrapper.GenerateAnalyticsReport)
 	})
 	r.Group(func(r chi.Router) {
@@ -627,6 +683,52 @@ func (response GetAnalytics422JSONResponse) VisitGetAnalyticsResponse(w http.Res
 type GetAnalytics500JSONResponse InternalErrorResponse
 
 func (response GetAnalytics500JSONResponse) VisitGetAnalyticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAnalyticsReportRequestObject struct {
+	ScenarioId openapi_types.UUID `json:"scenarioId"`
+	Params     GetAnalyticsReportParams
+}
+
+type GetAnalyticsReportResponseObject interface {
+	VisitGetAnalyticsReportResponse(w http.ResponseWriter) error
+}
+
+type GetAnalyticsReport200ApplicationpdfResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response GetAnalyticsReport200ApplicationpdfResponse) VisitGetAnalyticsReportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/pdf")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetAnalyticsReport404JSONResponse ErrorResponse
+
+func (response GetAnalyticsReport404JSONResponse) VisitGetAnalyticsReportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetAnalyticsReport500JSONResponse InternalErrorResponse
+
+func (response GetAnalyticsReport500JSONResponse) VisitGetAnalyticsReportResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
 
@@ -1115,6 +1217,9 @@ type StrictServerInterface interface {
 	// Scenario analytics
 	// (GET /admin/analytics/{scenarioId})
 	GetAnalytics(ctx context.Context, request GetAnalyticsRequestObject) (GetAnalyticsResponseObject, error)
+	// Download analytics PDF report
+	// (GET /admin/analytics/{scenarioId}/report)
+	GetAnalyticsReport(ctx context.Context, request GetAnalyticsReportRequestObject) (GetAnalyticsReportResponseObject, error)
 	// Generate analytics PDF report
 	// (POST /admin/analytics/{scenarioId}/report)
 	GenerateAnalyticsReport(ctx context.Context, request GenerateAnalyticsReportRequestObject) (GenerateAnalyticsReportResponseObject, error)
@@ -1198,6 +1303,33 @@ func (sh *strictHandler) GetAnalytics(w http.ResponseWriter, r *http.Request, sc
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetAnalyticsResponseObject); ok {
 		if err := validResponse.VisitGetAnalyticsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAnalyticsReport operation middleware
+func (sh *strictHandler) GetAnalyticsReport(w http.ResponseWriter, r *http.Request, scenarioId openapi_types.UUID, params GetAnalyticsReportParams) {
+	var request GetAnalyticsReportRequestObject
+
+	request.ScenarioId = scenarioId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAnalyticsReport(ctx, request.(GetAnalyticsReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAnalyticsReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAnalyticsReportResponseObject); ok {
+		if err := validResponse.VisitGetAnalyticsReportResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

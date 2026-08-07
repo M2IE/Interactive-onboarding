@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strings"
 
 	pkgconfig "github.com/M2IE/Interactive-onboarding/pkg/configs"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -44,7 +43,7 @@ func NewRustFS(ctx context.Context, cfgToCheck any) (Client, error) {
 	}, nil
 }
 
-func (c *RustFS) Upload(ctx context.Context, bucket, key string, body io.Reader, contentType string) (string, error) {
+func (c *RustFS) Upload(ctx context.Context, bucket, key string, body io.Reader, contentType string) error {
 	_, err := c.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(bucket),
 		Key:         aws.String(key),
@@ -52,8 +51,19 @@ func (c *RustFS) Upload(ctx context.Context, bucket, key string, body io.Reader,
 		ContentType: aws.String(contentType),
 	})
 	if err != nil {
-		return "", fmt.Errorf("put object: %w", err)
+		return fmt.Errorf("Upload object to S3(RustFS) error: %w", err)
 	}
 
-	return fmt.Sprintf("http://%s/%s/%s", strings.TrimRight(c.dsn, "/"), bucket, key), nil
+	return nil
+}
+
+func (c *RustFS) Download(ctx context.Context, bucket, key string) (io.ReadCloser, error) {
+	out, err := c.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("Download object from S3(RustFS) error: %w", err)
+	}
+	return out.Body, nil
 }

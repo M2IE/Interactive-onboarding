@@ -7,7 +7,8 @@ import (
 )
 
 type Client interface {
-	Upload(ctx context.Context, bucket, key string, body io.Reader, contentType string) (string, error)
+	Upload(ctx context.Context, bucket, key string, body io.Reader, contentType string) error
+	Download(ctx context.Context, bucket, key string) (io.ReadCloser, error)
 }
 
 type Type string

@@ -46,8 +46,8 @@ func main() {
 	}
 
 	q := queries.New()
-	infra := infrastructure.NewInfrastructure(db, q)
-	service := service.NewService(infra, db, s3Client, pdfEngine, cfg.S3Bucket)
+	infra := infrastructure.NewInfrastructure(db, q, s3Client, pdfEngine, cfg.S3Bucket)
+	service := service.NewService(infra, db)
 	handler := delivery.NewHandler(service)
 
 	r := apiv1.HandlerWithOptions(handler, apiv1.ChiServerOptions{

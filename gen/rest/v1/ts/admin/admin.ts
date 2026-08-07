@@ -152,10 +152,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Download analytics PDF report */
+        get: operations["getAnalyticsReport"];
         put?: never;
         /** Generate analytics PDF report */
-        post: operations["GenerateAnalyticsReport"];
+        post: operations["generateAnalyticsReport"];
         delete?: never;
         options?: never;
         head?: never;
@@ -815,7 +816,49 @@ export interface operations {
             };
         };
     };
-    GenerateAnalyticsReport: {
+    getAnalyticsReport: {
+        parameters: {
+            query: {
+                filename: string;
+            };
+            header?: never;
+            path: {
+                scenarioId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF report */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            /** @description Не найден */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalErrorResponse"];
+                };
+            };
+        };
+    };
+    generateAnalyticsReport: {
         parameters: {
             query?: never;
             header?: never;

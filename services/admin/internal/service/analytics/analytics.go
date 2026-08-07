@@ -1,39 +1,34 @@
 package analytics
 
 import (
-	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
-	"time"
 
 	"github.com/M2IE/Interactive-onboarding/pkg/database"
-	"github.com/M2IE/Interactive-onboarding/pkg/pdfengine"
-	"github.com/M2IE/Interactive-onboarding/pkg/s3"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/google/uuid"
 )
 
 type IAnalyticsInfrastructure interface {
+	// DB
 	GetScenarioAnalytics(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (*domain.Analytics, error)
 	GetStepAnalytics(ctx context.Context, db database.Querier, scenarioID uuid.UUID) ([]domain.StepAnalytics, error)
+
+	// S3
+	UploadAnalytics(ctx context.Context, scenarioID uuid.UUID, analytics *domain.Analytics) (string, error)
 }
 
 type AnalyticsService struct {
 	infra     IAnalyticsInfrastructure
 	txManager database.Database
-	s3        s3.Client
-	pdf       pdfengine.Engine
-	bucket    string
 }
 
-func NewAnalyticsService(infra IAnalyticsInfrastructure, txManager database.Database, s3Client s3.Client, pdfEngine pdfengine.Engine, bucket string) *AnalyticsService {
+func NewAnalyticsService(infra IAnalyticsInfrastructure, txManager database.Database) *AnalyticsService {
 	return &AnalyticsService{
 		infra:     infra,
 		txManager: txManager,
-		s3:        s3Client,
-		pdf:       pdfEngine,
-		bucket:    bucket,
 	}
 }
 
@@ -73,11 +68,9 @@ func (s *AnalyticsService) GenerateReport(ctx context.Context, scenarioID uuid.U
 		return "", err
 	}
 
-	content := analytics.ToPDFContent()
-	pdfBytes, err := s.pdf.GeneratePDF(ctx, content)
-	if err != nil {
-		return "", fmt.Errorf("generate pdf: %w", err)
-	}
+	// return filename and error
+	return s.infra.UploadAnalytics(ctx, scenarioID, analytics)
+}
 
 	key := fmt.Sprintf("%s_%s.pdf", scenarioID.String(), time.Now())
 	url, err := s.s3.Upload(ctx, s.bucket, key, bytes.NewReader(pdfBytes), "application/pdf")

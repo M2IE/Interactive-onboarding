@@ -153,6 +153,11 @@ type UpdateStepRequest struct {
 // ScenarioId defines model for ScenarioId.
 type ScenarioId = openapi_types.UUID
 
+// GetAnalyticsReportParams defines parameters for GetAnalyticsReport.
+type GetAnalyticsReportParams struct {
+	Filename string `form:"filename" json:"filename"`
+}
+
 // CreateScenarioJSONRequestBody defines body for CreateScenario for application/json ContentType.
 type CreateScenarioJSONRequestBody = CreateScenarioRequest
 
