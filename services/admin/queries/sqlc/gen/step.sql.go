@@ -89,14 +89,14 @@ func (q *Queries) DeleteStep(ctx context.Context, db DBTX, id uuid.UUID) error {
 }
 
 const getMaxOrderByScenario = `-- name: GetMaxOrderByScenario :one
-SELECT COALESCE(MAX(order_num), 0) FROM step WHERE scenario_id = $1
+SELECT COALESCE(MAX(order_num), 0)::int FROM step WHERE scenario_id = $1
 `
 
-func (q *Queries) GetMaxOrderByScenario(ctx context.Context, db DBTX, scenarioID uuid.UUID) (interface{}, error) {
+func (q *Queries) GetMaxOrderByScenario(ctx context.Context, db DBTX, scenarioID uuid.UUID) (int32, error) {
 	row := db.QueryRowContext(ctx, getMaxOrderByScenario, scenarioID)
-	var coalesce interface{}
-	err := row.Scan(&coalesce)
-	return coalesce, err
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const getStepByID = `-- name: GetStepByID :one

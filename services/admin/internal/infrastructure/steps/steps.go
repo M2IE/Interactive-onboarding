@@ -83,14 +83,8 @@ func (s *StepsInfrastructure) GetMaxOrder(ctx context.Context, db database.Queri
 		}
 		return 0, err
 	}
-	switch v := val.(type) {
-	case int32:
-		return int(v), nil
-	case int64:
-		return int(v), nil
-	default:
-		return 0, nil
-	}
+
+	return int(val), nil
 }
 
 // DecrementOrdersAfter сдвигает все order_num > удаленного номера на -1.

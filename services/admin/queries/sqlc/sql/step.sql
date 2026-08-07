@@ -28,7 +28,7 @@ WHERE id = $4;
 DELETE FROM step WHERE id = $1;
 
 -- name: GetMaxOrderByScenario :one
-SELECT COALESCE(MAX(order_num), 0) FROM step WHERE scenario_id = $1;
+SELECT COALESCE(MAX(order_num), 0)::int FROM step WHERE scenario_id = $1;
 
 -- name: UpdateStepOrder :exec
 UPDATE step SET order_num = $1 WHERE id = $2;

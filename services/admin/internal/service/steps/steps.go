@@ -69,8 +69,13 @@ func (s *StepsService) CreateStep(ctx context.Context, scenarioID uuid.UUID, sel
 	}
 	newOrder := maxOrder + 1
 
+	id, err := uuid.NewV7()
+	if err != nil {
+		return nil, err
+	}
+
 	step := &domain.Step{
-		ID:         uuid.New(),
+		ID:         id,
 		ScenarioID: scenarioID,
 		OrderNum:   newOrder,
 		Selector:   selector,
