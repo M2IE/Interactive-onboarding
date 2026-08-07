@@ -5,6 +5,9 @@ up:
 migrate-up:
 	docker compose --profile migrate up migrate
 
+seed:
+	docker compose --profile seed up seed --build
+
 rest-gen-admin-go:
 	oapi-codegen -config api/openapi/v1/admin/dto.yaml api/openapi/v1/admin/specs.yaml
 	oapi-codegen -config api/openapi/v1/admin/server.yaml api/openapi/v1/admin/specs.yaml

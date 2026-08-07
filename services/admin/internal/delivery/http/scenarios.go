@@ -28,15 +28,3 @@ func (h Handler) GetScenario(ctx context.Context, request apiv1.GetScenarioReque
 func (h Handler) UpdateScenario(ctx context.Context, request apiv1.UpdateScenarioRequestObject) (apiv1.UpdateScenarioResponseObject, error) {
 	return nil, nil
 }
-
-// Publish scenario
-// (POST /admin/scenarios/{id}/publish)
-func (h Handler) PublishScenario(ctx context.Context, request apiv1.PublishScenarioRequestObject) (apiv1.PublishScenarioResponseObject, error) {
-	return nil, nil
-}
-
-// Unpublish scenario
-// (POST /admin/scenarios/{id}/unpublish)
-func (h Handler) UnpublishScenario(ctx context.Context, request apiv1.UnpublishScenarioRequestObject) (apiv1.UnpublishScenarioResponseObject, error) {
-	return nil, nil
-}
