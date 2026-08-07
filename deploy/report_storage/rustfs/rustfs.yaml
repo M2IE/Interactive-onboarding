@@ -1,0 +1,52 @@
+services:
+  report_storage:
+    image: rustfs/rustfs:1.0.0-beta.12-glibc
+    container_name: report_storage
+    restart: unless-stopped
+    ports:
+      - "9000:9000" # delete in prod
+      - "9001:9001" # delete in prod
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY}
+      RUSTFS_ADDRESS: ${RUSTFS_ADDRESS}
+      RUSTFS_CONSOLE_ADDRESS: ${RUSTFS_CONSOLE_ADDRESS}
+      RUSTFS_REGION: ${RUSTFS_REGION}
+      RUSTFS_CONSOLE_ENABLE: ${RUSTFS_CONSOLE_ENABLE}
+      RUSTFS_URL: ${RUSTFS_URL}
+
+    volumes:
+      - report_storage_data:/data
+    networks:
+      - interactive_onboarding
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://${RUSTFS_URL}${RUSTFS_ADDRESS}/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  # Bucket initialization
+  init-s3:
+    image: rustfs/rc:v0.1.31
+    container_name: init-s3
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY}
+      RUSTFS_ADDRESS: ${RUSTFS_ADDRESS}
+      RUSTFS_URL: ${RUSTFS_URL}
+    entrypoint:
+      - sh
+      - -c
+      - |
+        rc alias set local http://${RUSTFS_URL}${RUSTFS_ADDRESS} ${RUSTFS_ACCESS_KEY} ${RUSTFS_SECRET_KEY} && \
+        rc bucket create local/reports && \
+        rc bucket lifecycle rule add local/reports --expiry-days 30
+    networks:
+      - interactive_onboarding
+    depends_on:
+      report_storage:
+        condition: service_healthy
+
+volumes:
+  report_storage_data:

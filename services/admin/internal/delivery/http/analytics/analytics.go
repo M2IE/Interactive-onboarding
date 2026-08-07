@@ -53,7 +53,6 @@ func (h AnalyticsHandler) GetAnalyticsReport(ctx context.Context, request apiv1.
 			}{Code: apiv1.SCENARIONOTFOUND, Message: "report not found"},
 		}, nil
 	}
-	defer body.Close()
 
 	return apiv1.GetAnalyticsReport200ApplicationpdfResponse{Body: body}, nil
 }

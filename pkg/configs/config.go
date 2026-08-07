@@ -19,12 +19,12 @@ func (c PostgresConfig) DSN() string {
 
 type ConfigRustFS struct {
 	RustFSRegion          string `env:"RUSTFS_REGION" envDefault:"us-east-1"`
-	RustFSAccessKey       string `env:"RUSTFS_ACCESS_KEY_ID"`
-	RustFSSecretAccessKey string `env:"RUSTFS_SECRET_ACCESS_KEY"`
+	RustFSAccessKey       string `env:"RUSTFS_ACCESS_KEY"`
+	RustFSSecretAccessKey string `env:"RUSTFS_SECRET_KEY"`
 	RustFSUrl             string `env:"RUSTFS_URL" envDefault:"localhost"`
-	RustFSPort            string `env:"RUSTFS_PORT" envDefault:"9000"`
+	RustFSPort            string `env:"RUSTFS_ADDRESS" envDefault:"9000"`
 }
 
 func (c ConfigRustFS) DSN() string {
-	return fmt.Sprintf("%s:%s", c.RustFSUrl, c.RustFSPort)
+	return fmt.Sprintf("%s%s", c.RustFSUrl, c.RustFSPort)
 }
