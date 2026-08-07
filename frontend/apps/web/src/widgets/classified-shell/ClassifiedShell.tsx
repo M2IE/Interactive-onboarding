@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { Link } from 'react-router-dom'
+import { appRoutes } from '@/shared/config/routes'
 import { AvitoLogo } from '@/shared/ui/AvitoLogo'
 
 type ClassifiedShellProps = {
@@ -10,23 +12,26 @@ export function ClassifiedShell({ children }: ClassifiedShellProps) {
     <div className="classified-shell">
       <header className="classified-header">
         <div className="classified-header__top">
-          <a href="/admin">Админка</a>
-          <a href="/demo/profile">Мои объявления</a>
+          <Link to={appRoutes.admin}>Админка</Link>
+          <Link to={appRoutes.demo.profile}>Мои объявления</Link>
           <span>Помощь</span>
           <span>Каталоги</span>
         </div>
         <div className="classified-header__main">
           <AvitoLogo />
           <nav aria-label="Разделы классифайда">
-            <a href="/demo/profile">Бизнес360</a>
-            <a href="/demo/new/transport">Авто</a>
-            <a href="/demo/new">Недвижимость</a>
-            <a href="/demo/new">Работа</a>
-            <a href="/demo/new">Услуги</a>
+            <Link to={appRoutes.demo.profile}>Бизнес360</Link>
+            <Link to={appRoutes.demo.transport}>Авто</Link>
+            <Link to={appRoutes.demo.newListing}>Недвижимость</Link>
+            <Link to={appRoutes.demo.newListing}>Работа</Link>
+            <Link to={appRoutes.demo.newListing}>Услуги</Link>
           </nav>
-          <a className="classified-header__create" href="/demo/new">
+          <Link
+            className="classified-header__create"
+            to={appRoutes.demo.newListing}
+          >
             + Разместить объявление
-          </a>
+          </Link>
         </div>
       </header>
       {children}
