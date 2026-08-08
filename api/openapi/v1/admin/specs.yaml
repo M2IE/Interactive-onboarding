@@ -109,7 +109,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Scenario"
+                $ref: "#/components/schemas/ScenarioWithSteps"
         "404":
           description: Не найден
           content:
@@ -664,6 +664,39 @@ components:
         total:
           type: integer
           format: int64
+
+    ScenarioWithSteps:
+      type: object
+      required:
+        - id
+        - projectId
+        - name
+        - url
+        - status
+        - steps
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        url:
+          type: string
+        status:
+          $ref: "#/components/schemas/ScenarioStatus"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/Step"
 
     CreateScenarioRequest:
       type: object
