@@ -20,6 +20,8 @@ var (
 	ErrScenarioAlreadyPublished   = errors.New("scenario already published")
 	ErrScenarioAlreadyUnpublished = errors.New("scenario already unpublished")
 	ErrReportNotFound             = errors.New("report not found")
+	ErrScenarioDraftAlreadyExists = errors.New("draft already exists")
+	ErrScenarioNotEditable        = errors.New("scenario not editable")
 )
 
 type Scenario struct {

@@ -7,6 +7,8 @@ package gen
 
 import (
 	"context"
+	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -102,6 +104,93 @@ func (q *Queries) GetScenarioStatus(ctx context.Context, db DBTX, id uuid.UUID) 
 	var status ScenarioStatus
 	err := row.Scan(&status)
 	return status, err
+}
+
+const listScenarios = `-- name: ListScenarios :many
+SELECT id, project_id, name, url, status, created_at, updated_at, count(*) OVER() AS total_count
+FROM scenario
+WHERE ($1::uuid IS NULL OR project_id = $1)
+ORDER BY created_at DESC
+LIMIT $3 OFFSET $2
+`
+
+type ListScenariosParams struct {
+	ProjectID uuid.NullUUID `db:"project_id"`
+	Offset    int32         `db:"offset"`
+	Limit     int32         `db:"limit"`
+}
+
+type ListScenariosRow struct {
+	ID         uuid.UUID      `db:"id"`
+	ProjectID  uuid.UUID      `db:"project_id"`
+	Name       string         `db:"name"`
+	Url        string         `db:"url"`
+	Status     ScenarioStatus `db:"status"`
+	CreatedAt  time.Time      `db:"created_at"`
+	UpdatedAt  time.Time      `db:"updated_at"`
+	TotalCount int64          `db:"total_count"`
+}
+
+func (q *Queries) ListScenarios(ctx context.Context, db DBTX, arg ListScenariosParams) ([]ListScenariosRow, error) {
+	rows, err := db.QueryContext(ctx, listScenarios, arg.ProjectID, arg.Offset, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListScenariosRow
+	for rows.Next() {
+		var i ListScenariosRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.Name,
+			&i.Url,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.TotalCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateScenario = `-- name: UpdateScenario :one
+UPDATE scenario SET
+    name = COALESCE($1::text, name),
+    url = COALESCE($2::text, url),
+    updated_at = now()
+WHERE id = $3 AND status = 'draft'
+RETURNING id, project_id, name, url, status, created_at, updated_at
+`
+
+type UpdateScenarioParams struct {
+	Name sql.NullString `db:"name"`
+	Url  sql.NullString `db:"url"`
+	ID   uuid.UUID      `db:"id"`
+}
+
+func (q *Queries) UpdateScenario(ctx context.Context, db DBTX, arg UpdateScenarioParams) (Scenario, error) {
+	row := db.QueryRowContext(ctx, updateScenario, arg.Name, arg.Url, arg.ID)
+	var i Scenario
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Url,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const updateScenarioStatusById = `-- name: UpdateScenarioStatusById :exec

@@ -807,7 +807,7 @@ type ListScenariosResponseObject interface {
 	VisitListScenariosResponse(w http.ResponseWriter) error
 }
 
-type ListScenarios200JSONResponse []Scenario
+type ListScenarios200JSONResponse ScenarioList
 
 func (response ListScenarios200JSONResponse) VisitListScenariosResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
