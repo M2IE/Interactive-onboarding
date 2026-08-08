@@ -5,6 +5,7 @@
 package gen
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"fmt"
 	"time"
@@ -128,10 +129,11 @@ type Scenario struct {
 }
 
 type Step struct {
-	ID         uuid.UUID `db:"id"`
-	ScenarioID uuid.UUID `db:"scenario_id"`
-	OrderNum   int32     `db:"order_num"`
-	Selector   string    `db:"selector"`
-	Title      string    `db:"title"`
-	Body       string    `db:"body"`
+	ID         uuid.UUID      `db:"id"`
+	ScenarioID uuid.UUID      `db:"scenario_id"`
+	OrderNum   int32          `db:"order_num"`
+	Selector   string         `db:"selector"`
+	Title      string         `db:"title"`
+	Body       string         `db:"body"`
+	NextUrl    sql.NullString `db:"next_url"`
 }

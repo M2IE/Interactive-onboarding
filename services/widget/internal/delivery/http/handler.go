@@ -57,6 +57,7 @@ func (h *WidgetHandler) GetWidgetScenario(ctx context.Context, request apiv1.Get
 			Selector: st.Selector,
 			Title:    st.Title,
 			Body:     st.Body,
+			NextUrl:  st.NextURL,
 		}
 	}
 
