@@ -18,7 +18,7 @@ func testScenario(status domain.ScenarioStatus) *domain.Scenario {
 	return &domain.Scenario{
 		ID:        testScenarioID,
 		ProjectID: testProjectID,
-		Name:      "Profiel",
+		Name:      "Profile",
 		URL:       "/profile",
 		Status:    status,
 	}
@@ -41,8 +41,8 @@ func (m *mockTx) QueryContext(context.Context, string, ...any) (*sql.Rows, error
 	return nil, nil
 }
 func (m *mockTx) QueryRowContext(context.Context, string, ...any) *sql.Row { return nil }
-func (m *mockTx) Commit() error                                            { m.committed = true; return m.commitErr }
-func (m *mockTx) Rollback() error                                          { m.rolledBack = true; return m.rollbackErr }
+func (m *mockTx) Commit() error   { m.committed = true; return m.commitErr }
+func (m *mockTx) Rollback() error { m.rolledBack = true; return m.rollbackErr }
 
 type mockDB struct {
 	beginErr error
@@ -57,8 +57,8 @@ func (m *mockDB) QueryContext(context.Context, string, ...any) (*sql.Rows, error
 	return nil, nil
 }
 func (m *mockDB) QueryRowContext(context.Context, string, ...any) *sql.Row { return nil }
-func (m *mockDB) Ping() error                                              { return nil }
-func (m *mockDB) Close() error                                             { return nil }
+func (m *mockDB) Ping() error  { return nil }
+func (m *mockDB) Close() error { return nil }
 func (m *mockDB) Begin() (database.Tx, error) {
 	if m.beginErr != nil {
 		return nil, m.beginErr
@@ -67,22 +67,22 @@ func (m *mockDB) Begin() (database.Tx, error) {
 }
 
 type mockInfra struct {
-	getScenarioResp      *domain.Scenario
-	getScenarioErr       error
-	createScenarioResp   *domain.Scenario
-	createScenarioErr    error
-	updateStatusErr      error
-	archiveErr           error
-	archiveRows          int64
-	copyStepsErr         error
-	createdProjectID     uuid.UUID
-	createdName          string
-	createdURL           string
-	createdStatus        domain.ScenarioStatus
-	updatedStatus        domain.ScenarioStatus
-	archivedProjectID    uuid.UUID
-	archivedStatus       domain.ScenarioStatus
-	archivedURL          string
+	getScenarioResp    *domain.Scenario
+	getScenarioErr     error
+	createScenarioResp *domain.Scenario
+	createScenarioErr  error
+	updateStatusErr    error
+	archiveErr         error
+	archiveRows        int64
+	copyStepsErr       error
+	createdProjectID   uuid.UUID
+	createdName        string
+	createdURL         string
+	createdStatus      domain.ScenarioStatus
+	updatedStatus      domain.ScenarioStatus
+	archivedProjectID  uuid.UUID
+	archivedStatus     domain.ScenarioStatus
+	archivedURL        string
 	copiedDestScenarioID uuid.UUID
 	copiedSrcScenarioID  uuid.UUID
 }
@@ -129,16 +129,10 @@ func newSvc(infra IPublishInfrastructure, db database.Database) *PublishService 
 func TestPublish_Success(t *testing.T) {
 	tx := &mockTx{}
 	draft := testScenario(domain.ScenarioStatusDraft)
-	published := &domain.Scenario{
-		ID:        uuid.New(),
-		ProjectID: testProjectID,
-		Name:      "Onboarding",
-		URL:       "/onboard",
-		Status:    domain.ScenarioStatusPublished,
-	}
+	clone := &domain.Scenario{ID: uuid.New(), ProjectID: testProjectID, Status: domain.ScenarioStatusPublished}
 	infra := &mockInfra{
 		getScenarioResp:    draft,
-		createScenarioResp: published,
+		createScenarioResp: clone,
 	}
 	svc := newSvc(infra, &mockDB{tx: tx})
 
@@ -147,28 +141,50 @@ func TestPublish_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.ID != published.ID {
-		t.Errorf("result ID = %s, want %s", result.ID, published.ID)
-	}
-	if result.Status != domain.ScenarioStatusPublished {
-		t.Errorf("status = %q, want %q", result.Status, domain.ScenarioStatusPublished)
+	if result.ID != clone.ID {
+		t.Errorf("result ID = %s, want clone ID %s", result.ID, clone.ID)
 	}
 	if !tx.committed {
 		t.Error("tx was not committed")
 	}
-	if infra.createdStatus != domain.ScenarioStatusPublished {
-		t.Errorf("created status = %q, want published", infra.createdStatus)
+	if infra.archivedStatus != domain.ScenarioStatusPublished {
+		t.Errorf("old published was not archived, archivedStatus = %q", infra.archivedStatus)
 	}
-	if infra.copiedDestScenarioID != published.ID {
-		t.Error("steps were not copied to the new published scenario")
+	if infra.copiedSrcScenarioID != draft.ID {
+		t.Error("steps were not copied from parent")
 	}
+}
+
+func TestPublish_FromArchived(t *testing.T) {
+	tx := &mockTx{}
+	archived := testScenario(domain.ScenarioStatusArchived)
+	clone := &domain.Scenario{ID: uuid.New(), ProjectID: testProjectID, Status: domain.ScenarioStatusPublished}
+	infra := &mockInfra{
+		getScenarioResp:    archived,
+		createScenarioResp: clone,
+	}
+	svc := newSvc(infra, &mockDB{tx: tx})
+
+	result, err := svc.Publish(context.Background(), testScenarioID)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !tx.committed {
+		t.Error("tx was not committed")
+	}
+	if infra.updatedStatus != domain.ScenarioStatusDraft {
+		t.Errorf("parent was not set to draft, updatedStatus = %q", infra.updatedStatus)
+	}
+	if infra.copiedSrcScenarioID != archived.ID {
+		t.Error("steps were not copied from parent")
+	}
+	_ = result
 }
 
 func TestPublish_ScenarioNotFound(t *testing.T) {
 	tx := &mockTx{}
-	infra := &mockInfra{
-		getScenarioErr: domain.ErrScenarioNotFound,
-	}
+	infra := &mockInfra{getScenarioErr: domain.ErrScenarioNotFound}
 	svc := newSvc(infra, &mockDB{tx: tx})
 
 	_, err := svc.Publish(context.Background(), testScenarioID)
@@ -183,9 +199,7 @@ func TestPublish_ScenarioNotFound(t *testing.T) {
 
 func TestPublish_AlreadyPublished(t *testing.T) {
 	tx := &mockTx{}
-	infra := &mockInfra{
-		getScenarioResp: testScenario(domain.ScenarioStatusPublished),
-	}
+	infra := &mockInfra{getScenarioResp: testScenario(domain.ScenarioStatusPublished)}
 	svc := newSvc(infra, &mockDB{tx: tx})
 
 	_, err := svc.Publish(context.Background(), testScenarioID)
@@ -200,9 +214,7 @@ func TestPublish_AlreadyPublished(t *testing.T) {
 
 func TestPublish_GetScenarioDBError(t *testing.T) {
 	tx := &mockTx{}
-	infra := &mockInfra{
-		getScenarioErr: errors.New("db connection refused"),
-	}
+	infra := &mockInfra{getScenarioErr: errors.New("db connection refused")}
 	svc := newSvc(infra, &mockDB{tx: tx})
 
 	_, err := svc.Publish(context.Background(), testScenarioID)
@@ -215,7 +227,7 @@ func TestPublish_GetScenarioDBError(t *testing.T) {
 	}
 }
 
-func TestPublish_ArchiveFails(t *testing.T) {
+func TestPublish_ArchivePublishedFails(t *testing.T) {
 	tx := &mockTx{}
 	infra := &mockInfra{
 		getScenarioResp: testScenario(domain.ScenarioStatusDraft),
@@ -233,10 +245,43 @@ func TestPublish_ArchiveFails(t *testing.T) {
 	}
 }
 
-func TestPublish_CreateFails(t *testing.T) {
+func TestPublish_ArchiveDraftFails(t *testing.T) {
 	tx := &mockTx{}
 	infra := &mockInfra{
-		getScenarioResp:   testScenario(domain.ScenarioStatusDraft),
+		getScenarioResp: testScenario(domain.ScenarioStatusArchived),
+		archiveErr:      errors.New("archive draft failed"),
+	}
+	svc := newSvc(infra, &mockDB{tx: tx})
+
+	_, err := svc.Publish(context.Background(), testScenarioID)
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestPublish_UpdateParentFails(t *testing.T) {
+	tx := &mockTx{}
+	infra := &mockInfra{
+		getScenarioResp: testScenario(domain.ScenarioStatusArchived),
+		updateStatusErr: errors.New("update failed"),
+	}
+	svc := newSvc(infra, &mockDB{tx: tx})
+
+	_, err := svc.Publish(context.Background(), testScenarioID)
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !tx.rolledBack {
+		t.Error("tx was not rolled back")
+	}
+}
+
+func TestPublish_CreateCloneFails(t *testing.T) {
+	tx := &mockTx{}
+	infra := &mockInfra{
+		getScenarioResp:    testScenario(domain.ScenarioStatusDraft),
 		createScenarioErr: errors.New("insert failed"),
 	}
 	svc := newSvc(infra, &mockDB{tx: tx})
@@ -253,10 +298,10 @@ func TestPublish_CreateFails(t *testing.T) {
 
 func TestPublish_CopyStepsFails(t *testing.T) {
 	tx := &mockTx{}
-	published := &domain.Scenario{ID: uuid.New(), ProjectID: testProjectID}
+	clone := &domain.Scenario{ID: uuid.New(), ProjectID: testProjectID}
 	infra := &mockInfra{
 		getScenarioResp:    testScenario(domain.ScenarioStatusDraft),
-		createScenarioResp: published,
+		createScenarioResp: clone,
 		copyStepsErr:       errors.New("copy failed"),
 	}
 	svc := newSvc(infra, &mockDB{tx: tx})
@@ -284,10 +329,10 @@ func TestPublish_BeginFails(t *testing.T) {
 
 func TestPublish_CommitFails(t *testing.T) {
 	tx := &mockTx{commitErr: errors.New("commit failed")}
-	published := &domain.Scenario{ID: uuid.New(), ProjectID: testProjectID}
+	clone := &domain.Scenario{ID: uuid.New(), ProjectID: testProjectID}
 	infra := &mockInfra{
 		getScenarioResp:    testScenario(domain.ScenarioStatusDraft),
-		createScenarioResp: published,
+		createScenarioResp: clone,
 	}
 	svc := newSvc(infra, &mockDB{tx: tx})
 
@@ -318,13 +363,14 @@ func TestUnpublish_Success(t *testing.T) {
 	if infra.updatedStatus != domain.ScenarioStatusDraft {
 		t.Errorf("updatedStatus = %q, want %q", infra.updatedStatus, domain.ScenarioStatusDraft)
 	}
+	if infra.archivedStatus != domain.ScenarioStatusDraft {
+		t.Error("old draft was not archived before unpublish")
+	}
 }
 
 func TestUnpublish_ScenarioNotFound(t *testing.T) {
 	tx := &mockTx{}
-	infra := &mockInfra{
-		getScenarioErr: domain.ErrScenarioNotFound,
-	}
+	infra := &mockInfra{getScenarioErr: domain.ErrScenarioNotFound}
 	svc := newSvc(infra, &mockDB{tx: tx})
 
 	err := svc.Unpublish(context.Background(), testScenarioID)
@@ -339,9 +385,7 @@ func TestUnpublish_ScenarioNotFound(t *testing.T) {
 
 func TestUnpublish_AlreadyUnpublished(t *testing.T) {
 	tx := &mockTx{}
-	infra := &mockInfra{
-		getScenarioResp: testScenario(domain.ScenarioStatusDraft),
-	}
+	infra := &mockInfra{getScenarioResp: testScenario(domain.ScenarioStatusDraft)}
 	svc := newSvc(infra, &mockDB{tx: tx})
 
 	err := svc.Unpublish(context.Background(), testScenarioID)
@@ -356,9 +400,7 @@ func TestUnpublish_AlreadyUnpublished(t *testing.T) {
 
 func TestUnpublish_GetScenarioDBError(t *testing.T) {
 	tx := &mockTx{}
-	infra := &mockInfra{
-		getScenarioErr: errors.New("db connection refused"),
-	}
+	infra := &mockInfra{getScenarioErr: errors.New("db connection refused")}
 	svc := newSvc(infra, &mockDB{tx: tx})
 
 	err := svc.Unpublish(context.Background(), testScenarioID)
@@ -376,6 +418,24 @@ func TestUnpublish_UpdateFails(t *testing.T) {
 	infra := &mockInfra{
 		getScenarioResp: testScenario(domain.ScenarioStatusPublished),
 		updateStatusErr: errors.New("update failed"),
+	}
+	svc := newSvc(infra, &mockDB{tx: tx})
+
+	err := svc.Unpublish(context.Background(), testScenarioID)
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !tx.rolledBack {
+		t.Error("tx was not rolled back")
+	}
+}
+
+func TestUnpublish_ArchiveFails(t *testing.T) {
+	tx := &mockTx{}
+	infra := &mockInfra{
+		getScenarioResp: testScenario(domain.ScenarioStatusPublished),
+		archiveErr:      errors.New("archive failed"),
 	}
 	svc := newSvc(infra, &mockDB{tx: tx})
 
