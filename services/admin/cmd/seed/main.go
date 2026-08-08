@@ -143,9 +143,9 @@ func ensurePublishedScenario(ctx context.Context, db database.Database, projectI
 func ensureEvents(ctx context.Context, db database.Database, projectID, scenarioID uuid.UUID, stepIDs []uuid.UUID) error {
 	exec := func(stepID sql.NullString, sessionID, eventType string) error {
 		_, err := db.ExecContext(ctx,
-			`INSERT INTO event (project_id, scenario_id, step_id, session_id, type)
-			 VALUES ($1, $2, $3, $4, $5)`,
-			projectID, scenarioID, stepID, sessionID, eventType,
+			`INSERT INTO event (id, project_id, scenario_id, step_id, session_id, type, event_key, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+			uuid.New(), projectID, scenarioID, stepID, sessionID, eventType, uuid.New(),
 		)
 		return err
 	}
