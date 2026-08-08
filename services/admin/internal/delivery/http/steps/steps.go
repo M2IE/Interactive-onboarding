@@ -9,8 +9,8 @@ import (
 )
 
 type IStepsService interface {
-	CreateStep(ctx context.Context, scenarioID uuid.UUID, selector, title, body string) (*domain.Step, error)
-	UpdateStep(ctx context.Context, stepID uuid.UUID, selector, title, body *string) (*domain.Step, error)
+	CreateStep(ctx context.Context, scenarioID uuid.UUID, selector, title, body string, nextURL *string) (*domain.Step, error)
+	UpdateStep(ctx context.Context, stepID uuid.UUID, selector, title, body *string, nextURL *string) (*domain.Step, error)
 	DeleteStep(ctx context.Context, stepID uuid.UUID) error
 	ReorderSteps(ctx context.Context, scenarioID uuid.UUID, items []domain.ReorderItem) error
 }
@@ -37,7 +37,7 @@ func (h StepsHandler) CreateStep(ctx context.Context, request apiv1.CreateStepRe
 	}
 
 	// Вызываем сервис
-	step, err := h.service.CreateStep(ctx, scenarioID, request.Body.Selector, request.Body.Title, request.Body.Body)
+	step, err := h.service.CreateStep(ctx, scenarioID, request.Body.Selector, request.Body.Title, request.Body.Body, request.Body.NextUrl)
 	if err != nil {
 		return ToCreateStepErrorResponse(err), nil
 	}
@@ -90,7 +90,7 @@ func (h StepsHandler) UpdateStep(ctx context.Context, request apiv1.UpdateStepRe
 		}, nil
 	}
 
-	step, err := h.service.UpdateStep(ctx, stepID, request.Body.Selector, request.Body.Title, request.Body.Body)
+	step, err := h.service.UpdateStep(ctx, stepID, request.Body.Selector, request.Body.Title, request.Body.Body, request.Body.NextUrl)
 	if err != nil {
 		return ToUpdateStepErrorResponse(err), nil
 	}

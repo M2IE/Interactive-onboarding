@@ -101,14 +101,14 @@ func (ns NullScenarioStatus) Value() (driver.Value, error) {
 }
 
 type Event struct {
-	ID         uuid.UUID      `db:"id"`
-	ProjectID  uuid.UUID      `db:"project_id"`
-	StepID     uuid.NullUUID  `db:"step_id"`
-	SessionID  string         `db:"session_id"`
-	Type       EventType      `db:"type"`
-	EventKey   sql.NullString `db:"event_key"`
-	CreatedAt  time.Time      `db:"created_at"`
-	ScenarioID uuid.NullUUID  `db:"scenario_id"`
+	ID         uuid.UUID     `db:"id"`
+	ProjectID  uuid.UUID     `db:"project_id"`
+	StepID     uuid.NullUUID `db:"step_id"`
+	SessionID  string        `db:"session_id"`
+	Type       EventType     `db:"type"`
+	EventKey   string        `db:"event_key"`
+	CreatedAt  time.Time     `db:"created_at"`
+	ScenarioID uuid.NullUUID `db:"scenario_id"`
 }
 
 type Project struct {
@@ -129,10 +129,11 @@ type Scenario struct {
 }
 
 type Step struct {
-	ID         uuid.UUID `db:"id"`
-	ScenarioID uuid.UUID `db:"scenario_id"`
-	OrderNum   int32     `db:"order_num"`
-	Selector   string    `db:"selector"`
-	Title      string    `db:"title"`
-	Body       string    `db:"body"`
+	ID         uuid.UUID      `db:"id"`
+	ScenarioID uuid.UUID      `db:"scenario_id"`
+	OrderNum   int32          `db:"order_num"`
+	Selector   string         `db:"selector"`
+	Title      string         `db:"title"`
+	Body       string         `db:"body"`
+	NextUrl    sql.NullString `db:"next_url"`
 }
