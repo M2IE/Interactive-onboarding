@@ -26,15 +26,6 @@ func (h *WidgetHandler) GetWidgetScenario(ctx context.Context, request apiv1.Get
 	projectKey := request.Params.ProjectKey
 	pageUrl := request.Params.PageUrl
 
-	if projectKey == "" || pageUrl == "" {
-		return apiv1.GetWidgetScenario400JSONResponse{
-			Error: struct {
-				Code    apiv1.ErrorResponseErrorCode `json:"code"`
-				Message string                       `json:"message"`
-			}{Code: "INVALID_PARAMETER", Message: "projectKey and pageUrl are required"},
-		}, nil
-	}
-
 	scenario, steps, err := h.service.GetScenario(ctx, projectKey, pageUrl)
 	if err != nil {
 		switch {
@@ -45,6 +36,8 @@ func (h *WidgetHandler) GetWidgetScenario(ctx context.Context, request apiv1.Get
 					Message string                       `json:"message"`
 				}{Code: "PROJECT_NOT_FOUND", Message: err.Error()},
 			}, nil
+		case errors.Is(err, domain.ErrNoPublishedScenario):
+			return apiv1.GetWidgetScenario204Response{}, nil
 		default:
 			return apiv1.GetWidgetScenario500JSONResponse{Error: struct {
 				Code    apiv1.InternalErrorResponseErrorCode `json:"code"`
