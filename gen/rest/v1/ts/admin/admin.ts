@@ -196,6 +196,11 @@ export interface components {
             /** Format: date-time */
             updatedAt?: string;
         };
+        ScenarioList: {
+            items: components["schemas"]["Scenario"][];
+            /** Format: int64 */
+            total: number;
+        };
         CreateScenarioRequest: {
             /** Format: uuid */
             projectId: string;
@@ -237,7 +242,11 @@ export type $defs = Record<string, never>;
 export interface operations {
     listScenarios: {
         parameters: {
-            query?: never;
+            query?: {
+                projectId?: string;
+                size?: number;
+                page?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -250,7 +259,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Scenario"][];
+                    "application/json": components["schemas"]["ScenarioList"];
                 };
             };
             /** @description Неверный запрос */
