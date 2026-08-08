@@ -1,46 +1,55 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   OnboardingApiClient,
   OnboardingEventType,
   OnboardingStep,
   WidgetConfig,
-} from '@interactive-onboarding/shared'
-import { getOrCreateSessionId } from '../core/session'
+} from "@interactive-onboarding/shared";
+import { getOrCreateSessionId } from "../core/session";
 import {
   calculateTooltipPosition,
   getTargetSnapshot,
   type TargetSnapshot,
-} from '../dom/target'
+} from "../dom/target";
 
 export type OnboardingWidgetProps = {
-  projectKey: string
-  apiClient: OnboardingApiClient
-  pageUrl?: string
-  userId?: string
-  enabled?: boolean
-  refreshKey?: number
-}
+  projectKey: string;
+  apiClient: OnboardingApiClient;
+  navigate?: (url: string) => void;
+  pageUrl?: string;
+  userId?: string;
+  enabled?: boolean;
+  refreshKey?: number;
+};
+
+type LoadedConfig = {
+  pageUrl: string;
+  value: WidgetConfig | null;
+};
 
 export function OnboardingWidget({
   projectKey,
   apiClient,
+  navigate,
   pageUrl,
   userId,
   enabled = true,
   refreshKey = 0,
 }: OnboardingWidgetProps) {
-  const [config, setConfig] = useState<WidgetConfig | null>(null)
-  const [activeIndex, setActiveIndex] = useState(0)
-  const [target, setTarget] = useState<TargetSnapshot | null>(null)
-  const viewedEvents = useRef(new Set<string>())
-  const [sessionId] = useState(() => getOrCreateSessionId())
-  const resolvedPageUrl = pageUrl ?? window.location.pathname
-  const activeStep = config?.steps[activeIndex]
+  const [loadedConfig, setLoadedConfig] = useState<LoadedConfig | null>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [target, setTarget] = useState<TargetSnapshot | null>(null);
+  const viewedEvents = useRef(new Set<string>());
+  const [sessionId] = useState(() => getOrCreateSessionId());
+  const resolvedPageUrl = pageUrl ?? window.location.pathname;
+  const config =
+    loadedConfig?.pageUrl === resolvedPageUrl ? loadedConfig.value : null;
+  const activeStep = config?.steps[activeIndex];
 
   const track = useCallback(
     (type: OnboardingEventType, step?: OnboardingStep) => {
       if (!config) {
-        return
+        return;
       }
 
       void apiClient.trackEvent({
@@ -51,20 +60,23 @@ export function OnboardingWidget({
         sessionId,
         userId,
         type,
-        eventKey: `${sessionId}:${config.versionId}:${step?.id ?? 'scenario'}:${type}`,
+        eventKey:
+          type === "scenario_started"
+            ? `${sessionId}:${config.flowKey}:${type}`
+            : `${sessionId}:${config.versionId}:${step?.id ?? "scenario"}:${type}`,
         pageUrl: resolvedPageUrl,
         createdAt: new Date().toISOString(),
-      })
+      });
     },
     [apiClient, config, projectKey, resolvedPageUrl, sessionId, userId],
-  )
+  );
 
   useEffect(() => {
     if (!enabled) {
-      return
+      return;
     }
 
-    let ignore = false
+    let ignore = false;
 
     apiClient
       .getConfig({
@@ -75,114 +87,128 @@ export function OnboardingWidget({
       })
       .then((nextConfig) => {
         if (!ignore) {
-          setConfig(nextConfig)
-          setActiveIndex(0)
+          setLoadedConfig({ pageUrl: resolvedPageUrl, value: nextConfig });
+          setTarget(null);
+          setActiveIndex(0);
         }
       })
       .catch(() => {
         if (!ignore) {
-          setConfig(null)
+          setLoadedConfig({ pageUrl: resolvedPageUrl, value: null });
+          setTarget(null);
         }
-      })
+      });
 
     return () => {
-      ignore = true
-    }
-  }, [apiClient, enabled, projectKey, refreshKey, resolvedPageUrl, sessionId, userId])
+      ignore = true;
+    };
+  }, [
+    apiClient,
+    enabled,
+    projectKey,
+    refreshKey,
+    resolvedPageUrl,
+    sessionId,
+    userId,
+  ]);
 
   useEffect(() => {
     if (!activeStep) {
-      return
+      return;
     }
 
-    const initialTarget = document.querySelector(activeStep.selector)
+    const initialTarget = document.querySelector(activeStep.selector);
 
     if (!initialTarget) {
-      track('target_not_found', activeStep)
-      return
+      track("target_not_found", activeStep);
+      return;
     }
 
-    const initialRect = initialTarget.getBoundingClientRect()
+    const initialRect = initialTarget.getBoundingClientRect();
     const shouldScroll =
-      initialRect.top < 120 || initialRect.bottom > window.innerHeight - 120
+      initialRect.top < 120 || initialRect.bottom > window.innerHeight - 120;
 
     if (shouldScroll) {
       initialTarget.scrollIntoView({
-        block: 'center',
-        inline: 'nearest',
-        behavior: 'smooth',
-      })
+        block: "center",
+        inline: "nearest",
+        behavior: "smooth",
+      });
     }
 
     const updateTarget = () => {
-      const nextTarget = getTargetSnapshot(activeStep.selector)
-      setTarget(nextTarget)
+      const nextTarget = getTargetSnapshot(activeStep.selector);
+      setTarget(nextTarget);
 
       if (!nextTarget) {
-        track('target_not_found', activeStep)
+        track("target_not_found", activeStep);
       }
-    }
+    };
 
-    updateTarget()
-    window.setTimeout(updateTarget, shouldScroll ? 320 : 50)
-    window.addEventListener('resize', updateTarget)
-    window.addEventListener('scroll', updateTarget, true)
+    updateTarget();
+    window.setTimeout(updateTarget, shouldScroll ? 320 : 50);
+    window.addEventListener("resize", updateTarget);
+    window.addEventListener("scroll", updateTarget, true);
 
     return () => {
-      window.removeEventListener('resize', updateTarget)
-      window.removeEventListener('scroll', updateTarget, true)
-    }
-  }, [activeStep, track])
+      window.removeEventListener("resize", updateTarget);
+      window.removeEventListener("scroll", updateTarget, true);
+    };
+  }, [activeStep, track]);
 
   useEffect(() => {
     if (!config || !activeStep) {
-      return
+      return;
     }
 
-    const startEventKey = `${sessionId}:${config.versionId}:scenario_started`
+    const startEventKey = `${sessionId}:${config.flowKey}:scenario_started`;
 
     if (!viewedEvents.current.has(startEventKey)) {
-      viewedEvents.current.add(startEventKey)
-      track('scenario_started')
+      viewedEvents.current.add(startEventKey);
+      track("scenario_started");
     }
 
-    const viewedEventKey = `${sessionId}:${config.versionId}:${activeStep.id}:step_viewed`
+    const viewedEventKey = `${sessionId}:${config.versionId}:${activeStep.id}:step_viewed`;
 
     if (!viewedEvents.current.has(viewedEventKey)) {
-      viewedEvents.current.add(viewedEventKey)
-      track('step_viewed', activeStep)
+      viewedEvents.current.add(viewedEventKey);
+      track("step_viewed", activeStep);
     }
-  }, [activeStep, config, sessionId, track])
+  }, [activeStep, config, sessionId, track]);
 
   if (!enabled || !config || !activeStep || !target) {
-    return null
+    return null;
   }
 
-  const renderedStep = activeStep
-  const isLastPageStep = activeIndex === config.steps.length - 1
-  const highlightStyle = getHighlightStyle(target.rect)
-  const tooltipStyle = getTooltipStyle(renderedStep, target.rect)
+  const renderedStep = activeStep;
+  const isLastPageStep = activeIndex === config.steps.length - 1;
+  const highlightStyle = getHighlightStyle(target.rect);
+  const tooltipStyle = getTooltipStyle(renderedStep, target.rect);
 
   function completeCurrentStep() {
-    track('step_completed', renderedStep)
+    track("step_completed", renderedStep);
 
     if (renderedStep.nextUrl) {
-      window.location.assign(renderedStep.nextUrl)
-      return
+      if (navigate) {
+        navigate(renderedStep.nextUrl);
+      } else {
+        window.location.assign(renderedStep.nextUrl);
+      }
+      return;
     }
 
     if (!isLastPageStep) {
-      setActiveIndex((index) => index + 1)
-      return
+      setActiveIndex((index) => index + 1);
+      return;
     }
 
-    track('scenario_completed')
-    setConfig(null)
+    track("scenario_completed");
+    setLoadedConfig({ pageUrl: resolvedPageUrl, value: null });
   }
 
   function skipScenario() {
-    track('scenario_dismissed', renderedStep)
-    setConfig(null)
+    track("scenario_dismissed", renderedStep);
+    setLoadedConfig({ pageUrl: resolvedPageUrl, value: null });
   }
 
   return (
@@ -194,29 +220,33 @@ export function OnboardingWidget({
             ?
           </span>
           <span>
-            Шаг {renderedStep.order} из {config.totalSteps}
+            Шаг {config.stepOffset + renderedStep.order} из {config.totalSteps}
           </span>
         </div>
         <h2>{renderedStep.title}</h2>
         <p>{renderedStep.body}</p>
         <div className="onboarding-sdk__actions">
           <button type="button" onClick={skipScenario}>
-            пропустить
+            Пропустить
           </button>
           <button
             type="button"
             onClick={() => setActiveIndex((index) => Math.max(index - 1, 0))}
             disabled={activeIndex === 0}
           >
-            назад
+            Назад
           </button>
-          <button type="button" className="is-primary" onClick={completeCurrentStep}>
-            далее
+          <button
+            type="button"
+            className="is-primary"
+            onClick={completeCurrentStep}
+          >
+            Далее
           </button>
         </div>
       </article>
     </div>
-  )
+  );
 }
 
 function getHighlightStyle(rect: DOMRect) {
@@ -225,9 +255,9 @@ function getHighlightStyle(rect: DOMRect) {
     left: rect.left - 8,
     width: rect.width + 16,
     height: rect.height + 16,
-  }
+  };
 }
 
 function getTooltipStyle(step: OnboardingStep, rect: DOMRect) {
-  return calculateTooltipPosition(rect, step.placement)
+  return calculateTooltipPosition(rect, step.placement);
 }
