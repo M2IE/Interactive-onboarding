@@ -23,12 +23,15 @@ func NewScenarioHandler(s IScenarioService) *ScenarioHandler {
 }
 
 func (h *ScenarioHandler) ListScenarios(ctx context.Context, request apiv1.ListScenariosRequestObject) (apiv1.ListScenariosResponseObject, error) {
-	scenarios, _, err := h.service.List(ctx, ToDomainScenariosList(request.Params))
+	scenarios, total, err := h.service.List(ctx, ToDomainScenariosList(request.Params))
 	if err != nil {
 		return ToListErrorResponse(err), nil
 	}
 
-	return apiv1.ListScenarios200JSONResponse(ToDTOsScenarios(scenarios)), nil
+	return apiv1.ListScenarios200JSONResponse{
+		Items: ToDTOsScenarios(scenarios),
+		Total: total,
+	}, nil
 }
 
 func (h *ScenarioHandler) GetScenario(ctx context.Context, request apiv1.GetScenarioRequestObject) (apiv1.GetScenarioResponseObject, error) {

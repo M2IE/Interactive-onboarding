@@ -99,6 +99,12 @@ Put reusable visual primitives here: buttons, badges, panels, inputs, form
 controls, empty states and other UI that does not know onboarding business
 rules.
 
+Admin controls wrap Radix primitives in this package instead of importing Radix
+directly throughout `apps/web`. Use Lucide icons for familiar interface actions.
+Do not make `packages/onboarding-sdk` depend on Radix or `packages/ui`; the
+embeddable widget must remain lightweight and isolated from the host app's UI
+stack.
+
 ## State Management
 
 Use Redux Toolkit for application state in `apps/web`:
@@ -244,9 +250,13 @@ Current routes:
 /demo/new/auto
 ```
 
-If routing grows, move route matching out of `App.tsx` into an app-level router.
-Keep route state explicit and testable. Do not duplicate route constants across
-pages and scenario configs; extract them to shared config.
+`apps/web` uses React Router at the app boundary. Keep route state explicit and
+testable. Do not duplicate route constants across pages and scenario configs;
+keep them in `shared/config/routes.ts`.
+
+One published scenario belongs to one page URL. The scenario owns its `url`;
+steps inherit that page and must not duplicate `pagePath` or `pageId`. A larger
+user journey can group page-local scenarios with `flowKey` and `flowOrder`.
 
 ## SDK Contract
 
@@ -265,6 +275,13 @@ React integration shape:
 
 ```tsx
 import { OnboardingProvider } from '@interactive-onboarding/onboarding-sdk/react'
+
+<OnboardingProvider
+  apiClient={apiClient}
+  navigate={routerNavigate}
+  pageUrl={location.pathname}
+  projectKey="avito-demo"
+/>
 ```
 
 The SDK should:
@@ -274,6 +291,9 @@ The SDK should:
 - Find DOM targets by stable selectors, preferably `data-onboarding-id`.
 - Render overlay, spotlight and tooltip.
 - Scroll offscreen targets into view.
+- Accept an optional host `navigate(url)` adapter. React SPA hosts pass their
+  router navigation function; plain sites rely on the SDK fallback to
+  `window.location.assign`.
 - Emit analytics events with `sessionId`, `versionId`, optional `stepId` and
   stable event keys.
 
@@ -281,7 +301,7 @@ Do not make the SDK depend on the demo classifieds implementation.
 
 ## Current Compliance Snapshot
 
-Validated on 2026-08-05:
+Validated on 2026-08-07:
 
 - Monorepo workspaces exist under `apps/*` and `packages/*`.
 - `apps/web` follows the intended FSD direction: route pages are thin, scenario
@@ -295,12 +315,20 @@ Validated on 2026-08-05:
   button labels.
 - SDK is split into `packages/onboarding-sdk` and does not import from
   `apps/web`.
+- Admin primitives wrap Radix UI in `packages/ui`; Lucide provides action icons.
+  The SDK remains independent from both dependencies.
 - Shared domain contracts exist in `packages/shared`; unsupported custom widget
   button-label fields are not part of `OnboardingStep`.
 - Mock persistence is behind `shared/lib/storage` and `shared/api`, not direct
   `localStorage` calls in presentational UI.
 - Workflow/report states use discriminated unions (`ScenarioEditorWorkflow`,
   `AsyncState<T>`) instead of contradictory boolean flag sets.
+- Scenario URL is edited as free text in the admin constructor and stored once
+  on the scenario. The mock widget API resolves a published page-local scenario
+  by `projectKey + pageUrl`.
+- Demo navigation uses React Router without document reloads. The SDK delegates
+  cross-page transitions to the host navigation adapter and keeps a full-page
+  fallback for non-SPA integrations.
 
 Treat regressions from this snapshot as architectural debt to fix before
 expanding product surface area.

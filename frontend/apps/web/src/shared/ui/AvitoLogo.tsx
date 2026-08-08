@@ -1,6 +1,13 @@
+import { Link } from 'react-router-dom'
+import { appRoutes } from '@/shared/config/routes'
+
 export function AvitoLogo() {
   return (
-    <a className="avito-logo" href="/" aria-label="Avito Onboarding Lab">
+    <Link
+      aria-label="Avito Onboarding Lab"
+      className="avito-logo"
+      to={appRoutes.home}
+    >
       <span className="avito-logo__mark" aria-hidden="true">
         <i />
         <i />
@@ -8,6 +15,6 @@ export function AvitoLogo() {
         <i />
       </span>
       <span>Avito</span>
-    </a>
+    </Link>
   )
 }

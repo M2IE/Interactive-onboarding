@@ -14,10 +14,19 @@ type Querier interface {
 	ArchiveByProjectAndStatus(ctx context.Context, db DBTX, arg ArchiveByProjectAndStatusParams) (int64, error)
 	CopyStepsToScenario(ctx context.Context, db DBTX, arg CopyStepsToScenarioParams) error
 	CreateScenario(ctx context.Context, db DBTX, arg CreateScenarioParams) (Scenario, error)
+	CreateStep(ctx context.Context, db DBTX, arg CreateStepParams) (Step, error)
+	DecrementOrdersAfter(ctx context.Context, db DBTX, arg DecrementOrdersAfterParams) error
+	DeleteStep(ctx context.Context, db DBTX, id uuid.UUID) error
+	GetMaxOrderByScenario(ctx context.Context, db DBTX, scenarioID uuid.UUID) (int32, error)
 	GetScenario(ctx context.Context, db DBTX, id uuid.UUID) (Scenario, error)
+	GetScenarioStatus(ctx context.Context, db DBTX, id uuid.UUID) (ScenarioStatus, error)
+	GetStepByID(ctx context.Context, db DBTX, id uuid.UUID) (Step, error)
+	GetStepsByScenario(ctx context.Context, db DBTX, scenarioID uuid.UUID) ([]Step, error)
 	ListScenarios(ctx context.Context, db DBTX, arg ListScenariosParams) ([]ListScenariosRow, error)
 	UpdateScenario(ctx context.Context, db DBTX, arg UpdateScenarioParams) (Scenario, error)
 	UpdateScenarioStatusById(ctx context.Context, db DBTX, arg UpdateScenarioStatusByIdParams) error
+	UpdateStep(ctx context.Context, db DBTX, arg UpdateStepParams) error
+	UpdateStepOrder(ctx context.Context, db DBTX, arg UpdateStepOrderParams) error
 }
 
 var _ Querier = (*Queries)(nil)

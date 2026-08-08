@@ -196,6 +196,11 @@ export interface components {
             /** Format: date-time */
             updatedAt?: string;
         };
+        ScenarioList: {
+            items: components["schemas"]["Scenario"][];
+            /** Format: int64 */
+            total: number;
+        };
         CreateScenarioRequest: {
             /** Format: uuid */
             projectId: string;
@@ -254,7 +259,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Scenario"][];
+                    "application/json": components["schemas"]["ScenarioList"];
                 };
             };
             /** @description Неверный запрос */

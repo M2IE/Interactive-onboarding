@@ -27,3 +27,6 @@ UPDATE scenario SET
     updated_at = now()
 WHERE id = sqlc.arg('id') AND status = 'draft'
 RETURNING id, project_id, name, url, status, created_at, updated_at;
+
+-- name: GetScenarioStatus :one
+SELECT status FROM scenario WHERE id = $1;

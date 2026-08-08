@@ -10,10 +10,11 @@
   "scripts": {
     "dev": "npm run dev --workspace @interactive-onboarding/web",
     "build": "npm run build --workspace @interactive-onboarding/shared && npm run build --workspace @interactive-onboarding/ui && npm run build --workspace @interactive-onboarding/onboarding-sdk && npm run build --workspace @interactive-onboarding/web",
+    "ci": "npm run typecheck && npm run lint && npm test && npm run build",
     "lint": "eslint .",
     "preview": "npm run preview --workspace @interactive-onboarding/web",
     "test": "jest --runInBand",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "tsc -b"
   },
   "devDependencies": {
     "@babel/preset-env": "^8.0.2",

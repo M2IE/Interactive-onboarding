@@ -1,14 +1,18 @@
 import { Button, Panel } from "@interactive-onboarding/ui";
+import { Link, useNavigate } from 'react-router-dom'
+import { appRoutes } from '@/shared/config/routes'
 import { AvitoLogo } from "@/shared/ui/AvitoLogo";
 
 export function AppShell() {
+  const navigate = useNavigate()
+
   return (
     <main className="home-shell">
       <nav className="home-shell__nav" aria-label="Главная навигация">
         <AvitoLogo />
         <div>
-          <a href="/admin">Админка</a>
-          <a href="/demo/profile">Демо классифайда</a>
+          <Link to={appRoutes.admin}>Админка</Link>
+          <Link to={appRoutes.demo.profile}>Демо классифайда</Link>
         </div>
       </nav>
 
@@ -20,12 +24,18 @@ export function AppShell() {
             подключаемый SDK-виджет и тестовый экран классифайда.
           </p>
           <div className="home-shell__actions">
-            <a href="/admin">
-              <Button variant="primary">Открыть админку</Button>
-            </a>
-            <a href="/demo/profile">
-              <Button variant="secondary">Проверить сценарий</Button>
-            </a>
+            <Button
+              onClick={() => navigate(appRoutes.admin)}
+              variant="primary"
+            >
+              Открыть админку
+            </Button>
+            <Button
+              onClick={() => navigate(appRoutes.demo.profile)}
+              variant="secondary"
+            >
+              Проверить сценарий
+            </Button>
           </div>
         </div>
 

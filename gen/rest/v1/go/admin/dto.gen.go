@@ -104,6 +104,12 @@ type Scenario struct {
 	Url       string             `json:"url"`
 }
 
+// ScenarioList defines model for ScenarioList.
+type ScenarioList struct {
+	Items []Scenario `json:"items"`
+	Total int64      `json:"total"`
+}
+
 // ScenarioStatus defines model for ScenarioStatus.
 type ScenarioStatus string
 

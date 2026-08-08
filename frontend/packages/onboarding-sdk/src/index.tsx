@@ -7,6 +7,7 @@ export type OnboardingInitOptions = {
   projectKey: string
   apiBaseUrl?: string
   apiClient?: OnboardingApiClient
+  navigate?: (url: string) => void
   pageUrl?: string
   userId?: string
   enabled?: boolean
@@ -36,6 +37,7 @@ export function initOnboarding(options: OnboardingInitOptions): OnboardingInstan
       <OnboardingWidget
         apiClient={apiClient}
         enabled={options.enabled}
+        navigate={options.navigate}
         pageUrl={options.pageUrl}
         projectKey={options.projectKey}
         refreshKey={refreshKey}

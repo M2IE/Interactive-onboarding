@@ -1,38 +1,111 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import type {
+  ButtonHTMLAttributes,
+  ComponentPropsWithoutRef,
+  ReactNode,
+} from 'react'
+import { Check, ChevronDown } from 'lucide-react'
+import { Select as RadixSelect, Tabs as RadixTabs, Tooltip } from 'radix-ui'
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
+type ButtonSize = 'small' | 'medium' | 'large'
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant
+  size?: ButtonSize
   icon?: ReactNode
 }
 
 export function Button({
   variant = 'secondary',
+  size = 'medium',
   icon,
   children,
   className,
   ...props
 }: ButtonProps) {
-  const classes = ['ui-button', `ui-button--${variant}`, className]
+  const classes = [
+    'ui-button',
+    `ui-button--${variant}`,
+    `ui-button--${size}`,
+    className,
+  ]
     .filter(Boolean)
     .join(' ')
 
   return (
     <button className={classes} type="button" {...props}>
-      {icon}
+      {icon && <span className="ui-button__icon">{icon}</span>}
       <span>{children}</span>
     </button>
   )
 }
 
+type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  label: string
+  icon: ReactNode
+  variant?: ButtonVariant
+}
+
+export function IconButton({
+  label,
+  icon,
+  variant = 'ghost',
+  className,
+  ...props
+}: IconButtonProps) {
+  return (
+    <Tooltip.Provider delayDuration={350}>
+      <Tooltip.Root>
+        <Tooltip.Trigger asChild>
+          <button
+            aria-label={label}
+            className={[
+              'ui-icon-button',
+              `ui-icon-button--${variant}`,
+              className,
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            type="button"
+            {...props}
+          >
+            {icon}
+          </button>
+        </Tooltip.Trigger>
+        <Tooltip.Portal>
+          <Tooltip.Content className="ui-tooltip" sideOffset={7}>
+            {label}
+            <Tooltip.Arrow className="ui-tooltip__arrow" />
+          </Tooltip.Content>
+        </Tooltip.Portal>
+      </Tooltip.Root>
+    </Tooltip.Provider>
+  )
+}
+
 type BadgeProps = {
   tone?: 'blue' | 'green' | 'gray' | 'red'
+  dot?: boolean
+  className?: string
   children: ReactNode
 }
 
-export function Badge({ tone = 'gray', children }: BadgeProps) {
-  return <span className={`ui-badge ui-badge--${tone}`}>{children}</span>
+export function Badge({
+  tone = 'gray',
+  dot = false,
+  className,
+  children,
+}: BadgeProps) {
+  return (
+    <span
+      className={['ui-badge', `ui-badge--${tone}`, className]
+        .filter(Boolean)
+        .join(' ')}
+    >
+      {dot && <i aria-hidden="true" />}
+      {children}
+    </span>
+  )
 }
 
 type PanelProps = {
@@ -60,14 +133,100 @@ type MetricProps = {
   label: string
   value: string
   caption?: string
+  icon?: ReactNode
 }
 
-export function Metric({ label, value, caption }: MetricProps) {
+export function Metric({ label, value, caption, icon }: MetricProps) {
   return (
     <div className="ui-metric">
-      <span>{label}</span>
+      <div className="ui-metric__label">
+        <span>{label}</span>
+        {icon}
+      </div>
       <strong>{value}</strong>
       {caption && <small>{caption}</small>}
     </div>
+  )
+}
+
+export function Tabs(props: ComponentPropsWithoutRef<typeof RadixTabs.Root>) {
+  return <RadixTabs.Root {...props} />
+}
+
+export function TabsList(
+  props: ComponentPropsWithoutRef<typeof RadixTabs.List>,
+) {
+  return <RadixTabs.List {...props} />
+}
+
+export function TabsTrigger(
+  props: ComponentPropsWithoutRef<typeof RadixTabs.Trigger>,
+) {
+  return <RadixTabs.Trigger {...props} />
+}
+
+export function TabsContent(
+  props: ComponentPropsWithoutRef<typeof RadixTabs.Content>,
+) {
+  return <RadixTabs.Content {...props} />
+}
+
+export type SelectOption<TValue extends string = string> = {
+  label: string
+  value: TValue
+}
+
+type SelectFieldProps<TValue extends string = string> = {
+  label: string
+  value: TValue
+  options: SelectOption<TValue>[]
+  onValueChange: (value: TValue) => void
+  className?: string
+}
+
+export function SelectField<TValue extends string>({
+  label,
+  value,
+  options,
+  onValueChange,
+  className,
+}: SelectFieldProps<TValue>) {
+  return (
+    <label className={className}>
+      <span>{label}</span>
+      <RadixSelect.Root
+        value={value}
+        onValueChange={(nextValue) => onValueChange(nextValue as TValue)}
+      >
+        <RadixSelect.Trigger className="ui-select" aria-label={label}>
+          <RadixSelect.Value />
+          <RadixSelect.Icon className="ui-select__icon">
+            <ChevronDown aria-hidden="true" size={16} strokeWidth={2} />
+          </RadixSelect.Icon>
+        </RadixSelect.Trigger>
+        <RadixSelect.Portal>
+          <RadixSelect.Content
+            className="ui-select-content"
+            position="popper"
+            sideOffset={5}
+          >
+            <RadixSelect.Viewport>
+              {options.map((option) => (
+                <RadixSelect.Item
+                  className="ui-select-item"
+                  key={option.value}
+                  value={option.value}
+                >
+                  <RadixSelect.ItemText>{option.label}</RadixSelect.ItemText>
+                  <RadixSelect.ItemIndicator className="ui-select-item__indicator">
+                    <Check aria-hidden="true" size={15} strokeWidth={2.4} />
+                  </RadixSelect.ItemIndicator>
+                </RadixSelect.Item>
+              ))}
+            </RadixSelect.Viewport>
+          </RadixSelect.Content>
+        </RadixSelect.Portal>
+      </RadixSelect.Root>
+    </label>
   )
 }

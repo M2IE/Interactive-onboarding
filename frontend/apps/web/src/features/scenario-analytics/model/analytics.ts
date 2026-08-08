@@ -7,6 +7,7 @@ import type {
 
 export type StepFunnelRow = {
   step: OnboardingScenario['steps'][number]
+  pageUrl: string
   views: number
   completed: number
   conversion: number
@@ -24,6 +25,7 @@ export function buildStepFunnelFromEvents(
 
       return {
         step,
+        pageUrl: scenario.url,
         views,
         completed,
         conversion: views === 0 ? 0 : Math.round((completed / views) * 100),

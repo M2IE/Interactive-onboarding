@@ -3,6 +3,14 @@ import type {
   OnboardingEventPayload,
 } from '@interactive-onboarding/shared'
 import { Button, Metric, Panel } from '@interactive-onboarding/ui'
+import {
+  Activity,
+  CheckCircle2,
+  Crosshair,
+  Download,
+  Trash2,
+  TrendingUp,
+} from 'lucide-react'
 import type { AsyncState } from '@/shared/lib/asyncState'
 import type { StepFunnelRow } from '../model/analytics'
 
@@ -31,21 +39,25 @@ export function ScenarioAnalytics({
     <div className="analytics-grid">
       <Metric
         caption="Уникальные старты демо-сессии"
+        icon={<Activity aria-hidden="true" size={18} />}
         label="Запусков"
         value={String(summary.started)}
       />
       <Metric
         caption="Пользователь дошел до конца"
+        icon={<CheckCircle2 aria-hidden="true" size={18} />}
         label="Завершений"
         value={String(summary.completed)}
       />
       <Metric
         caption="От всех запусков"
+        icon={<TrendingUp aria-hidden="true" size={18} />}
         label="Конверсия"
         value={`${summary.completionRate}%`}
       />
       <Metric
         caption="Селектор не найден на странице"
+        icon={<Crosshair aria-hidden="true" size={18} />}
         label="Ошибок таргета"
         value={String(summary.targetMisses)}
       />
@@ -53,8 +65,18 @@ export function ScenarioAnalytics({
       <Panel
         action={
           <div className="analytics-actions">
-            <Button onClick={onResetAnalytics}>Очистить</Button>
-            <Button onClick={onDownloadReport} variant="primary">
+            <Button
+              icon={<Trash2 aria-hidden="true" size={16} />}
+              onClick={onResetAnalytics}
+              variant="ghost"
+            >
+              Очистить
+            </Button>
+            <Button
+              icon={<Download aria-hidden="true" size={16} />}
+              onClick={onDownloadReport}
+              variant="primary"
+            >
               Скачать PDF
             </Button>
           </div>
@@ -62,30 +84,32 @@ export function ScenarioAnalytics({
         className="analytics-funnel"
         title="Воронка по шагам"
       >
-        <table>
-          <thead>
-            <tr>
-              <th>Шаг</th>
-              <th>Страница</th>
-              <th>Показы</th>
-              <th>Переходы</th>
-              <th>Конверсия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {funnel.map(({ step, views, completed, conversion }) => (
-              <tr key={step.id}>
-                <td>
-                  {step.order}. {step.title}
-                </td>
-                <td>{step.pagePath}</td>
-                <td>{views}</td>
-                <td>{completed}</td>
-                <td>{conversion}%</td>
+        <div className="analytics-table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Шаг</th>
+                <th>Страница</th>
+                <th>Показы</th>
+                <th>Переходы</th>
+                <th>Конверсия</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {funnel.map(({ step, pageUrl, views, completed, conversion }) => (
+                <tr key={step.id}>
+                  <td>
+                    {step.order}. {step.title}
+                  </td>
+                  <td>{pageUrl}</td>
+                  <td>{views}</td>
+                  <td>{completed}</td>
+                  <td>{conversion}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {reportState.status === 'loading' && (
           <p className="report-status">Формируем PDF-отчет</p>
         )}

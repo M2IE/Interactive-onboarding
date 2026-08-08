@@ -84,6 +84,17 @@ func (q *Queries) GetScenario(ctx context.Context, db DBTX, id uuid.UUID) (Scena
 	return i, err
 }
 
+const getScenarioStatus = `-- name: GetScenarioStatus :one
+SELECT status FROM scenario WHERE id = $1
+`
+
+func (q *Queries) GetScenarioStatus(ctx context.Context, db DBTX, id uuid.UUID) (ScenarioStatus, error) {
+	row := db.QueryRowContext(ctx, getScenarioStatus, id)
+	var status ScenarioStatus
+	err := row.Scan(&status)
+	return status, err
+}
+
 const listScenarios = `-- name: ListScenarios :many
 SELECT id, project_id, name, url, status, created_at, updated_at, count(*) OVER() AS total_count
 FROM scenario
@@ -143,10 +154,10 @@ func (q *Queries) ListScenarios(ctx context.Context, db DBTX, arg ListScenariosP
 
 const updateScenario = `-- name: UpdateScenario :one
 UPDATE scenario SET
-    name = COALESCE($1::string, name),
-    url = COALESCE($2::string, url),
+    name = COALESCE($1::text, name),
+    url = COALESCE($2::text, url),
     updated_at = now()
-WHERE id = $3
+WHERE id = $3 AND status = 'draft'
 RETURNING id, project_id, name, url, status, created_at, updated_at
 `
 

@@ -3,26 +3,25 @@ import type {
   OnboardingApiClient,
   OnboardingEventPayload,
   OnboardingScenario,
-  OnboardingStep,
   WidgetConfig,
   WidgetConfigRequest,
 } from '@interactive-onboarding/shared'
-import { defaultScenario } from '@/entities/scenario/defaultScenario'
+import { defaultScenarios } from '@/entities/scenario/defaultScenario'
 import {
   buildAnalyticsSummaryFromEvents,
   buildStepFunnelFromEvents,
 } from '@/features/scenario-analytics/model/analytics'
 import { readJson, writeJson } from '@/shared/lib/storage'
 
-const SCENARIOS_KEY = 'interactive-onboarding:scenarios'
-const EVENTS_KEY = 'interactive-onboarding:events'
+const SCENARIOS_KEY = 'interactive-onboarding:scenarios:v2'
+const EVENTS_KEY = 'interactive-onboarding:events:v2'
 
 export function readScenarios(): OnboardingScenario[] {
   const scenarios = readJson<OnboardingScenario[] | null>(SCENARIOS_KEY, null)
 
   if (!scenarios) {
-    writeScenarios([defaultScenario])
-    return [defaultScenario]
+    writeScenarios(defaultScenarios)
+    return defaultScenarios
   }
 
   return scenarios
@@ -33,7 +32,7 @@ export function writeScenarios(scenarios: OnboardingScenario[]) {
 }
 
 export function resetScenarios() {
-  writeScenarios([defaultScenario])
+  writeScenarios(defaultScenarios)
 }
 
 export function readEvents(): OnboardingEventPayload[] {
@@ -64,21 +63,35 @@ export function getPublishedConfig({
   pageUrl,
 }: WidgetConfigRequest): WidgetConfig | null {
   const pathname = normalizePath(pageUrl)
-  const scenario = readScenarios().find(
-    (item) => item.projectKey === projectKey && item.status === 'published',
+  const scenarios = readScenarios()
+  const scenario = scenarios.find(
+    (item) =>
+      item.projectKey === projectKey &&
+      item.status === 'published' &&
+      normalizePath(item.url) === pathname,
   )
 
   if (!scenario) {
     return null
   }
 
-  const steps = scenario.steps
-    .filter((step) => normalizePath(step.pagePath) === pathname)
-    .sort((left, right) => left.order - right.order)
+  const steps = scenario.steps.toSorted((left, right) => left.order - right.order)
 
   if (steps.length === 0) {
     return null
   }
+
+  const flowScenarios = scenarios
+    .filter(
+      (item) =>
+        item.projectKey === projectKey &&
+        item.flowKey === scenario.flowKey &&
+        item.status === 'published',
+    )
+    .toSorted((left, right) => left.flowOrder - right.flowOrder)
+  const stepOffset = flowScenarios
+    .filter((item) => item.flowOrder < scenario.flowOrder)
+    .reduce((total, item) => total + item.steps.length, 0)
 
   return {
     projectKey: scenario.projectKey,
@@ -87,72 +100,14 @@ export function getPublishedConfig({
     scenarioName: scenario.name,
     version: scenario.version,
     versionId: scenario.versionId,
-    pagePath: pathname,
-    totalSteps: scenario.steps.length,
+    pageUrl: pathname,
+    stepOffset,
+    totalSteps: flowScenarios.reduce(
+      (total, item) => total + item.steps.length,
+      0,
+    ),
     steps,
   }
-}
-
-export function createScenarioDraft() {
-  const scenarios = readScenarios()
-  const draft: OnboardingScenario = {
-    ...defaultScenario,
-    id: `scenario-${Date.now()}`,
-    name: 'Новый сценарий онбординга',
-    description: 'Черновик сценария для новой точки входа',
-    status: 'draft',
-    version: 1,
-    versionId: `scenario-draft-${Date.now()}-v1`,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    publishedAt: undefined,
-    steps: defaultScenario.steps.map((step, index) => ({
-      ...step,
-      id: `draft-step-${Date.now()}-${index}`,
-      versionId: `scenario-draft-${Date.now()}-v1`,
-    })),
-  }
-
-  writeScenarios([draft, ...scenarios])
-
-  return draft
-}
-
-export function updateScenario(nextScenario: OnboardingScenario) {
-  const nextScenarios = readScenarios().map((scenario) =>
-    scenario.id === nextScenario.id
-      ? { ...nextScenario, updatedAt: new Date().toISOString() }
-      : scenario,
-  )
-
-  writeScenarios(nextScenarios)
-}
-
-export function publishScenario(scenarioId: string) {
-  const scenarios = readScenarios()
-  const nextScenarios = scenarios.map((scenario) => {
-    if (scenario.id !== scenarioId) {
-      return scenario
-    }
-
-    const nextVersion = scenario.version + 1
-    const versionId = `${scenario.id}-v${nextVersion}`
-
-    return {
-      ...scenario,
-      status: 'published' as const,
-      version: nextVersion,
-      versionId,
-      publishedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      steps: scenario.steps.map((step) => ({
-        ...step,
-        versionId,
-      })),
-    }
-  })
-
-  writeScenarios(nextScenarios)
 }
 
 export function buildStepFunnel(scenario: OnboardingScenario) {
@@ -191,26 +146,6 @@ export function downloadAnalyticsPdf(scenario: OnboardingScenario) {
   link.click()
   link.remove()
   window.setTimeout(() => URL.revokeObjectURL(url), 0)
-}
-
-export function addScenarioStep(
-  scenario: OnboardingScenario,
-  step: Omit<OnboardingStep, 'id' | 'versionId' | 'order'>,
-) {
-  const nextOrder = Math.max(...scenario.steps.map((item) => item.order)) + 1
-
-  return {
-    ...scenario,
-    steps: [
-      ...scenario.steps,
-      {
-        ...step,
-        id: `step-${Date.now()}`,
-        versionId: scenario.versionId,
-        order: nextOrder,
-      },
-    ],
-  }
 }
 
 function normalizePath(pageUrl: string) {
