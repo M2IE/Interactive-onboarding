@@ -231,6 +231,20 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
+        ScenarioWithSteps: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            name: string;
+            url: string;
+            status: components["schemas"]["ScenarioStatus"];
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+            steps: components["schemas"]["Step"][];
+        };
         CreateScenarioRequest: {
             /** Format: uuid */
             projectId: string;
@@ -248,16 +262,22 @@ export interface components {
             selector: string;
             title: string;
             body: string;
+            /** @description URL для перехода после завершения шага (опционально) */
+            nextUrl?: string;
         };
         CreateStepRequest: {
             selector: string;
             title: string;
             body: string;
+            /** @description URL для перехода после завершения шага (опционально) */
+            nextUrl?: string;
         };
         UpdateStepRequest: {
             selector?: string;
             title?: string;
             body?: string;
+            /** @description URL для перехода после завершения шага (опционально) */
+            nextUrl?: string;
         };
     };
     responses: never;
@@ -389,7 +409,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Scenario"];
+                    "application/json": components["schemas"]["ScenarioWithSteps"];
                 };
             };
             /** @description Не найден */
