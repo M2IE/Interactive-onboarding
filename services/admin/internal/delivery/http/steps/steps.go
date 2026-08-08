@@ -2,7 +2,6 @@ package steps
 
 import (
 	"context"
-	"errors"
 
 	apiv1 "github.com/M2IE/Interactive-onboarding/gen/rest/v1/go/admin"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
@@ -40,24 +39,7 @@ func (h StepsHandler) CreateStep(ctx context.Context, request apiv1.CreateStepRe
 	// Вызываем сервис
 	step, err := h.service.CreateStep(ctx, scenarioID, request.Body.Selector, request.Body.Title, request.Body.Body)
 	if err != nil {
-		switch {
-		case errors.Is(err, domain.ErrScenarioNotFound):
-			return apiv1.CreateStep404JSONResponse{
-				Error: struct {
-					Code    apiv1.ErrorResponseErrorCode `json:"code"`
-					Message string                       `json:"message"`
-				}{Code: apiv1.SCENARIONOTFOUND, Message: err.Error()},
-			}, nil
-		case errors.Is(err, domain.ErrScenarioPublished):
-			return apiv1.CreateStep422JSONResponse{
-				Error: struct {
-					Code    apiv1.ErrorResponseErrorCode `json:"code"`
-					Message string                       `json:"message"`
-				}{Code: apiv1.SCENARIOSTATECONFLICT, Message: err.Error()},
-			}, nil
-		default:
-			return nil, err // 500
-		}
+		return ToCreateStepErrorResponse(err), nil
 	}
 
 	return apiv1.CreateStep201JSONResponse(ToDTOStep(step)), nil
@@ -66,17 +48,6 @@ func (h StepsHandler) CreateStep(ctx context.Context, request apiv1.CreateStepRe
 // Reorder steps
 // (PUT /admin/scenarios/{id}/steps/order)
 func (h StepsHandler) ReorderSteps(ctx context.Context, request apiv1.ReorderStepsRequestObject) (apiv1.ReorderStepsResponseObject, error) {
-	// Парсим scenarioID из пути
-	scenarioID, err := uuid.Parse(request.Id.String())
-	if err != nil {
-		return apiv1.ReorderSteps422JSONResponse{
-			Error: struct {
-				Code    apiv1.ErrorResponseErrorCode `json:"code"`
-				Message string                       `json:"message"`
-			}{Code: apiv1.INVALIDPARAMETER, Message: "invalid scenario id"},
-		}, nil
-	}
-
 	// Преобразуем DTO в доменные объекты
 	items, err := ToDomainReorderItems(request.Body.Order)
 	if err != nil {
@@ -88,40 +59,9 @@ func (h StepsHandler) ReorderSteps(ctx context.Context, request apiv1.ReorderSte
 		}, nil
 	}
 
-	err = h.service.ReorderSteps(ctx, scenarioID, items)
+	err = h.service.ReorderSteps(ctx, request.Id, items)
 	if err != nil {
-		switch {
-		case errors.Is(err, domain.ErrScenarioNotFound):
-			return apiv1.ReorderSteps404JSONResponse{
-				Error: struct {
-					Code    apiv1.ErrorResponseErrorCode `json:"code"`
-					Message string                       `json:"message"`
-				}{Code: apiv1.SCENARIONOTFOUND, Message: err.Error()},
-			}, nil
-		case errors.Is(err, domain.ErrScenarioPublished):
-			return apiv1.ReorderSteps422JSONResponse{
-				Error: struct {
-					Code    apiv1.ErrorResponseErrorCode `json:"code"`
-					Message string                       `json:"message"`
-				}{Code: apiv1.SCENARIOSTATECONFLICT, Message: err.Error()},
-			}, nil
-		case errors.Is(err, domain.ErrStepNotFound):
-			return apiv1.ReorderSteps404JSONResponse{
-				Error: struct {
-					Code    apiv1.ErrorResponseErrorCode `json:"code"`
-					Message string                       `json:"message"`
-				}{Code: apiv1.STEPNOTFOUND, Message: err.Error()},
-			}, nil
-		case errors.Is(err, domain.ErrDuplicateOrder), errors.Is(err, domain.ErrMissingSteps):
-			return apiv1.ReorderSteps422JSONResponse{
-				Error: struct {
-					Code    apiv1.ErrorResponseErrorCode `json:"code"`
-					Message string                       `json:"message"`
-				}{Code: apiv1.STEPORDERCONFLICT, Message: err.Error()},
-			}, nil
-		default:
-			return nil, err
-		}
+		return ToReorderStepsErrorResponse(err), nil
 	}
 
 	return apiv1.ReorderSteps204Response{}, nil
@@ -130,44 +70,8 @@ func (h StepsHandler) ReorderSteps(ctx context.Context, request apiv1.ReorderSte
 // Delete step
 // (DELETE /admin/scenarios/{id}/steps/{stepId})
 func (h StepsHandler) DeleteStep(ctx context.Context, request apiv1.DeleteStepRequestObject) (apiv1.DeleteStepResponseObject, error) {
-	stepID, err := uuid.Parse(request.StepId.String())
-	if err != nil {
-		return apiv1.DeleteStep404JSONResponse{
-			Error: struct {
-				Code    apiv1.ErrorResponseErrorCode `json:"code"`
-				Message string                       `json:"message"`
-			}{Code: apiv1.INVALIDPARAMETER, Message: "invalid step id"},
-		}, nil
-	}
-
-	err = h.service.DeleteStep(ctx, stepID)
-	if err != nil {
-		switch {
-		case errors.Is(err, domain.ErrStepNotFound):
-			return apiv1.DeleteStep404JSONResponse{
-				Error: struct {
-					Code    apiv1.ErrorResponseErrorCode `json:"code"`
-					Message string                       `json:"message"`
-				}{Code: apiv1.STEPNOTFOUND, Message: err.Error()},
-			}, nil
-		case errors.Is(err, domain.ErrScenarioNotFound):
-			return apiv1.DeleteStep404JSONResponse{
-				Error: struct {
-					Code    apiv1.ErrorResponseErrorCode `json:"code"`
-					Message string                       `json:"message"`
-				}{Code: apiv1.SCENARIONOTFOUND, Message: err.Error()},
-			}, nil
-		case errors.Is(err, domain.ErrScenarioPublished):
-			// В спецификации нет 422, используем 404 с кодом конфликта
-			return apiv1.DeleteStep404JSONResponse{
-				Error: struct {
-					Code    apiv1.ErrorResponseErrorCode `json:"code"`
-					Message string                       `json:"message"`
-				}{Code: apiv1.SCENARIOSTATECONFLICT, Message: err.Error()},
-			}, nil
-		default:
-			return nil, err // 500
-		}
+	if err := h.service.DeleteStep(ctx, request.StepId); err != nil {
+		return ToDeleteStepErrorResponse(err), nil
 	}
 
 	return apiv1.DeleteStep204Response{}, nil
@@ -188,31 +92,7 @@ func (h StepsHandler) UpdateStep(ctx context.Context, request apiv1.UpdateStepRe
 
 	step, err := h.service.UpdateStep(ctx, stepID, request.Body.Selector, request.Body.Title, request.Body.Body)
 	if err != nil {
-		switch {
-		case errors.Is(err, domain.ErrStepNotFound):
-			return apiv1.UpdateStep404JSONResponse{
-				Error: struct {
-					Code    apiv1.ErrorResponseErrorCode `json:"code"`
-					Message string                       `json:"message"`
-				}{Code: apiv1.STEPNOTFOUND, Message: err.Error()},
-			}, nil
-		case errors.Is(err, domain.ErrScenarioNotFound):
-			return apiv1.UpdateStep404JSONResponse{
-				Error: struct {
-					Code    apiv1.ErrorResponseErrorCode `json:"code"`
-					Message string                       `json:"message"`
-				}{Code: apiv1.SCENARIONOTFOUND, Message: err.Error()},
-			}, nil
-		case errors.Is(err, domain.ErrScenarioPublished):
-			return apiv1.UpdateStep422JSONResponse{
-				Error: struct {
-					Code    apiv1.ErrorResponseErrorCode `json:"code"`
-					Message string                       `json:"message"`
-				}{Code: apiv1.SCENARIOSTATECONFLICT, Message: err.Error()},
-			}, nil
-		default:
-			return nil, err
-		}
+		return ToUpdateStepErrorResponse(err), nil
 	}
 
 	return apiv1.UpdateStep200JSONResponse(ToDTOStep(step)), nil

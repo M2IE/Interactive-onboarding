@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	apiv1 "github.com/M2IE/Interactive-onboarding/gen/rest/v1/go/widget"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/domain"
@@ -39,6 +40,7 @@ func (h *WidgetHandler) GetWidgetScenario(ctx context.Context, request apiv1.Get
 		case errors.Is(err, domain.ErrNoPublishedScenario):
 			return apiv1.GetWidgetScenario204Response{}, nil
 		default:
+			slog.Error("get widget scenario: internal error", "error", err)
 			return apiv1.GetWidgetScenario500JSONResponse{Error: struct {
 				Code    apiv1.InternalErrorResponseErrorCode `json:"code"`
 				Message string                               `json:"message"`
@@ -138,6 +140,7 @@ func (h *WidgetHandler) PostWidgetEvent(ctx context.Context, request apiv1.PostW
 				}{Code: "MISSING_REQUIRED_FIELD", Message: err.Error()},
 			}, nil
 		default:
+			slog.Error("post widget event: internal error", "error", err)
 			return apiv1.PostWidgetEvent500JSONResponse{Error: struct {
 				Code    apiv1.InternalErrorResponseErrorCode `json:"code"`
 				Message string                               `json:"message"`

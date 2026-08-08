@@ -2,6 +2,7 @@ package scenarios
 
 import (
 	"errors"
+	"log/slog"
 
 	apiv1 "github.com/M2IE/Interactive-onboarding/gen/rest/v1/go/admin"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
@@ -24,7 +25,6 @@ func ToDTOsScenarios(v []domain.Scenario) []apiv1.Scenario {
 	for _, v := range v {
 		results = append(results, ToDTOScenario(&v))
 	}
-
 	return results
 }
 
@@ -48,19 +48,16 @@ func ToDomainScenariosList(v apiv1.ListScenariosParams) domain.ListScenarios {
 	if v.Page != nil && *v.Page >= 1 {
 		page = *v.Page
 	}
-
 	size := 20
 	if v.Size != nil {
 		size = *v.Size
 	}
-
 	switch {
 	case size < 1:
 		size = 1
 	case size > 100:
 		size = 100
 	}
-
 	return domain.ListScenarios{
 		ProjectID: v.ProjectId,
 		Page:      page,
@@ -69,11 +66,12 @@ func ToDomainScenariosList(v apiv1.ListScenariosParams) domain.ListScenarios {
 }
 
 func ToListErrorResponse(err error) apiv1.ListScenariosResponseObject {
+	slog.Error("list scenarios: internal error", "error", err)
 	return apiv1.ListScenarios500JSONResponse{
 		Error: struct {
 			Code    apiv1.InternalErrorResponseErrorCode `json:"code"`
 			Message string                               `json:"message"`
-		}{Code: apiv1.INTERNALERROR, Message: err.Error()},
+		}{Code: apiv1.INTERNALERROR, Message: "internal server error"},
 	}
 }
 
@@ -87,11 +85,12 @@ func ToGetErrorResponse(err error) apiv1.GetScenarioResponseObject {
 			}{Code: apiv1.SCENARIONOTFOUND, Message: err.Error()},
 		}
 	default:
+		slog.Error("get scenario: internal error", "error", err)
 		return apiv1.GetScenario500JSONResponse{
 			Error: struct {
 				Code    apiv1.InternalErrorResponseErrorCode `json:"code"`
 				Message string                               `json:"message"`
-			}{Code: apiv1.INTERNALERROR, Message: err.Error()},
+			}{Code: apiv1.INTERNALERROR, Message: "internal server error"},
 		}
 	}
 }
@@ -106,11 +105,12 @@ func ToCreateErrorResponse(err error) apiv1.CreateScenarioResponseObject {
 			}{Code: apiv1.SCENARIOSTATECONFLICT, Message: err.Error()},
 		}
 	default:
+		slog.Error("create scenario: internal error", "error", err)
 		return apiv1.CreateScenario500JSONResponse{
 			Error: struct {
 				Code    apiv1.InternalErrorResponseErrorCode `json:"code"`
 				Message string                               `json:"message"`
-			}{Code: apiv1.INTERNALERROR, Message: err.Error()},
+			}{Code: apiv1.INTERNALERROR, Message: "internal server error"},
 		}
 	}
 }
@@ -132,11 +132,12 @@ func ToUpdateErrorResponse(err error) apiv1.UpdateScenarioResponseObject {
 			}{Code: apiv1.SCENARIOSTATECONFLICT, Message: err.Error()},
 		}
 	default:
+		slog.Error("update scenario: internal error", "error", err)
 		return apiv1.UpdateScenario500JSONResponse{
 			Error: struct {
 				Code    apiv1.InternalErrorResponseErrorCode `json:"code"`
 				Message string                               `json:"message"`
-			}{Code: apiv1.INTERNALERROR, Message: err.Error()},
+			}{Code: apiv1.INTERNALERROR, Message: "internal server error"},
 		}
 	}
 }
