@@ -1,11 +1,11 @@
 -- name: GetStepsByScenario :many
-SELECT id, scenario_id, order_num, selector, title, body
+SELECT id, scenario_id, order_num, selector, title, body, next_url
 FROM step
 WHERE scenario_id = $1
 ORDER BY order_num;
 
 -- name: GetStepByID :one
-SELECT id, scenario_id, order_num, selector, title, body
+SELECT id, scenario_id, order_num, selector, title, body, next_url
 FROM step
 WHERE id = $1;
 

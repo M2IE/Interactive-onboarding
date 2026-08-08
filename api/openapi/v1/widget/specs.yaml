@@ -125,6 +125,9 @@ components:
         body:
           type: string
           description: Текст подсказки.
+        nextUrl:
+          type: string
+          description: URL для перехода после завершения шага (опционально)
 
     Scenario:
       type: object

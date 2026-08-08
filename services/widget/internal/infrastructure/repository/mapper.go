@@ -27,6 +27,10 @@ func toDomainScenario(row *gen.Scenario) *domain.Scenario {
 }
 
 func toDomainStep(row *gen.Step) *domain.Step {
+	var nextURL *string
+	if row.NextUrl.Valid {
+		nextURL = &row.NextUrl.String
+	}
 	return &domain.Step{
 		ID:         row.ID,
 		ScenarioID: row.ScenarioID,
@@ -34,5 +38,6 @@ func toDomainStep(row *gen.Step) *domain.Step {
 		Selector:   row.Selector,
 		Title:      row.Title,
 		Body:       row.Body,
+		NextURL:    nextURL,
 	}
 }
