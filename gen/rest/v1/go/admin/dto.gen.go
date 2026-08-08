@@ -19,6 +19,7 @@ const (
 	INVALIDSTEPBODY            ErrorResponseErrorCode = "INVALID_STEP_BODY"
 	INVALIDSTEPSELECTOR        ErrorResponseErrorCode = "INVALID_STEP_SELECTOR"
 	INVALIDSTEPTITLE           ErrorResponseErrorCode = "INVALID_STEP_TITLE"
+	PROJECTNOTFOUND            ErrorResponseErrorCode = "PROJECT_NOT_FOUND"
 	SCENARIOALREADYPUBLISHED   ErrorResponseErrorCode = "SCENARIO_ALREADY_PUBLISHED"
 	SCENARIOALREADYUNPUBLISHED ErrorResponseErrorCode = "SCENARIO_ALREADY_UNPUBLISHED"
 	SCENARIOHASNOSTEPS         ErrorResponseErrorCode = "SCENARIO_HAS_NO_STEPS"
@@ -96,6 +97,14 @@ type InternalErrorResponse struct {
 
 // InternalErrorResponseErrorCode defines model for InternalErrorResponse.Error.Code.
 type InternalErrorResponseErrorCode string
+
+// Project defines model for Project.
+type Project struct {
+	CreatedAt  *time.Time         `json:"createdAt,omitempty"`
+	Id         openapi_types.UUID `json:"id"`
+	Name       string             `json:"name"`
+	ProjectKey string             `json:"projectKey"`
+}
 
 // ReorderStepsRequest defines model for ReorderStepsRequest.
 type ReorderStepsRequest struct {
