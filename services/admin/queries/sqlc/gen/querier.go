@@ -22,6 +22,8 @@ type Querier interface {
 	GetScenarioStatus(ctx context.Context, db DBTX, id uuid.UUID) (ScenarioStatus, error)
 	GetStepByID(ctx context.Context, db DBTX, id uuid.UUID) (Step, error)
 	GetStepsByScenario(ctx context.Context, db DBTX, scenarioID uuid.UUID) ([]Step, error)
+	ListScenarios(ctx context.Context, db DBTX, arg ListScenariosParams) ([]ListScenariosRow, error)
+	UpdateScenario(ctx context.Context, db DBTX, arg UpdateScenarioParams) (Scenario, error)
 	UpdateScenarioStatusById(ctx context.Context, db DBTX, arg UpdateScenarioStatusByIdParams) error
 	UpdateStep(ctx context.Context, db DBTX, arg UpdateStepParams) error
 	UpdateStepOrder(ctx context.Context, db DBTX, arg UpdateStepOrderParams) error
