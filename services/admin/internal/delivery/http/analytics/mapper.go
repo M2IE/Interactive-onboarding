@@ -2,6 +2,7 @@ package analytics
 
 import (
 	"errors"
+	"log/slog"
 
 	apiv1 "github.com/M2IE/Interactive-onboarding/gen/rest/v1/go/admin"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
@@ -37,11 +38,12 @@ func ToAnalyticsErrorResponse(err error) apiv1.GetAnalyticsResponseObject {
 			}{Code: apiv1.SCENARIONOTFOUND, Message: err.Error()},
 		}
 	default:
+		slog.Error("get analytics: internal error", "error", err)
 		return apiv1.GetAnalytics500JSONResponse{
 			Error: struct {
 				Code    apiv1.InternalErrorResponseErrorCode `json:"code"`
 				Message string                               `json:"message"`
-			}{Code: apiv1.INTERNALERROR, Message: err.Error()},
+			}{Code: apiv1.INTERNALERROR, Message: "internal server error"},
 		}
 	}
 }
@@ -56,11 +58,12 @@ func ToAnalyticsReportErrorResponse(err error) apiv1.GenerateAnalyticsReportResp
 			}{Code: apiv1.SCENARIONOTFOUND, Message: err.Error()},
 		}
 	default:
+		slog.Error("generate report: internal error", "error", err)
 		return apiv1.GenerateAnalyticsReport500JSONResponse{
 			Error: struct {
 				Code    apiv1.InternalErrorResponseErrorCode `json:"code"`
 				Message string                               `json:"message"`
-			}{Code: apiv1.INTERNALERROR, Message: err.Error()},
+			}{Code: apiv1.INTERNALERROR, Message: "internal server error"},
 		}
 	}
 }
@@ -75,11 +78,12 @@ func ToDownloadReportErrorResponse(err error) apiv1.GetAnalyticsReportResponseOb
 			}{Code: apiv1.SCENARIONOTFOUND, Message: err.Error()},
 		}
 	default:
+		slog.Error("download report: internal error", "error", err)
 		return apiv1.GetAnalyticsReport500JSONResponse{
 			Error: struct {
 				Code    apiv1.InternalErrorResponseErrorCode `json:"code"`
 				Message string                               `json:"message"`
-			}{Code: apiv1.INTERNALERROR, Message: err.Error()},
+			}{Code: apiv1.INTERNALERROR, Message: "internal server error"},
 		}
 	}
 }

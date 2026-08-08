@@ -2,6 +2,7 @@ package publishes
 
 import (
 	"errors"
+	"log/slog"
 
 	apiv1 "github.com/M2IE/Interactive-onboarding/gen/rest/v1/go/admin"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
@@ -38,11 +39,12 @@ func ToPublishErrorResponse(err error) apiv1.PublishScenarioResponseObject {
 			}{Code: apiv1.SCENARIOALREADYPUBLISHED, Message: err.Error()},
 		}
 	default:
+		slog.Error("publish scenario: internal error", "error", err)
 		return apiv1.PublishScenario500JSONResponse{
 			Error: struct {
 				Code    apiv1.InternalErrorResponseErrorCode `json:"code"`
 				Message string                               `json:"message"`
-			}{Code: apiv1.INTERNALERROR, Message: err.Error()},
+			}{Code: apiv1.INTERNALERROR, Message: "internal server error"},
 		}
 	}
 }
@@ -64,11 +66,12 @@ func ToUnpublishErrorResponse(err error) apiv1.UnpublishScenarioResponseObject {
 			}{Code: apiv1.SCENARIOALREADYUNPUBLISHED, Message: err.Error()},
 		}
 	default:
+		slog.Error("unpublish scenario: internal error", "error", err)
 		return apiv1.UnpublishScenario500JSONResponse{
 			Error: struct {
 				Code    apiv1.InternalErrorResponseErrorCode `json:"code"`
 				Message string                               `json:"message"`
-			}{Code: apiv1.INTERNALERROR, Message: err.Error()},
+			}{Code: apiv1.INTERNALERROR, Message: "internal server error"},
 		}
 	}
 }
