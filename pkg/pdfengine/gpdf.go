@@ -19,6 +19,8 @@ func (e *GPDFEngine) GeneratePDF(ctx context.Context, content Content) ([]byte, 
 	doc := gpdf.NewDocument(
 		gpdf.WithPageSize(gpdf.A4),
 		gpdf.WithMargins(document.UniformEdges(document.Mm(20))),
+		gpdf.WithFont("DejaVuSans", fontData),
+		gpdf.WithDefaultFont("DejaVuSans", 12),
 	)
 
 	page := doc.AddPage()
