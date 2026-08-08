@@ -23,6 +23,21 @@ services:
       init-s3:
         condition: service_completed_successfully
 
+  widget_service:
+    container_name: widget_service
+    build:
+      context: .
+      dockerfile: services/widget/Dockerfile 
+    image: widget_service:0.1
+    env_file:
+      - ./.env
+
+    networks:
+      - interactive_onboarding
+    depends_on:
+      db_scenarios:
+        condition: service_healthy
+
 networks:
   interactive_onboarding:
     driver: bridge
