@@ -64,7 +64,7 @@ func (a *AnalyticsInfrastructure) UploadAnalytics(ctx context.Context, scenarioI
 		return "", fmt.Errorf("Error in PDF generateion: %w", err)
 	}
 
-	key := fmt.Sprintf("%s_%s.pdf", scenarioID.String(), time.Now())
+	key := fmt.Sprintf("%s_%s.pdf", scenarioID.String(), time.Now().Format("20060102150405"))
 	if err := a.s3.Upload(ctx, a.s3ReportBucket, key, bytes.NewReader(pdfBytes), "application/pdf"); err != nil {
 		slog.Error("failed to upload report to s3", "error", err)
 		return "", fmt.Errorf("upload report: %w", err)

@@ -42,7 +42,7 @@ func main() {
 		return
 	}
 
-	pdfEngine, err := pdfengine.New(pdfengine.SignintechGoPDF)
+	pdfEngine, err := pdfengine.New(pdfengine.TypeGPDF)
 	if err != nil {
 		slog.Error("pdf engine error", "error", err)
 		return

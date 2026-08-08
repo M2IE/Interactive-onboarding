@@ -44,9 +44,9 @@ func ToPDFContent(a *domain.Analytics) pdfengine.Content {
 		Title:  "Summary",
 		Header: []string{"Metric", "Value"},
 		Rows: [][]string{
-			{strconv.Itoa(a.TotalViews), "Total Views"},
-			{strconv.Itoa(a.Completed), "Completed"},
-			{strconv.Itoa(a.Dismissed), "Dismissed"},
+			{"Total Views", strconv.Itoa(a.TotalViews)},
+			{"Completed", strconv.Itoa(a.Completed)},
+			{"Dismissed", strconv.Itoa(a.Dismissed)},
 		},
 	})
 

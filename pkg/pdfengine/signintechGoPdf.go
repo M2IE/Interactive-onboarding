@@ -3,10 +3,18 @@ package pdfengine
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"fmt"
+	"sync"
 
 	gopdf "github.com/signintech/gopdf"
 )
+
+// go embed DejaVuSans.ttf (add : after "go" to use)
+var fontData []byte
+
+var fontOnce sync.Once
+var fontLoadErr error
 
 type SignintechEngine struct{}
 
@@ -18,6 +26,10 @@ func (e *SignintechEngine) GeneratePDF(ctx context.Context, content Content) ([]
 	pdf := &gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
 	pdf.AddPage()
+
+	if err := setFont(pdf, 20); err != nil {
+		return nil, err
+	}
 
 	if err := e.addHeading(pdf, content.Title); err != nil {
 		return nil, err
@@ -41,7 +53,7 @@ func (e *SignintechEngine) GeneratePDF(ctx context.Context, content Content) ([]
 }
 
 func (e *SignintechEngine) addHeading(pdf *gopdf.GoPdf, title string) error {
-	if err := loadFont(pdf, 20); err != nil {
+	if err := setFont(pdf, 20); err != nil {
 		return err
 	}
 	pdf.SetX(50)
@@ -50,9 +62,7 @@ func (e *SignintechEngine) addHeading(pdf *gopdf.GoPdf, title string) error {
 }
 
 func (e *SignintechEngine) renderParagraph(pdf *gopdf.GoPdf, p Paragraph) {
-	if err := loadFont(pdf, 12); err != nil {
-		return
-	}
+	setFont(pdf, 12)
 	pdf.SetX(50)
 	pdf.Br(18)
 	pdf.Cell(nil, p.Text)
@@ -60,9 +70,7 @@ func (e *SignintechEngine) renderParagraph(pdf *gopdf.GoPdf, p Paragraph) {
 }
 
 func (e *SignintechEngine) renderTable(pdf *gopdf.GoPdf, tbl Table) {
-	if err := loadFont(pdf, 12); err != nil {
-		return
-	}
+	setFont(pdf, 12)
 	y := pdf.GetY() + 10
 
 	if tbl.Title != "" {
@@ -82,9 +90,7 @@ func (e *SignintechEngine) renderTable(pdf *gopdf.GoPdf, tbl Table) {
 	}
 	y += 20
 
-	if err := loadFont(pdf, 10); err != nil {
-		return
-	}
+	setFont(pdf, 10)
 	for _, row := range tbl.Rows {
 		x = 50.0
 		for i, cell := range row {
@@ -115,25 +121,12 @@ func (e *SignintechEngine) columnWidths(cols int) []float64 {
 	}
 }
 
-var fontLoaded bool
-
-func loadFont(pdf *gopdf.GoPdf, size float64) error {
-	if !fontLoaded {
-		fontPaths := []string{
-			"/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-			"/usr/share/fonts/TTF/DejaVuSans.ttf",
-		}
-		var loaded bool
-		for _, path := range fontPaths {
-			if err := pdf.AddTTFFont("Default", path); err == nil {
-				loaded = true
-				break
-			}
-		}
-		if !loaded {
-			return fmt.Errorf("no suitable font found")
-		}
-		fontLoaded = true
+func setFont(pdf *gopdf.GoPdf, size float64) error {
+	fontOnce.Do(func() {
+		fontLoadErr = pdf.AddTTFFontData("Main", fontData)
+	})
+	if fontLoadErr != nil {
+		return fontLoadErr
 	}
-	return pdf.SetFont("Default", "", int(size))
+	return pdf.SetFont("Main", "", int(size))
 }
