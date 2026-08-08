@@ -15,3 +15,6 @@ UPDATE scenario SET status = $2, updated_at = now() WHERE id = $1;
 -- name: ArchiveByProjectAndStatus :execrows
 UPDATE scenario SET status = 'archived', updated_at = now()
 WHERE project_id = $1 AND status = $2 AND url = $3;
+
+-- name: GetScenarioStatus :one
+SELECT status FROM scenario WHERE id = $1;

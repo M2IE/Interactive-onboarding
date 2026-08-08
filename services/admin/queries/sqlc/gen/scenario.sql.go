@@ -93,6 +93,17 @@ func (q *Queries) ScenarioExists(ctx context.Context, db DBTX, id uuid.UUID) (bo
 	return exists, err
 }
 
+const getScenarioStatus = `-- name: GetScenarioStatus :one
+SELECT status FROM scenario WHERE id = $1
+`
+
+func (q *Queries) GetScenarioStatus(ctx context.Context, db DBTX, id uuid.UUID) (ScenarioStatus, error) {
+	row := db.QueryRowContext(ctx, getScenarioStatus, id)
+	var status ScenarioStatus
+	err := row.Scan(&status)
+	return status, err
+}
+
 const updateScenarioStatusById = `-- name: UpdateScenarioStatusById :exec
 UPDATE scenario SET status = $2, updated_at = now() WHERE id = $1
 `
