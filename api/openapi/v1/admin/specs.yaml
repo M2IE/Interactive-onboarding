@@ -530,9 +530,9 @@ components:
     AnalyticsReportResponse:
       type: object
       required:
-        - url
+        - filename
       properties:
-        url:
+        filename:
           type: string
 
     ReorderStepsRequest:

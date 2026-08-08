@@ -42,7 +42,7 @@ const (
 
 // AnalyticsReportResponse defines model for AnalyticsReportResponse.
 type AnalyticsReportResponse struct {
-	Url string `json:"url"`
+	Filename string `json:"filename"`
 }
 
 // AnalyticsResponse defines model for AnalyticsResponse.

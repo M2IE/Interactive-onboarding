@@ -35,12 +35,12 @@ func (h AnalyticsHandler) GetAnalytics(ctx context.Context, request apiv1.GetAna
 }
 
 func (h AnalyticsHandler) GenerateAnalyticsReport(ctx context.Context, request apiv1.GenerateAnalyticsReportRequestObject) (apiv1.GenerateAnalyticsReportResponseObject, error) {
-	url, err := h.s.GenerateReport(ctx, request.ScenarioId)
+	filename, err := h.s.GenerateReport(ctx, request.ScenarioId)
 	if err != nil {
 		return ToAnalyticsReportErrorResponse(err), nil
 	}
 
-	return apiv1.GenerateAnalyticsReport200JSONResponse{Url: url}, nil
+	return apiv1.GenerateAnalyticsReport200JSONResponse{Filename: filename}, nil
 }
 
 func (h AnalyticsHandler) GetAnalyticsReport(ctx context.Context, request apiv1.GetAnalyticsReportRequestObject) (apiv1.GetAnalyticsReportResponseObject, error) {

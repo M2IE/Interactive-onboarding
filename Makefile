@@ -1,6 +1,37 @@
+help:
+	@echo "Infrastructure:"
+	@echo "  start           Full bootstrap: start containers + migrate + seed"
+	@echo "  up              Start all containers + run migrations"
+	@echo "  prune           Full teardown: remove containers and volumes (wipes DB)"
+	@echo "  down            Stop all containers"
+	@echo ""
+	@echo "Database:"
+	@echo "  migrate-up      Run all pending SQL migrations"
+	@echo "  seed            Build and run seeder (demo scenarios + analytics events)"
+	@echo ""
+	@echo "Code generation:"
+	@echo "  rest-gen-admin   Generate Go + TypeScript for Admin API"
+	@echo "  rest-gen-widget  Generate Go + TypeScript for Widget API"
+	@echo "  api-gen          Generate everything (admin + widget)"
+	@echo ""
 
+# up services and migrations
 up:
 	docker compose up -d
+	make migrate-up
+
+down:
+	docker compose stop
+
+# full up with migrations and seeds
+start:
+	make up
+	make seed
+
+# full delete
+prune:
+	docker compose down -v
+	docker compose rm migrate seed -s -f
 
 migrate-up:
 	docker compose --profile migrate up migrate
