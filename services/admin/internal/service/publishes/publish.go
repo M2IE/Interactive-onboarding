@@ -42,25 +42,42 @@ func (s *PublishService) Publish(ctx context.Context, scenarioID uuid.UUID) (res
 		}
 	}()
 
-	draft, err := s.infra.GetScenario(ctx, tx, scenarioID)
+	parent, err := s.infra.GetScenario(ctx, tx, scenarioID)
 	if err != nil {
 		return nil, err
 	}
-	if draft.Status == domain.ScenarioStatusPublished {
+	if parent.Status == domain.ScenarioStatusPublished {
 		return nil, domain.ErrScenarioAlreadyPublished
 	}
 
-	_, err = s.infra.ArchiveByProjectAndStatus(ctx, tx, draft.ProjectID, domain.ScenarioStatusPublished, draft.URL)
+	// Archive old "published" scenario
+	_, err = s.infra.ArchiveByProjectAndStatus(ctx, tx, parent.ProjectID, domain.ScenarioStatusPublished, parent.URL)
 	if err != nil {
 		return nil, err
 	}
 
-	published, err := s.infra.CreateScenario(ctx, tx, draft.ProjectID, draft.Name, draft.URL, domain.ScenarioStatusPublished)
+	if parent.Status != domain.ScenarioStatusDraft {
+		// Archive old "draft" scenario
+		_, err = s.infra.ArchiveByProjectAndStatus(ctx, tx, parent.ProjectID, domain.ScenarioStatusDraft, parent.URL)
+		if err != nil {
+			return nil, err
+		}
+
+		// Update status to `parent` scenario
+		err = s.infra.UpdateScenarioStatus(ctx, tx, parent.ID, domain.ScenarioStatusDraft)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Clone new sceanrio with "published" status
+	published, err := s.infra.CreateScenario(ctx, tx, parent.ProjectID, parent.Name, parent.URL, domain.ScenarioStatusPublished)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.infra.CopyStepsToScenario(ctx, tx, published.ID, draft.ID)
+	// Copy all steps from `parent` to "published" scenario
+	err = s.infra.CopyStepsToScenario(ctx, tx, published.ID, parent.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -91,6 +108,11 @@ func (s *PublishService) Unpublish(ctx context.Context, scenarioID uuid.UUID) (e
 	}
 	if scenario.Status != domain.ScenarioStatusPublished {
 		return domain.ErrScenarioAlreadyUnpublished
+	}
+
+	_, err = s.infra.ArchiveByProjectAndStatus(ctx, tx, scenario.ProjectID, domain.ScenarioStatusDraft, scenario.URL)
+	if err != nil {
+		return err
 	}
 
 	err = s.infra.UpdateScenarioStatus(ctx, tx, scenarioID, domain.ScenarioStatusDraft)
