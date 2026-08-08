@@ -133,6 +133,9 @@ type WidgetEventRequest struct {
 	// EventKey Уникальный ключ события. Если не передан, бекенд сгенерирует сам.
 	EventKey *string `json:"event_key,omitempty"`
 
+	// ScenarioId Идентификатор сценария (обязателен для scenario_dismissed; для остальных может отсутствовать, если определяется по step_id)
+	ScenarioId *openapi_types.UUID `json:"scenario_id,omitempty"`
+
 	// SessionId Идентификатор сессии (из cookie или localStorage).
 	SessionId openapi_types.UUID `json:"session_id"`
 

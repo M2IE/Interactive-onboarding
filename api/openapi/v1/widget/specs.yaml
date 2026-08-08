@@ -177,6 +177,10 @@ components:
           type: string
           format: uuid
           description: Идентификатор шага (обязателен для step_viewed, step_completed; для остальных не передаётся или игнорируется).
+        scenario_id:
+          type: string
+          format: uuid
+          description: Идентификатор сценария (обязателен для scenario_dismissed; для остальных может отсутствовать, если определяется по step_id)
         event_key:
           type: string
           description: Уникальный ключ события. Если не передан, бекенд сгенерирует сам.
