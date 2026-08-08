@@ -13,6 +13,7 @@ type Step struct {
 	Selector   string
 	Title      string
 	Body       string
+	NextURL    *string
 }
 
 type ReorderItem struct {

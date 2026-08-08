@@ -709,6 +709,9 @@ components:
           type: string
         body:
           type: string
+        nextUrl:
+          type: string
+          description: URL для перехода после завершения шага (опционально)
 
     CreateStepRequest:
       type: object
@@ -723,6 +726,9 @@ components:
           type: string
         body:
           type: string
+        nextUrl:
+          type: string
+          description: URL для перехода после завершения шага (опционально)
 
     UpdateStepRequest:
       type: object
@@ -733,3 +739,6 @@ components:
           type: string
         body:
           type: string
+        nextUrl:
+          type: string
+          description: URL для перехода после завершения шага (опционально)
