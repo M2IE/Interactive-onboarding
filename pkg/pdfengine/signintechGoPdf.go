@@ -10,7 +10,7 @@ import (
 	gopdf "github.com/signintech/gopdf"
 )
 
-// go embed DejaVuSans.ttf (add : after "go" to use)
+//go:embed DejaVuSans.ttf
 var fontData []byte
 
 var fontOnce sync.Once

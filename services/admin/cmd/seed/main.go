@@ -72,7 +72,7 @@ func main() {
 			url:  "/demo/new/transport",
 			name: "Transport Selection Demo",
 			steps: []stepDef{
-				{1, "#transport-type", "Transport Type", "Choose the type of transport: car, motorcycle, bicycle, or public transit."},
+				{1, "#transport-type", "Тип транспорта", "Choose the type of transport: car, motorcycle, bicycle, or public transit."},
 				{2, "#transport-details", "Vehicle Details", "Enter the make, model, year, and any specific features of your vehicle."},
 				{3, "#transport-confirm", "Confirm", "Verify your transport selection and submit to continue."},
 			},
