@@ -84,6 +84,17 @@ func (q *Queries) GetScenario(ctx context.Context, db DBTX, id uuid.UUID) (Scena
 	return i, err
 }
 
+const scenarioExists = `-- name: ScenarioExists :one
+SELECT EXISTS(SELECT 1 FROM scenario WHERE id = $1) AS exists
+`
+
+func (q *Queries) ScenarioExists(ctx context.Context, db DBTX, id uuid.UUID) (bool, error) {
+	row := db.QueryRowContext(ctx, scenarioExists, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const getScenarioStatus = `-- name: GetScenarioStatus :one
 SELECT status FROM scenario WHERE id = $1
 `

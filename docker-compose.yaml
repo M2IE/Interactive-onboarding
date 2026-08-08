@@ -1,6 +1,8 @@
 include:
-  - path: deployment/database/postgres.yaml
-  - path: deployment/migrations/go-migrate.yaml
+  - path: deploy/database/postgres.yaml
+  - path: deploy/migrations/go-migrate.yaml
+  - path: deploy/report_storage/rustfs/rustfs.yaml
+  - path: deploy/seed/seed.yaml
 
 services:
   admin_service:
@@ -9,15 +11,17 @@ services:
       context: .
       dockerfile: services/admin/Dockerfile
     image: admin_service:0.1
+    ports:
+      - "8001:8001"
     env_file:
       - ./.env
-
     networks:
       - interactive_onboarding
     depends_on:
       db_scenarios:
         condition: service_healthy
-
+      init-s3:
+        condition: service_completed_successfully
 
 networks:
   interactive_onboarding:

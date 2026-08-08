@@ -1,0 +1,16 @@
+services:
+  seed:
+    build:
+      context: ../..
+      dockerfile: services/admin/Dockerfile.seed
+    container_name: seed
+    depends_on:
+      db_scenarios:
+        condition: service_healthy
+    env_file:
+      - ../../.env
+    networks:
+      - interactive_onboarding
+    restart: "no"
+    profiles:
+      - seed

@@ -14,11 +14,14 @@ type Querier interface {
 	ArchiveByProjectAndStatus(ctx context.Context, db DBTX, arg ArchiveByProjectAndStatusParams) (int64, error)
 	CopyStepsToScenario(ctx context.Context, db DBTX, arg CopyStepsToScenarioParams) error
 	CreateScenario(ctx context.Context, db DBTX, arg CreateScenarioParams) (Scenario, error)
+	GetAnalytics(ctx context.Context, db DBTX, scenarioID uuid.NullUUID) (GetAnalyticsRow, error)
+	GetScenario(ctx context.Context, db DBTX, id uuid.UUID) (Scenario, error)
+	GetStepAnalytics(ctx context.Context, db DBTX, scenarioID uuid.NullUUID) ([]GetStepAnalyticsRow, error)
+	ScenarioExists(ctx context.Context, db DBTX, id uuid.UUID) (bool, error)
 	CreateStep(ctx context.Context, db DBTX, arg CreateStepParams) (Step, error)
 	DecrementOrdersAfter(ctx context.Context, db DBTX, arg DecrementOrdersAfterParams) error
 	DeleteStep(ctx context.Context, db DBTX, id uuid.UUID) error
 	GetMaxOrderByScenario(ctx context.Context, db DBTX, scenarioID uuid.UUID) (int32, error)
-	GetScenario(ctx context.Context, db DBTX, id uuid.UUID) (Scenario, error)
 	GetScenarioStatus(ctx context.Context, db DBTX, id uuid.UUID) (ScenarioStatus, error)
 	GetStepByID(ctx context.Context, db DBTX, id uuid.UUID) (Step, error)
 	GetStepsByScenario(ctx context.Context, db DBTX, scenarioID uuid.UUID) ([]Step, error)

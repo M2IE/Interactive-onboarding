@@ -145,6 +145,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/analytics/{scenarioId}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download analytics PDF report */
+        get: operations["getAnalyticsReport"];
+        put?: never;
+        /** Generate analytics PDF report */
+        post: operations["generateAnalyticsReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -163,6 +181,9 @@ export interface components {
                 message: string;
             };
         };
+        AnalyticsReportResponse: {
+            url: string;
+        };
         ReorderStepsRequest: {
             order: components["schemas"]["StepOrder"][];
         };
@@ -178,6 +199,15 @@ export interface components {
             completed: number;
             /** @description Number of dismissed scenarios */
             dismissed: number;
+            steps: components["schemas"]["StepAnalytics"][];
+        };
+        StepAnalytics: {
+            /** Format: uuid */
+            stepId: string;
+            title: string;
+            orderNum: number;
+            views: number;
+            completed: number;
         };
         /** @enum {string} */
         ScenarioStatus: "draft" | "published" | "archived";
@@ -777,6 +807,88 @@ export interface operations {
             };
             /** @description Не прошёл валидацию */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalErrorResponse"];
+                };
+            };
+        };
+    };
+    getAnalyticsReport: {
+        parameters: {
+            query: {
+                filename: string;
+            };
+            header?: never;
+            path: {
+                scenarioId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF report */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            /** @description Не найден */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalErrorResponse"];
+                };
+            };
+        };
+    };
+    generateAnalyticsReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scenarioId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Report URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnalyticsReportResponse"];
+                };
+            };
+            /** @description Не найден */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
