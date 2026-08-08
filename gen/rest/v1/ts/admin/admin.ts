@@ -182,7 +182,7 @@ export interface components {
             };
         };
         AnalyticsReportResponse: {
-            url: string;
+            filename: string;
         };
         ReorderStepsRequest: {
             order: components["schemas"]["StepOrder"][];
