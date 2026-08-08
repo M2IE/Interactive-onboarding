@@ -43,6 +43,10 @@ func (a *AnalyticsInfrastructure) GetScenarioAnalytics(ctx context.Context, db d
 	return toScenarioAnalytics(&row), nil
 }
 
+func (a *AnalyticsInfrastructure) ScenarioExists(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (bool, error) {
+	return a.q.ScenarioExists(ctx, a.querier(db), scenarioID)
+}
+
 func (a *AnalyticsInfrastructure) GetStepAnalytics(ctx context.Context, db database.Querier, scenarioID uuid.UUID) ([]domain.StepAnalytics, error) {
 	rows, err := a.q.GetStepAnalytics(ctx, a.querier(db), toNullUUID(scenarioID))
 	if err != nil {

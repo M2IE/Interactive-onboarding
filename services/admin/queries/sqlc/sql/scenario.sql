@@ -1,6 +1,9 @@
 -- name: GetScenario :one
 SELECT * FROM scenario WHERE id = $1 FOR UPDATE;
 
+-- name: ScenarioExists :one
+SELECT EXISTS(SELECT 1 FROM scenario WHERE id = $1) AS exists;
+
 -- name: CreateScenario :one
 INSERT INTO scenario (project_id, name, url, status)
 VALUES ($1, $2, $3, $4)

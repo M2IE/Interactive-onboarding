@@ -17,6 +17,7 @@ type Querier interface {
 	GetAnalytics(ctx context.Context, db DBTX, scenarioID uuid.NullUUID) (GetAnalyticsRow, error)
 	GetScenario(ctx context.Context, db DBTX, id uuid.UUID) (Scenario, error)
 	GetStepAnalytics(ctx context.Context, db DBTX, scenarioID uuid.NullUUID) ([]GetStepAnalyticsRow, error)
+	ScenarioExists(ctx context.Context, db DBTX, id uuid.UUID) (bool, error)
 	UpdateScenarioStatusById(ctx context.Context, db DBTX, arg UpdateScenarioStatusByIdParams) error
 }
 

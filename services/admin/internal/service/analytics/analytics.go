@@ -14,6 +14,7 @@ type IAnalyticsInfrastructure interface {
 	// DB
 	GetScenarioAnalytics(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (*domain.Analytics, error)
 	GetStepAnalytics(ctx context.Context, db database.Querier, scenarioID uuid.UUID) ([]domain.StepAnalytics, error)
+	ScenarioExists(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (bool, error)
 
 	// S3
 	UploadAnalytics(ctx context.Context, scenarioID uuid.UUID, analytics *domain.Analytics) (string, error)
@@ -44,6 +45,14 @@ func (s *AnalyticsService) GetAnalytics(ctx context.Context, scenarioID uuid.UUI
 			}
 		}
 	}()
+
+	exists, err := s.infra.ScenarioExists(ctx, tx, scenarioID)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, domain.ErrScenarioNotFound
+	}
 
 	result, err := s.infra.GetScenarioAnalytics(ctx, tx, scenarioID)
 	if err != nil {
