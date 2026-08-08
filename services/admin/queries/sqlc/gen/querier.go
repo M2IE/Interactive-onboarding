@@ -19,6 +19,7 @@ type Querier interface {
 	DeleteStep(ctx context.Context, db DBTX, id uuid.UUID) error
 	GetAnalytics(ctx context.Context, db DBTX, scenarioID uuid.NullUUID) (GetAnalyticsRow, error)
 	GetMaxOrderByScenario(ctx context.Context, db DBTX, scenarioID uuid.UUID) (int32, error)
+	GetProjectByKey(ctx context.Context, db DBTX, projectKey string) (Project, error)
 	GetScenario(ctx context.Context, db DBTX, id uuid.UUID) (Scenario, error)
 	GetScenarioStatus(ctx context.Context, db DBTX, id uuid.UUID) (ScenarioStatus, error)
 	GetStepAnalytics(ctx context.Context, db DBTX, scenarioID uuid.NullUUID) ([]GetStepAnalyticsRow, error)

@@ -9,8 +9,39 @@ tags:
   - name: Steps
   - name: Publishing
   - name: Analytics
+  - name: Projects
 
 paths:
+  /admin/projects/{projectKey}:
+    get:
+      tags:
+        - Projects
+      summary: Get project by key
+      operationId: getProjectByKey
+      parameters:
+        - name: projectKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "404":
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+
   /admin/scenarios:
     post:
       tags:
@@ -494,6 +525,7 @@ components:
                 # HTTP 404
                 - SCENARIO_NOT_FOUND
                 - STEP_NOT_FOUND
+                - PROJECT_NOT_FOUND
 
                 # HTTP 409
                 - SCENARIO_ALREADY_PUBLISHED
@@ -697,6 +729,24 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Step"
+
+    Project:
+      type: object
+      required:
+        - id
+        - name
+        - projectKey
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        projectKey:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
 
     CreateScenarioRequest:
       type: object
