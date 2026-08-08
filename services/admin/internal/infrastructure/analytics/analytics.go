@@ -66,7 +66,7 @@ func (a *AnalyticsInfrastructure) querier(db database.Querier) database.Querier 
 func (a *AnalyticsInfrastructure) UploadAnalytics(ctx context.Context, scenarioID uuid.UUID, analytics *domain.Analytics) (string, error) {
 	pdfBytes, err := a.pdf.GeneratePDF(ctx, ToPDFContent(analytics))
 	if err != nil {
-		return "", fmt.Errorf("Error in PDF generateion: %w", err)
+		return "", fmt.Errorf("error in PDF generation: %w", err)
 	}
 
 	key := fmt.Sprintf("%s_%s.pdf", scenarioID.String(), time.Now().Format("20060102150405"))
