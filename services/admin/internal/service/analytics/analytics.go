@@ -51,7 +51,8 @@ func (s *AnalyticsService) GetAnalytics(ctx context.Context, scenarioID uuid.UUI
 		return nil, err
 	}
 	if !exists {
-		return nil, domain.ErrScenarioNotFound
+		err = domain.ErrScenarioNotFound
+		return nil, err
 	}
 
 	result, err := s.infra.GetScenarioAnalytics(ctx, tx, scenarioID)

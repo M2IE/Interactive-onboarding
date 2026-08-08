@@ -3,17 +3,18 @@ package analytics
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"time"
-
-	"io"
 
 	"github.com/M2IE/Interactive-onboarding/pkg/database"
 	"github.com/M2IE/Interactive-onboarding/pkg/pdfengine"
 	"github.com/M2IE/Interactive-onboarding/pkg/s3"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/M2IE/Interactive-onboarding/services/admin/queries"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/google/uuid"
 )
 
@@ -78,5 +79,12 @@ func (a *AnalyticsInfrastructure) UploadAnalytics(ctx context.Context, scenarioI
 }
 
 func (a *AnalyticsInfrastructure) DownloadAnalytics(ctx context.Context, filename string) (io.ReadCloser, error) {
-	return a.s3.Download(ctx, a.s3ReportBucket, filename)
+	r, err := a.s3.Download(ctx, a.s3ReportBucket, filename)
+	if err != nil {
+		if _, ok := errors.AsType[*types.NoSuchKey](err); ok {
+			return nil, domain.ErrReportNotFound
+		}
+		return nil, err
+	}
+	return r, nil
 }

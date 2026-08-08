@@ -46,12 +46,7 @@ func (h AnalyticsHandler) GenerateAnalyticsReport(ctx context.Context, request a
 func (h AnalyticsHandler) GetAnalyticsReport(ctx context.Context, request apiv1.GetAnalyticsReportRequestObject) (apiv1.GetAnalyticsReportResponseObject, error) {
 	body, err := h.s.DownloadReport(ctx, request.Params.Filename)
 	if err != nil {
-		return apiv1.GetAnalyticsReport404JSONResponse{
-			Error: struct {
-				Code    apiv1.ErrorResponseErrorCode `json:"code"`
-				Message string                       `json:"message"`
-			}{Code: apiv1.SCENARIONOTFOUND, Message: "report not found"},
-		}, nil
+		return ToDownloadReportErrorResponse(err), nil
 	}
 
 	return apiv1.GetAnalyticsReport200ApplicationpdfResponse{Body: body}, nil
