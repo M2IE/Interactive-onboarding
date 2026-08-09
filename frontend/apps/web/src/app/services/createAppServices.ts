@@ -5,12 +5,12 @@ import {
   createRealAnalyticsRepository,
   type AnalyticsRepository,
 } from '@/features/scenario-analytics'
+import { mockOnboardingClient } from '@/entities/scenario/api/mockOnboardingApi'
 import {
   createMockScenarioRepository,
 } from '@/features/scenario-editor/api/createMockScenarioRepository'
 import { createRealScenarioRepository } from '@/features/scenario-editor/api/createRealScenarioRepository'
 import type { ScenarioRepository } from '@/features/scenario-editor/api/types'
-import { mockOnboardingClient } from '@/shared/api/mockOnboardingApi'
 import type { ApiMode, AppConfig } from '@/shared/config/appConfig'
 
 export type AppServices = {

@@ -3,7 +3,7 @@ import {
   readScenarios,
   resetScenarios as resetStoredScenarios,
   writeScenarios,
-} from '@/shared/api/mockOnboardingApi'
+} from '@/entities/scenario/api/mockOnboardingApi'
 import type { ScenarioRepository } from './types'
 import { createScenarioDraft, createScenarioStep } from './scenarioFactory'
 

@@ -3,7 +3,7 @@ import {
   clearEvents,
   readEvents,
   readScenarios,
-} from '@/shared/api/mockOnboardingApi'
+} from '@/entities/scenario/api/mockOnboardingApi'
 import { triggerBrowserDownload } from '@/shared/lib/download'
 import {
   buildAnalyticsSummaryFromEvents,
