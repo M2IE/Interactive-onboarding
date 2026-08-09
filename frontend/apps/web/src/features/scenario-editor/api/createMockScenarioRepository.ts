@@ -58,6 +58,19 @@ export function createMockScenarioRepository(): ScenarioRepository {
       return published
     },
 
+    async unpublishScenario(scenario) {
+      const updatedAt = new Date().toISOString()
+      const draft: OnboardingScenario = {
+        ...scenario,
+        status: 'draft',
+        publishedAt: undefined,
+        updatedAt,
+      }
+
+      storeScenario(draft)
+      return draft
+    },
+
     async resetScenarios() {
       resetStoredScenarios()
       return readScenarios()

@@ -2,6 +2,7 @@ import { Button } from '@interactive-onboarding/ui'
 import {
   BarChart3,
   BookOpenCheck,
+  EyeOff,
   MonitorPlay,
   Plus,
   RefreshCw,
@@ -117,16 +118,26 @@ export function AdminPage({ apiMode }: AdminPageProps) {
                 Сохранить
               </Button>
             )}
-            {!isAnalytics && (
-              <Button
-                disabled={editor.isBusy || editor.isPublished}
-                icon={<Send aria-hidden="true" size={17} />}
-                onClick={editor.publishActiveScenario}
-                variant="primary"
-              >
-                Опубликовать
-              </Button>
-            )}
+            {!isAnalytics &&
+              (editor.isPublished ? (
+                <Button
+                  disabled={editor.isBusy}
+                  icon={<EyeOff aria-hidden="true" size={17} />}
+                  onClick={editor.unpublishActiveScenario}
+                  variant="danger"
+                >
+                  Снять с публикации
+                </Button>
+              ) : (
+                <Button
+                  disabled={editor.isBusy}
+                  icon={<Send aria-hidden="true" size={17} />}
+                  onClick={editor.publishActiveScenario}
+                  variant="primary"
+                >
+                  Опубликовать
+                </Button>
+              ))}
           </div>
         </header>
 

@@ -14,6 +14,7 @@ import {
   selectStep,
   updateScenarioMeta,
   updateStep,
+  unpublishScenario,
   type ScenarioEditorState,
 } from '../model/scenarioEditorSlice'
 import {
@@ -78,6 +79,11 @@ export function useScenarioEditor() {
     publishActiveScenario: () => {
       if (activeScenario && !isPublished) {
         void dispatch(publishScenario(activeScenario))
+      }
+    },
+    unpublishActiveScenario: () => {
+      if (activeScenario && isPublished) {
+        void dispatch(unpublishScenario(activeScenario))
       }
     },
     reloadScenarios: () => {

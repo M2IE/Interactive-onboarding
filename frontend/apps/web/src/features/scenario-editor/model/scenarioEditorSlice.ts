@@ -15,6 +15,7 @@ type ScenarioEditorOperation =
   | 'add_step'
   | 'save'
   | 'publish'
+  | 'unpublish'
   | 'reset'
 
 export type ScenarioEditorWorkflow =
@@ -102,6 +103,18 @@ export const publishScenario = createAsyncThunk<
 >('scenarioEditor/publish', async (scenario, { extra, rejectWithValue }) => {
   try {
     return await extra.scenarioRepository.publishScenario(scenario)
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error))
+  }
+})
+
+export const unpublishScenario = createAsyncThunk<
+  OnboardingScenario,
+  OnboardingScenario,
+  ThunkConfig
+>('scenarioEditor/unpublish', async (scenario, { extra, rejectWithValue }) => {
+  try {
+    return await extra.scenarioRepository.unpublishScenario(scenario)
   } catch (error) {
     return rejectWithValue(getErrorMessage(error))
   }
@@ -239,6 +252,17 @@ const scenarioEditorSlice = createSlice({
       .addCase(publishScenario.rejected, (state, action) => {
         setError(state, 'publish', action.payload)
       })
+      .addCase(unpublishScenario.pending, (state) => {
+        state.workflow = { status: 'loading', operation: 'unpublish' }
+      })
+      .addCase(unpublishScenario.fulfilled, (state, action) => {
+        removeArchivedScenarioCopies(state, action.payload)
+        replaceScenario(state, action.payload)
+        state.workflow = { status: 'ready' }
+      })
+      .addCase(unpublishScenario.rejected, (state, action) => {
+        setError(state, 'unpublish', action.payload)
+      })
       .addCase(resetScenarios.pending, (state) => {
         state.workflow = { status: 'loading', operation: 'reset' }
       })
@@ -308,6 +332,18 @@ function removeSupersededPublishedScenario(
     (item) =>
       item.id === scenario.id ||
       item.status !== 'published' ||
+      item.projectId !== scenario.projectId ||
+      item.url !== scenario.url,
+  )
+}
+
+function removeArchivedScenarioCopies(
+  state: ScenarioEditorState,
+  scenario: OnboardingScenario,
+) {
+  state.scenarios = state.scenarios.filter(
+    (item) =>
+      item.id === scenario.id ||
       item.projectId !== scenario.projectId ||
       item.url !== scenario.url,
   )

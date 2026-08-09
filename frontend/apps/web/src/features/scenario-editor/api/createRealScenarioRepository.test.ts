@@ -109,6 +109,37 @@ describe('real scenario repository', () => {
       expect.objectContaining({ id: 'published-1', status: 'published' }),
     )
   })
+
+  it('unpublishes and reloads the editable scenario from the API', async () => {
+    const published = {
+      ...createDraft(),
+      id: 'published-1',
+      status: 'published' as const,
+    }
+    const fetchClient = createMethodRouter({
+      'POST /api/v1/admin/scenarios/published-1/unpublish': undefined,
+      'GET /api/v1/admin/scenarios/published-1': {
+        ...toAdminScenario(published),
+        status: 'draft',
+      },
+    })
+    const repository = createRealScenarioRepository({
+      apiBaseUrl: '/api/v1',
+      projectId: 'project-1',
+      projectKey: 'interactive-onboarding',
+      fetchClient,
+    })
+
+    const unpublished = await repository.unpublishScenario(published)
+
+    expect(unpublished).toEqual(
+      expect.objectContaining({ id: 'published-1', status: 'draft' }),
+    )
+    expect(fetchClient).toHaveBeenCalledWith(
+      '/api/v1/admin/scenarios/published-1/unpublish',
+      { method: 'POST' },
+    )
+  })
 })
 
 function createRouter(responses: Record<string, unknown>) {

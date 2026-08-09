@@ -123,6 +123,11 @@ export function createRealScenarioRepository({
       return getScenario(published.id)
     },
 
+    async unpublishScenario(scenario) {
+      await apiClient.unpublishScenario(scenario.id)
+      return getScenario(scenario.id)
+    },
+
     async resetScenarios() {
       return listScenarios()
     },
