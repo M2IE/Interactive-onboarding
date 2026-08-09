@@ -6,6 +6,10 @@ module.exports = {
       '<rootDir>/packages/shared/src/index.ts',
     '^@interactive-onboarding/shared/(.*)$':
       '<rootDir>/packages/shared/src/$1',
+    '^@interactive-onboarding/api-client$':
+      '<rootDir>/packages/api-client/src/index.ts',
+    '^@interactive-onboarding/api-client/(.*)$':
+      '<rootDir>/packages/api-client/src/$1',
     '^@interactive-onboarding/ui$': '<rootDir>/packages/ui/src/index.tsx',
     '^@interactive-onboarding/ui/(.*)$': '<rootDir>/packages/ui/src/$1',
     '^@interactive-onboarding/onboarding-sdk$':

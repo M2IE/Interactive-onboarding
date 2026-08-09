@@ -118,6 +118,9 @@ type Step struct {
 	// Id Идентификатор шага.
 	Id openapi_types.UUID `json:"id"`
 
+	// NextUrl URL для перехода после завершения шага (опционально)
+	NextUrl *string `json:"nextUrl,omitempty"`
+
 	// OrderNum Порядковый номер шага в сценарии.
 	OrderNum int `json:"orderNum"`
 

@@ -1,2 +1,6 @@
 export { useScenarioAnalytics } from './hooks/useScenarioAnalytics'
 export { ScenarioAnalytics } from './ui/ScenarioAnalytics'
+export { createMockAnalyticsRepository } from './api/createMockAnalyticsRepository'
+export { createRealAnalyticsRepository } from './api/createRealAnalyticsRepository'
+export { scenarioAnalyticsReducer } from './model/scenarioAnalyticsSlice'
+export type { AnalyticsRepository } from './model/types'

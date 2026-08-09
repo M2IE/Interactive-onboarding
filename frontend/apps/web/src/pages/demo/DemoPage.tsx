@@ -1,10 +1,18 @@
 import { OnboardingProvider } from "@interactive-onboarding/onboarding-sdk/react";
+import type { OnboardingApiClient } from '@interactive-onboarding/shared'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { ClassifiedShell } from "@/widgets/classified-shell/ClassifiedShell";
-import { mockOnboardingClient } from "@/shared/api/mockOnboardingApi";
 import { appRoutes } from '@/shared/config/routes'
 
-export function DemoPage() {
+type DemoPageProps = {
+  onboardingClient: OnboardingApiClient
+  projectKey: string
+}
+
+export function DemoPage({
+  onboardingClient,
+  projectKey,
+}: DemoPageProps) {
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -24,11 +32,10 @@ export function DemoPage() {
       </ClassifiedShell>
 
       <OnboardingProvider
-        apiClient={mockOnboardingClient}
+        apiClient={onboardingClient}
         navigate={navigate}
         pageUrl={location.pathname}
-        projectKey="avito-demo"
-        userId="demo-user-1"
+        projectKey={projectKey}
       />
     </>
   );

@@ -1,19 +1,29 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import {
+  createAsyncThunk,
+  createSlice,
+  type PayloadAction,
+} from '@reduxjs/toolkit'
 import type {
   OnboardingScenario,
   OnboardingStep,
 } from '@interactive-onboarding/shared'
-import {
-  defaultScenario,
-  defaultScenarios,
-} from '@/entities/scenario/defaultScenario'
-import { readScenarios } from '@/shared/api/mockOnboardingApi'
+import type { ScenarioRepositoryServices } from '../api/types'
+
+type ScenarioEditorOperation =
+  | 'load'
+  | 'create'
+  | 'add_step'
+  | 'save'
+  | 'publish'
+  | 'unpublish'
+  | 'reset'
 
 export type ScenarioEditorWorkflow =
+  | { status: 'idle' }
+  | { status: 'loading'; operation: ScenarioEditorOperation }
   | { status: 'ready' }
-  | { status: 'publishing'; scenarioId: string }
-  | { status: 'published'; scenarioId: string; versionId: string }
-  | { status: 'error'; message: string }
+  | { status: 'published'; scenarioId: string }
+  | { status: 'error'; operation: ScenarioEditorOperation; message: string }
 
 export type ScenarioEditorState = {
   scenarios: OnboardingScenario[]
@@ -33,19 +43,97 @@ type UpdateStepPayload = {
   patch: Partial<OnboardingStep>
 }
 
-type AddStepPayload = {
-  scenarioId: string
-  stepId: string
-  createdAt: string
+type ThunkConfig = {
+  extra: ScenarioRepositoryServices
+  rejectValue: string
 }
 
-type PublishScenarioPayload = {
-  scenarioId: string
-  publishedAt: string
-}
+export const loadScenarios = createAsyncThunk<
+  OnboardingScenario[],
+  void,
+  ThunkConfig
+>('scenarioEditor/load', async (_, { extra, rejectWithValue }) => {
+  try {
+    return await extra.scenarioRepository.listScenarios()
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error))
+  }
+})
+
+export const createScenario = createAsyncThunk<
+  OnboardingScenario,
+  void,
+  ThunkConfig
+>('scenarioEditor/create', async (_, { extra, rejectWithValue }) => {
+  try {
+    return await extra.scenarioRepository.createScenario()
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error))
+  }
+})
+
+export const addScenarioStep = createAsyncThunk<
+  OnboardingScenario,
+  OnboardingScenario,
+  ThunkConfig
+>('scenarioEditor/addStep', async (scenario, { extra, rejectWithValue }) => {
+  try {
+    return await extra.scenarioRepository.addStep(scenario)
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error))
+  }
+})
+
+export const saveScenario = createAsyncThunk<
+  OnboardingScenario,
+  OnboardingScenario,
+  ThunkConfig
+>('scenarioEditor/save', async (scenario, { extra, rejectWithValue }) => {
+  try {
+    return await extra.scenarioRepository.saveScenario(scenario)
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error))
+  }
+})
+
+export const publishScenario = createAsyncThunk<
+  OnboardingScenario,
+  OnboardingScenario,
+  ThunkConfig
+>('scenarioEditor/publish', async (scenario, { extra, rejectWithValue }) => {
+  try {
+    return await extra.scenarioRepository.publishScenario(scenario)
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error))
+  }
+})
+
+export const unpublishScenario = createAsyncThunk<
+  OnboardingScenario,
+  OnboardingScenario,
+  ThunkConfig
+>('scenarioEditor/unpublish', async (scenario, { extra, rejectWithValue }) => {
+  try {
+    return await extra.scenarioRepository.unpublishScenario(scenario)
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error))
+  }
+})
+
+export const resetScenarios = createAsyncThunk<
+  OnboardingScenario[],
+  void,
+  ThunkConfig
+>('scenarioEditor/reset', async (_, { extra, rejectWithValue }) => {
+  try {
+    return await extra.scenarioRepository.resetScenarios()
+  } catch (error) {
+    return rejectWithValue(getErrorMessage(error))
+  }
+})
 
 export function buildInitialScenarioEditorState(
-  scenarios = readScenarios(),
+  scenarios: OnboardingScenario[] = [],
 ): ScenarioEditorState {
   const firstScenario = scenarios[0]
 
@@ -53,7 +141,7 @@ export function buildInitialScenarioEditorState(
     scenarios,
     selectedScenarioId: firstScenario?.id,
     selectedStepId: firstScenario?.steps[0]?.id,
-    workflow: { status: 'ready' },
+    workflow: scenarios.length > 0 ? { status: 'ready' } : { status: 'idle' },
   }
 }
 
@@ -65,7 +153,11 @@ const scenarioEditorSlice = createSlice({
       const scenario = state.scenarios.find((item) => item.id === action.payload)
 
       if (!scenario) {
-        state.workflow = { status: 'error', message: 'Сценарий не найден' }
+        state.workflow = {
+          status: 'error',
+          operation: 'load',
+          message: 'Сценарий не найден',
+        }
         return
       }
 
@@ -76,23 +168,6 @@ const scenarioEditorSlice = createSlice({
     selectStep(state, action: PayloadAction<string>) {
       state.selectedStepId = action.payload
     },
-    createDraft: {
-      reducer(state, action: PayloadAction<OnboardingScenario>) {
-        state.scenarios.unshift(action.payload)
-        state.selectedScenarioId = action.payload.id
-        state.selectedStepId = action.payload.steps[0]?.id
-        state.workflow = { status: 'ready' }
-      },
-      prepare() {
-        return { payload: createScenarioDraft(new Date()) }
-      },
-    },
-    restoreDemoScenario(state) {
-      state.scenarios = defaultScenarios
-      state.selectedScenarioId = defaultScenario.id
-      state.selectedStepId = defaultScenario.steps[0]?.id
-      state.workflow = { status: 'ready' }
-    },
     updateScenarioMeta(
       state,
       action: PayloadAction<UpdateScenarioMetaPayload>,
@@ -101,103 +176,102 @@ const scenarioEditorSlice = createSlice({
         (item) => item.id === action.payload.scenarioId,
       )
 
-      if (!scenario) {
-        return
+      if (scenario) {
+        applyScenarioPatch(scenario, action.payload.patch)
       }
-
-      applyScenarioPatch(scenario, action.payload.patch)
     },
     updateStep(state, action: PayloadAction<UpdateStepPayload>) {
       const scenario = state.scenarios.find(
         (item) => item.id === action.payload.scenarioId,
       )
-
-      if (!scenario) {
-        return
-      }
-
-      const step = scenario.steps.find(
+      const step = scenario?.steps.find(
         (item) => item.id === action.payload.stepId,
       )
 
-      if (!step) {
-        return
-      }
-
-      applyStepPatch(step, action.payload.patch)
-      markScenarioDraft(scenario)
-    },
-    addStep: {
-      reducer(state, action: PayloadAction<AddStepPayload>) {
-        const scenario = state.scenarios.find(
-          (item) => item.id === action.payload.scenarioId,
-        )
-
-        if (!scenario) {
-          return
-        }
-
-        const step = createStep(scenario, action.payload)
-        scenario.steps.push(step)
-        state.selectedStepId = step.id
+      if (scenario && step) {
+        Object.assign(step, action.payload.patch)
         markScenarioDraft(scenario)
-      },
-      prepare(scenarioId: string) {
-        return {
-          payload: {
-            scenarioId,
-            stepId: `step-${Date.now()}`,
-            createdAt: new Date().toISOString(),
-          },
-        }
-      },
+      }
     },
-    publishScenario: {
-      reducer(state, action: PayloadAction<PublishScenarioPayload>) {
-        const scenario = state.scenarios.find(
-          (item) => item.id === action.payload.scenarioId,
-        )
-
-        if (!scenario) {
-          state.workflow = { status: 'error', message: 'Сценарий не найден' }
-          return
-        }
-
-        state.workflow = {
-          status: 'publishing',
-          scenarioId: action.payload.scenarioId,
-        }
-
-        const nextVersion = scenario.version + 1
-        const versionId = `${scenario.id}-v${nextVersion}`
-
-        scenario.status = 'published'
-        scenario.version = nextVersion
-        scenario.versionId = versionId
-        scenario.publishedAt = action.payload.publishedAt
-        scenario.updatedAt = action.payload.publishedAt
-        scenario.steps.forEach((step) => {
-          step.versionId = versionId
-        })
-
+  },
+  extraReducers(builder) {
+    builder
+      .addCase(loadScenarios.pending, (state) => {
+        state.workflow = { status: 'loading', operation: 'load' }
+      })
+      .addCase(loadScenarios.fulfilled, (state, action) => {
+        replaceWorkspace(state, action.payload)
+      })
+      .addCase(loadScenarios.rejected, (state, action) => {
+        setError(state, 'load', action.payload)
+      })
+      .addCase(createScenario.pending, (state) => {
+        state.workflow = { status: 'loading', operation: 'create' }
+      })
+      .addCase(createScenario.fulfilled, (state, action) => {
+        state.scenarios.unshift(action.payload)
+        state.selectedScenarioId = action.payload.id
+        state.selectedStepId = action.payload.steps[0]?.id
+        state.workflow = { status: 'ready' }
+      })
+      .addCase(createScenario.rejected, (state, action) => {
+        setError(state, 'create', action.payload)
+      })
+      .addCase(addScenarioStep.pending, (state) => {
+        state.workflow = { status: 'loading', operation: 'add_step' }
+      })
+      .addCase(addScenarioStep.fulfilled, (state, action) => {
+        replaceScenario(state, action.payload)
+        state.selectedStepId = action.payload.steps.at(-1)?.id
+        state.workflow = { status: 'ready' }
+      })
+      .addCase(addScenarioStep.rejected, (state, action) => {
+        setError(state, 'add_step', action.payload)
+      })
+      .addCase(saveScenario.pending, (state) => {
+        state.workflow = { status: 'loading', operation: 'save' }
+      })
+      .addCase(saveScenario.fulfilled, (state, action) => {
+        replaceScenario(state, action.payload)
+        state.workflow = { status: 'ready' }
+      })
+      .addCase(saveScenario.rejected, (state, action) => {
+        setError(state, 'save', action.payload)
+      })
+      .addCase(publishScenario.pending, (state) => {
+        state.workflow = { status: 'loading', operation: 'publish' }
+      })
+      .addCase(publishScenario.fulfilled, (state, action) => {
+        removeSupersededPublishedScenario(state, action.payload)
+        replaceScenario(state, action.payload)
         state.workflow = {
           status: 'published',
-          scenarioId: scenario.id,
-          versionId,
+          scenarioId: action.payload.id,
         }
-      },
-      prepare(scenarioId: string) {
-        return {
-          payload: {
-            scenarioId,
-            publishedAt: new Date().toISOString(),
-          },
-        }
-      },
-    },
-    resetWorkflow(state) {
-      state.workflow = { status: 'ready' }
-    },
+      })
+      .addCase(publishScenario.rejected, (state, action) => {
+        setError(state, 'publish', action.payload)
+      })
+      .addCase(unpublishScenario.pending, (state) => {
+        state.workflow = { status: 'loading', operation: 'unpublish' }
+      })
+      .addCase(unpublishScenario.fulfilled, (state, action) => {
+        removeArchivedScenarioCopies(state, action.payload)
+        replaceScenario(state, action.payload)
+        state.workflow = { status: 'ready' }
+      })
+      .addCase(unpublishScenario.rejected, (state, action) => {
+        setError(state, 'unpublish', action.payload)
+      })
+      .addCase(resetScenarios.pending, (state) => {
+        state.workflow = { status: 'loading', operation: 'reset' }
+      })
+      .addCase(resetScenarios.fulfilled, (state, action) => {
+        replaceWorkspace(state, action.payload)
+      })
+      .addCase(resetScenarios.rejected, (state, action) => {
+        setError(state, 'reset', action.payload)
+      })
   },
 })
 
@@ -205,26 +279,8 @@ function applyScenarioPatch(
   scenario: OnboardingScenario,
   patch: UpdateScenarioMetaPayload['patch'],
 ) {
-  if (patch.name !== undefined) {
-    scenario.name = patch.name
-  }
-
-  if (patch.description !== undefined) {
-    scenario.description = patch.description
-  }
-
-  if (patch.url !== undefined) {
-    scenario.url = patch.url
-  }
-
+  Object.assign(scenario, patch)
   markScenarioDraft(scenario)
-}
-
-function applyStepPatch(
-  step: OnboardingStep,
-  patch: Partial<OnboardingStep>,
-) {
-  Object.assign(step, patch)
 }
 
 function markScenarioDraft(scenario: OnboardingScenario) {
@@ -235,72 +291,81 @@ function markScenarioDraft(scenario: OnboardingScenario) {
   scenario.updatedAt = new Date().toISOString()
 }
 
-function createScenarioDraft(now: Date): OnboardingScenario {
-  const timestamp = now.getTime()
-  const isoDate = now.toISOString()
-  const versionId = `scenario-draft-${timestamp}-v1`
+function replaceWorkspace(
+  state: ScenarioEditorState,
+  scenarios: OnboardingScenario[],
+) {
+  const selected = scenarios.find(
+    (scenario) => scenario.id === state.selectedScenarioId,
+  )
+  const nextSelected = selected ?? scenarios[0]
 
-  return {
-    id: `scenario-${timestamp}`,
-    projectId: defaultScenario.projectId,
-    projectKey: defaultScenario.projectKey,
-    flowKey: `custom-flow-${timestamp}`,
-    flowOrder: 1,
-    name: 'Новый сценарий онбординга',
-    description: 'Черновик сценария для новой точки входа',
-    url: `/demo/custom-${timestamp}`,
-    status: 'draft',
-    version: 1,
-    versionId,
-    createdAt: isoDate,
-    updatedAt: isoDate,
-    publishedAt: undefined,
-    steps: [
-      {
-        id: `draft-step-${timestamp}`,
-        versionId,
-        order: 1,
-        selector: '[data-onboarding-id="target"]',
-        title: 'Новый шаг',
-        body: 'Опишите, какую проблему пользователя решает эта подсказка.',
-        placement: 'right',
-        completion: 'next_button',
-      },
-    ],
-  }
+  state.scenarios = scenarios
+  state.selectedScenarioId = nextSelected?.id
+  state.selectedStepId = nextSelected?.steps[0]?.id
+  state.workflow = { status: 'ready' }
 }
 
-function createStep(
+function replaceScenario(
+  state: ScenarioEditorState,
   scenario: OnboardingScenario,
-  payload: AddStepPayload,
-): OnboardingStep {
-  const nextOrder =
-    scenario.steps.length === 0
-      ? 1
-      : Math.max(...scenario.steps.map((item) => item.order)) + 1
+) {
+  const index = state.scenarios.findIndex((item) => item.id === scenario.id)
 
-  return {
-    id: payload.stepId,
-    versionId: scenario.versionId,
-    order: nextOrder,
-    selector: '[data-onboarding-id="profile-create-button"]',
-    title: 'Новый шаг',
-    body: 'Опишите, какую проблему пользователя решает эта подсказка.',
-    placement: 'right',
-    completion: 'next_button',
+  if (index === -1) {
+    state.scenarios.unshift(scenario)
+  } else {
+    state.scenarios[index] = scenario
+  }
+
+  state.selectedScenarioId = scenario.id
+  if (!scenario.steps.some((step) => step.id === state.selectedStepId)) {
+    state.selectedStepId = scenario.steps[0]?.id
   }
 }
 
-export const {
-  addStep,
-  createDraft,
-  publishScenario,
-  resetWorkflow,
-  restoreDemoScenario,
-  selectScenario,
-  selectStep,
-  updateScenarioMeta,
-  updateStep,
-} = scenarioEditorSlice.actions
+function removeSupersededPublishedScenario(
+  state: ScenarioEditorState,
+  scenario: OnboardingScenario,
+) {
+  state.scenarios = state.scenarios.filter(
+    (item) =>
+      item.id === scenario.id ||
+      item.status !== 'published' ||
+      item.projectId !== scenario.projectId ||
+      item.url !== scenario.url,
+  )
+}
+
+function removeArchivedScenarioCopies(
+  state: ScenarioEditorState,
+  scenario: OnboardingScenario,
+) {
+  state.scenarios = state.scenarios.filter(
+    (item) =>
+      item.id === scenario.id ||
+      item.projectId !== scenario.projectId ||
+      item.url !== scenario.url,
+  )
+}
+
+function setError(
+  state: ScenarioEditorState,
+  operation: ScenarioEditorOperation,
+  message?: string,
+) {
+  state.workflow = {
+    status: 'error',
+    operation,
+    message: message ?? 'Не удалось выполнить запрос',
+  }
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Неизвестная ошибка API'
+}
+
+export const { selectScenario, selectStep, updateScenarioMeta, updateStep } =
+  scenarioEditorSlice.actions
 
 export const scenarioEditorReducer = scenarioEditorSlice.reducer

@@ -846,94 +846,6 @@ textarea:focus {
   padding: 28px 20px;
 }
 
-.onboarding-sdk {
-  position: relative;
-  z-index: 2147483000;
-}
-
-.onboarding-sdk__spotlight {
-  border: 2px solid #47c2ff;
-  border-radius: var(--radius-md);
-  box-shadow:
-    0 0 0 9999px rgba(0, 0, 0, 0.62),
-    0 0 28px rgba(71, 194, 255, 0.72);
-  pointer-events: none;
-  position: fixed;
-  transition:
-    top 180ms ease,
-    left 180ms ease,
-    width 180ms ease,
-    height 180ms ease;
-  z-index: 2147483001;
-}
-
-.onboarding-sdk__tooltip {
-  background: white;
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-overlay);
-  color: #111111;
-  padding: 22px;
-  position: fixed;
-  width: min(348px, calc(100vw - 36px));
-  z-index: 2147483002;
-}
-
-.onboarding-sdk__meta {
-  align-items: center;
-  color: #1ca164;
-  display: flex;
-  font-size: 13px;
-  font-weight: 800;
-  gap: 9px;
-  margin-bottom: 14px;
-}
-
-.onboarding-sdk__pin {
-  align-items: center;
-  border: 2px solid #47c2ff;
-  border-radius: 999px;
-  color: #0a84ff;
-  display: flex;
-  font-weight: 900;
-  height: 28px;
-  justify-content: center;
-  width: 28px;
-}
-
-.onboarding-sdk__tooltip h2 {
-  font-size: 20px;
-  line-height: 1.2;
-  margin-bottom: 12px;
-}
-
-.onboarding-sdk__tooltip p {
-  color: #34373b;
-  font-size: 15px;
-}
-
-.onboarding-sdk__actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  margin-top: 20px;
-}
-
-.onboarding-sdk__actions button {
-  background: #f1f2f3;
-  border: none;
-  border-radius: var(--radius-sm);
-  color: #111111;
-  font-size: 14px;
-  font-weight: 800;
-  min-height: 38px;
-  padding: 0 14px;
-}
-
-.onboarding-sdk__actions button.is-primary {
-  background: var(--color-blue);
-  color: white;
-}
-
 @media (max-width: 920px) {
   .home-shell__hero,
   .admin-shell,
@@ -984,8 +896,7 @@ textarea:focus {
 
 @media (max-width: 620px) {
   .home-shell__actions,
-  .publish-actions,
-  .onboarding-sdk__actions {
+  .publish-actions {
     flex-direction: column;
   }
 

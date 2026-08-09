@@ -4,8 +4,7 @@ services:
     container_name: report_storage
     restart: unless-stopped
     ports:
-      - "9000:9000" # delete in prod
-      - "9001:9001" # delete in prod
+      - "9001:9001" # UI
     environment:
       RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY}
       RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY}

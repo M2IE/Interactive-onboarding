@@ -14,7 +14,6 @@ describe('ScenarioEditor', () => {
       activeScenario,
       activeStep,
       scenarios: defaultScenarios,
-      workflow: { status: 'ready' },
       onAddStep: jest.fn(),
       onOpenDemo: jest.fn(),
       onSelectScenario: jest.fn(),
@@ -55,5 +54,54 @@ describe('ScenarioEditor', () => {
     expect(onUpdateScenarioMeta).toHaveBeenCalledWith({
       url: '/demo/new/electronics',
     })
+  })
+
+  it('shows archived scenarios through the registry filter', () => {
+    const archivedScenario = {
+      ...activeScenario,
+      id: 'scenario-archived',
+      name: 'Архивная версия профиля',
+      status: 'archived' as const,
+    }
+
+    renderEditor({
+      scenarios: [activeScenario, archivedScenario],
+    })
+
+    expect(
+      screen.queryByRole('button', { name: /Архивная версия профиля/ }),
+    ).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Архив' }))
+
+    expect(
+      screen.getByRole('button', { name: /Архивная версия профиля/ }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Первое объявление: профиль/ }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps an archived scenario read-only', () => {
+    const archivedScenario = {
+      ...activeScenario,
+      id: 'scenario-archived',
+      status: 'archived' as const,
+    }
+
+    renderEditor({
+      activeScenario: archivedScenario,
+      activeStep: archivedScenario.steps[0],
+      scenarios: [archivedScenario],
+      readOnly: true,
+    })
+
+    expect(
+      screen.getByRole('textbox', { name: 'Название сценария' }),
+    ).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: 'Открыть демо' }),
+    ).toBeDisabled()
+    expect(screen.getAllByText('Архивный')).not.toHaveLength(0)
   })
 })

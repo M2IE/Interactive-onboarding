@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@interactive-onboarding/api-client": "*",
     "@interactive-onboarding/onboarding-sdk": "*",
     "@interactive-onboarding/shared": "*",
     "@interactive-onboarding/ui": "*",

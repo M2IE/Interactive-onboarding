@@ -91,3 +91,33 @@ jobs:
           version: v2.12
           working-directory: services/${{ matrix.service }}
           args: --config=${{ github.workspace }}/.golangci.yaml
+
+  integration-test:
+    name: Integration Tests (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        service: [admin, widget]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: services/${{ matrix.service }}/go.mod
+          cache: true
+          cache-dependency-path: services/${{ matrix.service }}/go.sum
+
+      - name: Build
+        working-directory: services/${{ matrix.service }}
+        run: go build -tags=integration ./...
+
+      - name: Vet
+        working-directory: services/${{ matrix.service }}
+        run: go vet -tags=integration ./...
+
+      - name: Test
+        working-directory: services/${{ matrix.service }}
+        run: go test -tags=integration -count=1 -timeout 10m ./internal/infrastructure/...

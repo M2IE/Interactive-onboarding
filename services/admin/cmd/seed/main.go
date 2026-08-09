@@ -17,6 +17,7 @@ type stepDef struct {
 	selector string
 	title    string
 	body     string
+	nextURL  string
 }
 
 type scenarioDef struct {
@@ -51,41 +52,32 @@ func main() {
 	scenarios := []scenarioDef{
 		{
 			url:  "/demo/profile",
-			name: "Profile Setup Demo",
+			name: "Первое объявление: профиль",
 			steps: []stepDef{
-				{1, "#profile-info", "Your Profile", "Set up your profile by filling in your personal details, contact information, and preferences."},
-				{2, "#profile-avatar", "Upload Photo", "Upload a profile picture to personalize your account and help others recognize you."},
-				{3, "#profile-save", "Save Changes", "Click save to apply all your changes and make your profile visible to others."},
+				{1, `[data-onboarding-id="profile-create-button"]`, "Начните с первого объявления", "После регистрации профиль пустой. Самый короткий путь к продаже начинается с кнопки размещения.", "/demo/new"},
 			},
 		},
 		{
 			url:  "/demo/new",
-			name: "New Item Demo",
+			name: "Первое объявление: категория",
 			steps: []stepDef{
-				{1, "#new-title", "Create New", "Start by giving your item a descriptive name that helps others understand its purpose."},
-				{2, "#new-category", "Choose Category", "Select the most appropriate category so your item appears in relevant searches."},
-				{3, "#new-description", "Add Description", "Provide detailed information about your item including features, condition, and any special notes."},
-				{4, "#new-submit", "Submit", "Review your information and submit to make your item available."},
+				{1, `[data-onboarding-id="category-transport"]`, "Выберите транспорт", "В транспорте важны дополнительные данные: тип, состояние, фото, VIN и пробег. Поэтому путь здесь подробнее.", "/demo/new/transport"},
 			},
 		},
 		{
 			url:  "/demo/new/transport",
-			name: "Transport Selection Demo",
+			name: "Первое объявление: тип транспорта",
 			steps: []stepDef{
-				{1, "#transport-type", "Тип транспорта", "Choose the type of transport: car, motorcycle, bicycle, or public transit."},
-				{2, "#transport-details", "Vehicle Details", "Enter the make, model, year, and any specific features of your vehicle."},
-				{3, "#transport-confirm", "Confirm", "Verify your transport selection and submit to continue."},
+				{1, `[data-onboarding-id="transport-used-car"]`, "Уточните тип объявления", "Для автомобиля с пробегом откроется форма с данными, которые помогают покупателю быстрее принять решение.", "/demo/new/auto"},
 			},
 		},
 		{
 			url:  "/demo/new/auto",
-			name: "Auto Details Demo",
+			name: "Первое объявление: автомобиль",
 			steps: []stepDef{
-				{1, "#auto-brand", "Brand", "Select your car brand from the available manufacturers."},
-				{2, "#auto-model", "Model", "Choose the specific model that matches your vehicle."},
-				{3, "#auto-year", "Year", "Select the manufacturing year of your vehicle."},
-				{4, "#auto-engine", "Engine Specs", "Enter engine details including fuel type, power, and transmission."},
-				{5, "#auto-price", "Price", "Set your asking price and any additional notes for buyers."},
+				{1, `[data-onboarding-id="auto-photos"]`, "Добавьте фото автомобиля", "Первые фото снаружи и внутри помогают покупателю оценить состояние до переписки и осмотра.", ""},
+				{2, `[data-onboarding-id="auto-details"]`, "Заполните данные для доверия", "VIN, пробег и технические параметры снижают сомнения покупателя и уменьшают лишние вопросы.", ""},
+				{3, `[data-onboarding-id="auto-publish"]`, "Проверьте цену и опубликуйте", "Цена, контакты и способ связи завершают объявление. После проверки его можно размещать.", ""},
 			},
 		},
 	}
@@ -104,7 +96,9 @@ func main() {
 func ensureProject(ctx context.Context, db database.Database) (uuid.UUID, error) {
 	var id uuid.UUID
 	err := db.QueryRowContext(ctx,
-		`INSERT INTO project (name, project_key) VALUES ($1, $2) RETURNING id`,
+		`INSERT INTO project (name, project_key) VALUES ($1, $2)
+		 ON CONFLICT (project_key) DO UPDATE SET name = EXCLUDED.name
+		 RETURNING id`,
 		"Interactive Onboarding", "interactive-onboarding",
 	).Scan(&id)
 	if err != nil {
@@ -114,6 +108,13 @@ func ensureProject(ctx context.Context, db database.Database) (uuid.UUID, error)
 }
 
 func ensureScenarioPair(ctx context.Context, db database.Database, projectID uuid.UUID, def scenarioDef) error {
+	if _, err := db.ExecContext(ctx,
+		`DELETE FROM scenario WHERE project_id = $1 AND url = $2`,
+		projectID, def.url,
+	); err != nil {
+		return fmt.Errorf("delete previous seed: %w", err)
+	}
+
 	_, _, err := createScenario(ctx, db, projectID, def.name, def.url, "draft", def.steps)
 	if err != nil {
 		return fmt.Errorf("create draft: %w", err)
@@ -149,8 +150,9 @@ func createScenario(ctx context.Context, db database.Database, projectID uuid.UU
 	for _, s := range stepDefs {
 		var stepID uuid.UUID
 		err := db.QueryRowContext(ctx,
-			`INSERT INTO step (scenario_id, order_num, selector, title, body) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-			scenarioID, s.orderNum, s.selector, s.title, s.body,
+			`INSERT INTO step (scenario_id, order_num, selector, title, body, next_url)
+			 VALUES ($1, $2, $3, $4, $5, NULLIF($6, '')) RETURNING id`,
+			scenarioID, s.orderNum, s.selector, s.title, s.body, s.nextURL,
 		).Scan(&stepID)
 		if err != nil {
 			return uuid.Nil, nil, err

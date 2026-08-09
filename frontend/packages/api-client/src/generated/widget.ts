@@ -62,6 +62,8 @@ export interface components {
             title: string;
             /** @description Текст подсказки. */
             body: string;
+            /** @description URL для перехода после завершения шага (опционально) */
+            nextUrl?: string;
         };
         Scenario: {
             /**
