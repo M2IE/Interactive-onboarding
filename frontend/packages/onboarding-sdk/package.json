@@ -20,6 +20,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@interactive-onboarding/api-client": "*",
     "@interactive-onboarding/shared": "*"
   },
   "peerDependencies": {

@@ -22,7 +22,8 @@ export function initOnboarding(options: OnboardingInitOptions): OnboardingInstan
   const apiClient =
     options.apiClient ??
     createHttpOnboardingClient({
-      apiBaseUrl: options.apiBaseUrl ?? window.location.origin,
+      apiBaseUrl:
+        options.apiBaseUrl ?? new URL('/api/v1', window.location.origin).href,
     })
 
   const container = document.createElement('div')

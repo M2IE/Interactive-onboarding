@@ -6,6 +6,7 @@
   },
   "include": [
     "src",
+    "../../packages/api-client/src",
     "../../packages/shared/src",
     "../../packages/ui/src",
     "../../packages/onboarding-sdk/src"
@@ -17,6 +18,7 @@
     "../../packages/**/src/**/*.test.tsx"
   ],
   "references": [
+    { "path": "../../packages/api-client" },
     { "path": "../../packages/shared" },
     { "path": "../../packages/ui" },
     { "path": "../../packages/onboarding-sdk" }

@@ -38,7 +38,7 @@ func toGenCreateStepParams(step *domain.Step) gen.CreateStepParams {
 		Selector:   step.Selector,
 		Title:      step.Title,
 		Body:       step.Body,
-		NextUrl:    sql.NullString{String: *step.NextURL, Valid: step.NextURL != nil},
+		NextUrl:    toNullString(step.NextURL),
 	}
 }
 
@@ -49,6 +49,14 @@ func toGenUpdateStepParams(step *domain.Step) gen.UpdateStepParams {
 		Selector: step.Selector,
 		Title:    step.Title,
 		Body:     step.Body,
-		NextUrl:  sql.NullString{String: *step.NextURL, Valid: step.NextURL != nil},
+		NextUrl:  toNullString(step.NextURL),
 	}
+}
+
+func toNullString(value *string) sql.NullString {
+	if value == nil {
+		return sql.NullString{}
+	}
+
+	return sql.NullString{String: *value, Valid: true}
 }

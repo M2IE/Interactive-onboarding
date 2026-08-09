@@ -18,6 +18,10 @@ export default defineConfig({
         replacement: resolveFromRoot('packages/onboarding-sdk/src/index.tsx'),
       },
       {
+        find: '@interactive-onboarding/api-client',
+        replacement: resolveFromRoot('packages/api-client/src/index.ts'),
+      },
+      {
         find: '@interactive-onboarding/shared',
         replacement: resolveFromRoot('packages/shared/src/index.ts'),
       },
@@ -34,6 +38,12 @@ export default defineConfig({
   server: {
     host: '127.0.0.1',
     port: 5173,
+    proxy: {
+      '/api/v1': {
+        target: 'http://127.0.0.1',
+        changeOrigin: true,
+      },
+    },
   },
   preview: {
     host: '127.0.0.1',

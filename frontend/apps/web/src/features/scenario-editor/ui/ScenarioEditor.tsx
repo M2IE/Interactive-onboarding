@@ -51,6 +51,8 @@ type ScenarioEditorProps = {
   activeScenario?: OnboardingScenario
   activeStep?: OnboardingStep
   workflow: ScenarioEditorWorkflow
+  readOnly?: boolean
+  showExtendedFields?: boolean
   onAddStep: () => void
   onOpenDemo: () => void
   onSelectScenario: (scenarioId: string) => void
@@ -68,6 +70,8 @@ export function ScenarioEditor({
   activeScenario,
   activeStep,
   workflow,
+  readOnly = false,
+  showExtendedFields = true,
   onAddStep,
   onOpenDemo,
   onSelectScenario,
@@ -75,8 +79,20 @@ export function ScenarioEditor({
   onUpdateScenarioMeta,
   onUpdateStep,
 }: ScenarioEditorProps) {
-  if (!activeScenario || !activeStep) {
+  if (!activeScenario) {
     return null
+  }
+
+  if (!activeStep) {
+    return (
+      <section className="editor-state">
+        <h2>В сценарии пока нет шагов</h2>
+        <p>Добавьте первую подсказку и укажите элемент страницы.</p>
+        <Button disabled={readOnly} onClick={onAddStep}>
+          Добавить шаг
+        </Button>
+      </section>
+    )
   }
 
   return (
@@ -116,16 +132,24 @@ export function ScenarioEditor({
         >
           <ScenarioMetaForm
             scenario={activeScenario}
+            readOnly={readOnly}
+            showExtendedFields={showExtendedFields}
             onUpdateScenarioMeta={onUpdateScenarioMeta}
           />
           <div className="scenario-editor-body">
             <StepTimeline
               activeScenario={activeScenario}
               activeStep={activeStep}
+              readOnly={readOnly}
               onAddStep={onAddStep}
               onSelectStep={onSelectStep}
             />
-            <StepForm activeStep={activeStep} onUpdateStep={onUpdateStep} />
+            <StepForm
+              activeStep={activeStep}
+              readOnly={readOnly}
+              showExtendedFields={showExtendedFields}
+              onUpdateStep={onUpdateStep}
+            />
           </div>
         </TabsContent>
 
@@ -226,6 +250,8 @@ function ScenarioRegistry({
 
 type ScenarioMetaFormProps = {
   scenario: OnboardingScenario
+  readOnly: boolean
+  showExtendedFields: boolean
   onUpdateScenarioMeta: (patch: {
     name?: string
     description?: string
@@ -235,6 +261,8 @@ type ScenarioMetaFormProps = {
 
 function ScenarioMetaForm({
   scenario,
+  readOnly,
+  showExtendedFields,
   onUpdateScenarioMeta,
 }: ScenarioMetaFormProps) {
   return (
@@ -253,6 +281,7 @@ function ScenarioMetaForm({
         <label>
           <span>Название сценария</span>
           <input
+            disabled={readOnly}
             value={scenario.name}
             onChange={(event) =>
               onUpdateScenarioMeta({ name: event.target.value })
@@ -262,6 +291,7 @@ function ScenarioMetaForm({
         <label>
           <span>Путь страницы</span>
           <input
+            disabled={readOnly}
             placeholder="/demo/new/auto"
             value={scenario.url}
             onChange={(event) =>
@@ -269,15 +299,18 @@ function ScenarioMetaForm({
             }
           />
         </label>
-        <label className="scenario-meta__description">
-          <span>Описание</span>
-          <textarea
-            value={scenario.description}
-            onChange={(event) =>
-              onUpdateScenarioMeta({ description: event.target.value })
-            }
-          />
-        </label>
+        {showExtendedFields && (
+          <label className="scenario-meta__description">
+            <span>Описание</span>
+            <textarea
+              disabled={readOnly}
+              value={scenario.description}
+              onChange={(event) =>
+                onUpdateScenarioMeta({ description: event.target.value })
+              }
+            />
+          </label>
+        )}
       </div>
     </section>
   )
@@ -286,6 +319,7 @@ function ScenarioMetaForm({
 type StepTimelineProps = {
   activeScenario: OnboardingScenario
   activeStep: OnboardingStep
+  readOnly: boolean
   onAddStep: () => void
   onSelectStep: (stepId: string) => void
 }
@@ -293,6 +327,7 @@ type StepTimelineProps = {
 function StepTimeline({
   activeScenario,
   activeStep,
+  readOnly,
   onAddStep,
   onSelectStep,
 }: StepTimelineProps) {
@@ -310,6 +345,7 @@ function StepTimeline({
         <IconButton
           icon={<Plus aria-hidden="true" size={18} />}
           label="Добавить шаг"
+          disabled={readOnly}
           onClick={onAddStep}
           variant="secondary"
         />
@@ -339,10 +375,17 @@ function StepTimeline({
 
 type StepFormProps = {
   activeStep: OnboardingStep
+  readOnly: boolean
+  showExtendedFields: boolean
   onUpdateStep: (patch: Partial<OnboardingStep>) => void
 }
 
-function StepForm({ activeStep, onUpdateStep }: StepFormProps) {
+function StepForm({
+  activeStep,
+  readOnly,
+  showExtendedFields,
+  onUpdateStep,
+}: StepFormProps) {
   return (
     <section className="step-inspector">
       <div className="workspace-section-header workspace-section-header--compact">
@@ -356,6 +399,7 @@ function StepForm({ activeStep, onUpdateStep }: StepFormProps) {
         <label>
           <span>Заголовок подсказки</span>
           <input
+            disabled={readOnly}
             value={activeStep.title}
             onChange={(event) => onUpdateStep({ title: event.target.value })}
           />
@@ -363,6 +407,7 @@ function StepForm({ activeStep, onUpdateStep }: StepFormProps) {
         <label>
           <span>Текст подсказки</span>
           <textarea
+            disabled={readOnly}
             value={activeStep.body}
             onChange={(event) => onUpdateStep({ body: event.target.value })}
           />
@@ -370,27 +415,31 @@ function StepForm({ activeStep, onUpdateStep }: StepFormProps) {
         <label>
           <span>Селектор элемента</span>
           <input
+            disabled={readOnly}
             value={activeStep.selector}
             onChange={(event) => onUpdateStep({ selector: event.target.value })}
           />
         </label>
-        <div className="form-grid">
-          <SelectField
-            label="Позиция подсказки"
-            options={placementOptions}
-            value={activeStep.placement}
-            onValueChange={(placement) => onUpdateStep({ placement })}
-          />
-          <SelectField
-            label="Завершение шага"
-            options={completionOptions}
-            value={activeStep.completion}
-            onValueChange={(completion) => onUpdateStep({ completion })}
-          />
-        </div>
+        {showExtendedFields && (
+          <div className="form-grid">
+            <SelectField
+              label="Позиция подсказки"
+              options={placementOptions}
+              value={activeStep.placement}
+              onValueChange={(placement) => onUpdateStep({ placement })}
+            />
+            <SelectField
+              label="Завершение шага"
+              options={completionOptions}
+              value={activeStep.completion}
+              onValueChange={(completion) => onUpdateStep({ completion })}
+            />
+          </div>
+        )}
         <label>
           <span>URL перехода</span>
           <input
+            disabled={readOnly}
             placeholder="Опционально"
             value={activeStep.nextUrl ?? ''}
             onChange={(event) =>
@@ -398,16 +447,21 @@ function StepForm({ activeStep, onUpdateStep }: StepFormProps) {
             }
           />
         </label>
-        <label>
-          <span>Условие показа</span>
-          <input
-            placeholder="Например: firstListing=true"
-            value={activeStep.condition ?? ''}
-            onChange={(event) =>
-              onUpdateStep({ condition: event.target.value || undefined })
-            }
-          />
-        </label>
+        {showExtendedFields && (
+          <>
+            <label>
+              <span>Условие показа</span>
+              <input
+                disabled={readOnly}
+                placeholder="Например: firstListing=true"
+                value={activeStep.condition ?? ''}
+                onChange={(event) =>
+                  onUpdateStep({ condition: event.target.value || undefined })
+                }
+              />
+            </label>
+          </>
+        )}
       </div>
     </section>
   )
