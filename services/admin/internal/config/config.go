@@ -10,6 +10,7 @@ type Config struct {
 	S3Bucket    string `env:"S3_REPORT_BUCKET" envDefault:"reports"`
 	pkgconfig.PostgresConfig
 	pkgconfig.ConfigRustFS
+	pkgconfig.ClickHouseConfig
 }
 
 func Load() (Config, error) {

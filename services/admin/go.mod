@@ -4,6 +4,7 @@ go 1.26.5
 
 replace (
 	github.com/M2IE/Interactive-onboarding/gen/rest/v1/go => ../../gen/rest/v1/go
+	github.com/M2IE/Interactive-onboarding/pkg/clickhouse => ../../pkg/clickhouse
 	github.com/M2IE/Interactive-onboarding/pkg/configs => ../../pkg/configs
 	github.com/M2IE/Interactive-onboarding/pkg/database => ../../pkg/database
 	github.com/M2IE/Interactive-onboarding/pkg/pdfengine => ../../pkg/pdfengine
@@ -12,7 +13,9 @@ replace (
 )
 
 require (
+	github.com/ClickHouse/clickhouse-go/v2 v2.48.0
 	github.com/M2IE/Interactive-onboarding/gen/rest/v1/go v0.0.0-00010101000000-000000000000
+	github.com/M2IE/Interactive-onboarding/pkg/clickhouse v0.0.0-00010101000000-000000000000
 	github.com/M2IE/Interactive-onboarding/pkg/configs v0.0.0-00010101000000-000000000000
 	github.com/M2IE/Interactive-onboarding/pkg/database v0.0.0-00010101000000-000000000000
 	github.com/M2IE/Interactive-onboarding/pkg/pdfengine v0.0.0-00010101000000-000000000000
@@ -30,7 +33,9 @@ require (
 require (
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
+	github.com/ClickHouse/ch-go v0.74.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/andybalholm/brotli v1.2.2 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.16 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.34 // indirect
@@ -55,6 +60,8 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.10.1 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
+	github.com/go-faster/city v1.0.1 // indirect
+	github.com/go-faster/errors v0.7.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
@@ -79,11 +86,15 @@ require (
 	github.com/oapi-codegen/runtime v1.6.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
+	github.com/paulmach/orb v0.13.0 // indirect
 	github.com/phpdave11/gofpdi v1.0.14-0.20211212211723-1f10f9844311 // indirect
+	github.com/pierrec/lz4/v4 v4.1.27 // indirect
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
+	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/shirou/gopsutil/v4 v4.26.6 // indirect
+	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/signintech/gopdf v0.38.0 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
