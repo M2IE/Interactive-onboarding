@@ -1,9 +1,9 @@
 import type {
-  AnalyticsSummary,
   OnboardingEventPayload,
   OnboardingEventType,
   OnboardingScenario,
-} from '@interactive-onboarding/shared'
+} from '@m2ie/onboarding-sdk'
+import type { AnalyticsSummary } from '@interactive-onboarding/shared'
 
 export type StepFunnelRow = {
   step: OnboardingScenario['steps'][number]

@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import type { ThunkDispatch, UnknownAction } from '@reduxjs/toolkit'
-import type { OnboardingStep } from '@interactive-onboarding/shared'
+import type { OnboardingStep } from '@m2ie/onboarding-sdk'
 import { useDispatch, useSelector } from 'react-redux'
 import type { ScenarioRepositoryServices } from '../api/types'
 import {

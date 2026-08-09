@@ -1,7 +1,7 @@
 import type {
   OnboardingScenario,
   OnboardingStep,
-} from '@interactive-onboarding/shared'
+} from '@m2ie/onboarding-sdk'
 import { defaultScenario } from '@/entities/scenario/defaultScenario'
 
 export function createScenarioDraft(now = new Date()): OnboardingScenario {

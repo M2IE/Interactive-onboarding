@@ -1,6 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals'
-import type { OnboardingEventPayload } from '@interactive-onboarding/shared'
-import { createHttpOnboardingClient } from './httpClient'
+import type { OnboardingEventPayload } from '../types/contracts'
+import {
+  createHttpOnboardingClient,
+  OnboardingApiError,
+} from './httpClient'
 
 describe('HTTP onboarding client adapter', () => {
   it('maps the MVP response to a page-local widget config', async () => {
@@ -77,6 +80,46 @@ describe('HTTP onboarding client adapter', () => {
     await client.trackEvent(createEvent(type))
 
     expect(fetchClient).not.toHaveBeenCalled()
+  })
+
+  it.each([204, 404])('maps a %s response to an empty config', async (status) => {
+    const client = createHttpOnboardingClient({
+      apiBaseUrl: '/api/v1/',
+      fetchClient: createFetch(undefined, status),
+    })
+
+    await expect(
+      client.getConfig({
+        projectKey: 'avito-demo',
+        pageUrl: '/demo/profile',
+        sessionId: 'session-1',
+      }),
+    ).resolves.toBeNull()
+  })
+
+  it('exposes a typed API error without falling back to mock data', async () => {
+    const client = createHttpOnboardingClient({
+      apiBaseUrl: '/api/v1',
+      fetchClient: createFetch(
+        { error: { code: 'INTERNAL_ERROR', message: 'Backend unavailable' } },
+        500,
+      ),
+    })
+
+    const request = client.getConfig({
+      projectKey: 'avito-demo',
+      pageUrl: '/demo/profile',
+      sessionId: 'session-1',
+    })
+
+    await expect(request).rejects.toEqual(
+      expect.objectContaining<Partial<OnboardingApiError>>({
+        name: 'OnboardingApiError',
+        status: 500,
+        code: 'INTERNAL_ERROR',
+        message: 'Backend unavailable',
+      }),
+    )
   })
 
   it('maps a dismiss event to the backend contract', async () => {

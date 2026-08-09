@@ -12,9 +12,9 @@ module.exports = {
       '<rootDir>/packages/api-client/src/$1',
     '^@interactive-onboarding/ui$': '<rootDir>/packages/ui/src/index.tsx',
     '^@interactive-onboarding/ui/(.*)$': '<rootDir>/packages/ui/src/$1',
-    '^@interactive-onboarding/onboarding-sdk$':
-      '<rootDir>/packages/onboarding-sdk/src/index.tsx',
-    '^@interactive-onboarding/onboarding-sdk/(.*)$':
+    '^@m2ie/onboarding-sdk$':
+      '<rootDir>/packages/onboarding-sdk/src/index.ts',
+    '^@m2ie/onboarding-sdk/(.*)$':
       '<rootDir>/packages/onboarding-sdk/src/$1',
   },
   roots: ['<rootDir>/apps', '<rootDir>/packages'],

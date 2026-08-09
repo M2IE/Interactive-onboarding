@@ -1,4 +1,4 @@
-import type { OnboardingScenario } from '@interactive-onboarding/shared'
+import type { OnboardingScenario } from '@m2ie/onboarding-sdk'
 import {
   clearEvents,
   readEvents,

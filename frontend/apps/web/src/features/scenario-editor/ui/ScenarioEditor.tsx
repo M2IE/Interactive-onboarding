@@ -3,7 +3,7 @@ import type {
   OnboardingScenario,
   OnboardingStep,
   ScenarioStatus,
-} from '@interactive-onboarding/shared'
+} from '@m2ie/onboarding-sdk'
 import {
   Badge,
   Button,

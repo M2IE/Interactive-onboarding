@@ -6,7 +6,7 @@ import {
 import type {
   OnboardingScenario,
   OnboardingStep,
-} from '@interactive-onboarding/shared'
+} from '@m2ie/onboarding-sdk'
 import type { ScenarioRepositoryServices } from '../api/types'
 
 type ScenarioEditorOperation =
