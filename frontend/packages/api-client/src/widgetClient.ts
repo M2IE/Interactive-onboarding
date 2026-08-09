@@ -51,6 +51,7 @@ export function createWidgetApiClient({
     async postEvent(event) {
       await requestVoid(fetchClient, `${baseUrl}/widget/event`, {
         method: 'POST',
+        keepalive: true,
         headers: {
           'Content-Type': 'application/json',
         },

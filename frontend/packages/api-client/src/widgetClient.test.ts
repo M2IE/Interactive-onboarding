@@ -77,6 +77,7 @@ describe('Widget API client', () => {
 
     expect(fetchClient).toHaveBeenCalledWith('/api/v1/widget/event', {
       method: 'POST',
+      keepalive: true,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         session_id: 'session-1',
