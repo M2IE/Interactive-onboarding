@@ -440,6 +440,36 @@
   padding: 0 10px;
 }
 
+.scenario-status-filter {
+  background: var(--admin-control);
+  border-radius: var(--radius-sm);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 14px 8px;
+  padding: 3px;
+}
+
+.scenario-status-filter button {
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 700;
+  min-height: 32px;
+  padding: 0 5px;
+}
+
+.scenario-status-filter button:hover {
+  color: var(--color-text);
+}
+
+.scenario-status-filter button[aria-pressed='true'] {
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  color: var(--color-text);
+}
+
 .scenario-search:focus-within {
   border-color: var(--color-blue);
   outline: 3px solid var(--color-blue-soft);

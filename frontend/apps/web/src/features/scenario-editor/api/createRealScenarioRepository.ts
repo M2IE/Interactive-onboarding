@@ -66,12 +66,9 @@ export function createRealScenarioRepository({
   async function listScenarios() {
     const project = await getProject()
     const scenarios = await apiClient.listScenarios(project.id)
-    const visibleScenarios = scenarios.filter(
-      (scenario) => scenario.status !== 'archived',
-    )
 
     return Promise.all(
-      visibleScenarios.map(async (scenario) =>
+      scenarios.map(async (scenario) =>
         mapScenario(project, await apiClient.getScenario(scenario.id)),
       ),
     )
@@ -121,6 +118,11 @@ export function createRealScenarioRepository({
       await saveScenario(scenario)
       const published = await apiClient.publishScenario(scenario.id)
       return getScenario(published.id)
+    },
+
+    async unpublishScenario(scenario) {
+      await apiClient.unpublishScenario(scenario.id)
+      return getScenario(scenario.id)
     },
 
     async resetScenarios() {

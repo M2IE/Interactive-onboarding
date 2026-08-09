@@ -39,6 +39,10 @@ type ConfigState =
   | { status: "empty"; pageUrl: string }
   | { status: "error"; pageUrl: string; error: Error };
 
+type StepActionState =
+  | { status: "idle" }
+  | { status: "completing"; stepId: string };
+
 export function OnboardingWidget({
   projectKey,
   apiClient,
@@ -54,6 +58,9 @@ export function OnboardingWidget({
     pageUrl: resolvedPageUrl,
   });
   const [activeIndex, setActiveIndex] = useState(0);
+  const [stepActionState, setStepActionState] = useState<StepActionState>({
+    status: "idle",
+  });
   const [target, setTarget] = useState<TargetSnapshot | null>(null);
   const [tooltipHeight, setTooltipHeight] = useState(0);
   const tooltipRef = useRef<HTMLElement | null>(null);
@@ -78,13 +85,13 @@ export function OnboardingWidget({
   }, [activeStep, target, tooltipHeight]);
 
   const track = useCallback(
-    (type: OnboardingEventType, step?: OnboardingStep) => {
+    async (type: OnboardingEventType, step?: OnboardingStep) => {
       if (!config) {
         return;
       }
 
-      void apiClient
-        .trackEvent({
+      try {
+        await apiClient.trackEvent({
           projectKey,
           scenarioId: config.scenarioId,
           versionId: config.versionId,
@@ -98,8 +105,10 @@ export function OnboardingWidget({
               : `${sessionId}:${config.versionId}:${step?.id ?? "scenario"}:${type}`,
           pageUrl: resolvedPageUrl,
           createdAt: new Date().toISOString(),
-        })
-        .catch(() => undefined);
+        });
+      } catch {
+        // Analytics must not prevent the user from continuing the host flow.
+      }
     },
     [apiClient, config, projectKey, resolvedPageUrl, sessionId, userId],
   );
@@ -125,6 +134,7 @@ export function OnboardingWidget({
 
         setTarget(null);
         setActiveIndex(0);
+        setStepActionState({ status: "idle" });
 
         if (!nextConfig || hasScenarioOutcome(nextConfig.scenarioId)) {
           setConfigState({ status: "empty", pageUrl: resolvedPageUrl });
@@ -171,7 +181,7 @@ export function OnboardingWidget({
     const initialTarget = document.querySelector(activeStep.selector);
 
     if (!initialTarget) {
-      track("target_not_found", activeStep);
+      void track("target_not_found", activeStep);
       return;
     }
 
@@ -192,7 +202,7 @@ export function OnboardingWidget({
       setTarget(nextTarget);
 
       if (!nextTarget) {
-        track("target_not_found", activeStep);
+        void track("target_not_found", activeStep);
       }
     };
 
@@ -216,14 +226,14 @@ export function OnboardingWidget({
 
     if (!viewedEvents.current.has(startEventKey)) {
       viewedEvents.current.add(startEventKey);
-      track("scenario_started");
+      void track("scenario_started");
     }
 
     const viewedEventKey = `${sessionId}:${config.versionId}:${activeStep.id}:step_viewed`;
 
     if (!viewedEvents.current.has(viewedEventKey)) {
       viewedEvents.current.add(viewedEventKey);
-      track("step_viewed", activeStep);
+      void track("step_viewed", activeStep);
     }
   }, [activeStep, config, sessionId, track]);
 
@@ -234,6 +244,7 @@ export function OnboardingWidget({
   const renderedConfig = config;
   const renderedStep = activeStep;
   const isLastPageStep = activeIndex === config.steps.length - 1;
+  const isCompleting = stepActionState.status === "completing";
   const highlightStyle = getHighlightStyle(target.rect);
   const tooltipStyle = getTooltipStyle(
     renderedStep,
@@ -241,10 +252,24 @@ export function OnboardingWidget({
     tooltipHeight,
   );
 
-  function completeCurrentStep() {
-    track("step_completed", renderedStep);
+  async function completeCurrentStep() {
+    if (isCompleting) {
+      return;
+    }
+
+    const completionEvent = track("step_completed", renderedStep);
 
     if (renderedStep.nextUrl) {
+      setStepActionState({ status: "completing", stepId: renderedStep.id });
+      await completionEvent;
+
+      if (isLastPageStep) {
+        await track("scenario_completed");
+        rememberScenarioOutcome(renderedConfig.scenarioId, "completed");
+      }
+
+      setStepActionState({ status: "idle" });
+
       if (navigate) {
         navigate(renderedStep.nextUrl);
       } else {
@@ -253,18 +278,23 @@ export function OnboardingWidget({
       return;
     }
 
+    void completionEvent;
+
+    if (isLastPageStep) {
+      void track("scenario_completed");
+      rememberScenarioOutcome(renderedConfig.scenarioId, "completed");
+    }
+
     if (!isLastPageStep) {
       setActiveIndex((index) => index + 1);
       return;
     }
 
-    track("scenario_completed");
-    rememberScenarioOutcome(renderedConfig.scenarioId, "completed");
     setConfigState({ status: "empty", pageUrl: resolvedPageUrl });
   }
 
   function skipScenario() {
-    track("scenario_dismissed", renderedStep);
+    void track("scenario_dismissed", renderedStep);
     rememberScenarioOutcome(renderedConfig.scenarioId, "dismissed");
     setConfigState({ status: "empty", pageUrl: resolvedPageUrl });
   }
@@ -288,20 +318,21 @@ export function OnboardingWidget({
         <h2>{renderedStep.title}</h2>
         <p>{renderedStep.body}</p>
         <div className="onboarding-sdk__actions">
-          <button type="button" onClick={skipScenario}>
+          <button type="button" onClick={skipScenario} disabled={isCompleting}>
             Пропустить
           </button>
           <button
             type="button"
             onClick={() => setActiveIndex((index) => Math.max(index - 1, 0))}
-            disabled={activeIndex === 0}
+            disabled={activeIndex === 0 || isCompleting}
           >
             Назад
           </button>
           <button
             type="button"
             className="is-primary"
-            onClick={completeCurrentStep}
+            onClick={() => void completeCurrentStep()}
+            disabled={isCompleting}
           >
             Далее
           </button>

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type {
   OnboardingScenario,
   OnboardingStep,
+  ScenarioStatus,
 } from '@interactive-onboarding/shared'
 import {
   Badge,
@@ -25,7 +26,6 @@ import {
   Sparkles,
   Workflow,
 } from 'lucide-react'
-import type { ScenarioEditorWorkflow } from '../model/scenarioEditorSlice'
 
 const placementOptions: Array<{
   label: string
@@ -46,11 +46,21 @@ const completionOptions: Array<{
   { label: 'Переход', value: 'navigate' },
 ]
 
+type ScenarioStatusFilter = 'active' | 'archived' | 'all'
+
+const scenarioStatusPresentation: Record<
+  ScenarioStatus,
+  { label: string; tone: 'blue' | 'green' | 'gray' }
+> = {
+  draft: { label: 'Черновик', tone: 'blue' },
+  published: { label: 'Опубликован', tone: 'green' },
+  archived: { label: 'Архивный', tone: 'gray' },
+}
+
 type ScenarioEditorProps = {
   scenarios: OnboardingScenario[]
   activeScenario?: OnboardingScenario
   activeStep?: OnboardingStep
-  workflow: ScenarioEditorWorkflow
   readOnly?: boolean
   showExtendedFields?: boolean
   onAddStep: () => void
@@ -69,7 +79,6 @@ export function ScenarioEditor({
   scenarios,
   activeScenario,
   activeStep,
-  workflow,
   readOnly = false,
   showExtendedFields = true,
   onAddStep,
@@ -160,10 +169,7 @@ export function ScenarioEditor({
         >
           <ScenarioPreview
             activeStep={activeStep}
-            published={
-              activeScenario.status === 'published' ||
-              workflow.status === 'published'
-            }
+            status={activeScenario.status}
             onOpenDemo={onOpenDemo}
           />
         </TabsContent>
@@ -184,15 +190,24 @@ function ScenarioRegistry({
   onSelectScenario,
 }: ScenarioRegistryProps) {
   const [query, setQuery] = useState('')
+  const [statusFilter, setStatusFilter] =
+    useState<ScenarioStatusFilter>('active')
   const normalizedQuery = query.trim().toLocaleLowerCase('ru')
   const filteredScenarios = useMemo(
     () =>
-      scenarios.filter((scenario) =>
-        `${scenario.name} ${scenario.url}`
+      scenarios.filter((scenario) => {
+        const matchesStatus =
+          statusFilter === 'all' ||
+          (statusFilter === 'archived'
+            ? scenario.status === 'archived'
+            : scenario.status !== 'archived')
+        const matchesQuery = `${scenario.name} ${scenario.url}`
           .toLocaleLowerCase('ru')
-          .includes(normalizedQuery),
-      ),
-    [normalizedQuery, scenarios],
+          .includes(normalizedQuery)
+
+        return matchesStatus && matchesQuery
+      }),
+    [normalizedQuery, scenarios, statusFilter],
   )
 
   return (
@@ -200,8 +215,36 @@ function ScenarioRegistry({
       <div className="workspace-section-header">
         <div>
           <h2>Сценарии</h2>
-          <span>{scenarios.length} точки входа</span>
+          <span>{filteredScenarios.length} сценариев</span>
         </div>
+      </div>
+
+      <div
+        aria-label="Фильтр сценариев"
+        className="scenario-status-filter"
+        role="group"
+      >
+        <button
+          aria-pressed={statusFilter === 'active'}
+          onClick={() => setStatusFilter('active')}
+          type="button"
+        >
+          Активные
+        </button>
+        <button
+          aria-pressed={statusFilter === 'archived'}
+          onClick={() => setStatusFilter('archived')}
+          type="button"
+        >
+          Архив
+        </button>
+        <button
+          aria-pressed={statusFilter === 'all'}
+          onClick={() => setStatusFilter('all')}
+          type="button"
+        >
+          Все
+        </button>
       </div>
 
       <label className="scenario-search">
@@ -229,13 +272,10 @@ function ScenarioRegistry({
             <span className="scenario-list__content">
               <strong>{scenario.name}</strong>
               <small>{scenario.url}</small>
-              <Badge
+              <ScenarioStatusBadge
                 className="scenario-status"
-                dot
-                tone={scenario.status === 'published' ? 'green' : 'gray'}
-              >
-                {scenario.status === 'published' ? 'Опубликован' : 'Черновик'}
-              </Badge>
+                status={scenario.status}
+              />
             </span>
           </button>
         ))}
@@ -272,9 +312,7 @@ function ScenarioMetaForm({
           <h2>Настройки сценария</h2>
           <span>Основные данные точки входа</span>
         </div>
-        <Badge dot tone={scenario.status === 'published' ? 'green' : 'gray'}>
-          {scenario.status === 'published' ? 'Опубликован' : 'Черновик'}
-        </Badge>
+        <ScenarioStatusBadge status={scenario.status} />
       </div>
 
       <div className="scenario-meta">
@@ -469,13 +507,13 @@ function StepForm({
 
 type ScenarioPreviewProps = {
   activeStep: OnboardingStep
-  published: boolean
+  status: ScenarioStatus
   onOpenDemo: () => void
 }
 
 function ScenarioPreview({
   activeStep,
-  published,
+  status,
   onOpenDemo,
 }: ScenarioPreviewProps) {
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>(
@@ -538,12 +576,15 @@ function ScenarioPreview({
       </div>
 
       <div className="preview-footer">
-        <Badge tone={published ? 'green' : 'blue'} dot>
-          {published
+        <Badge tone={scenarioStatusPresentation[status].tone} dot>
+          {status === 'published'
             ? 'Конфигурация опубликована'
-            : 'Предпросмотр черновика'}
+            : status === 'archived'
+              ? 'Архивная версия'
+              : 'Предпросмотр черновика'}
         </Badge>
         <Button
+          disabled={status === 'archived'}
           icon={<ExternalLink aria-hidden="true" size={17} />}
           onClick={onOpenDemo}
           variant="primary"
@@ -552,5 +593,21 @@ function ScenarioPreview({
         </Button>
       </div>
     </section>
+  )
+}
+
+function ScenarioStatusBadge({
+  status,
+  className,
+}: {
+  status: ScenarioStatus
+  className?: string
+}) {
+  const presentation = scenarioStatusPresentation[status]
+
+  return (
+    <Badge className={className} dot tone={presentation.tone}>
+      {presentation.label}
+    </Badge>
   )
 }

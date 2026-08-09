@@ -2,6 +2,7 @@ import { Button } from '@interactive-onboarding/ui'
 import {
   BarChart3,
   BookOpenCheck,
+  EyeOff,
   MonitorPlay,
   Plus,
   RefreshCw,
@@ -109,7 +110,7 @@ export function AdminPage({ apiMode }: AdminPageProps) {
             )}
             {!isAnalytics && (
               <Button
-                disabled={editor.isBusy || editor.isPublished}
+                disabled={editor.isBusy || editor.isReadOnly}
                 icon={<Save aria-hidden="true" size={17} />}
                 onClick={editor.saveActiveScenario}
                 variant="secondary"
@@ -117,16 +118,26 @@ export function AdminPage({ apiMode }: AdminPageProps) {
                 Сохранить
               </Button>
             )}
-            {!isAnalytics && (
-              <Button
-                disabled={editor.isBusy || editor.isPublished}
-                icon={<Send aria-hidden="true" size={17} />}
-                onClick={editor.publishActiveScenario}
-                variant="primary"
-              >
-                Опубликовать
-              </Button>
-            )}
+            {!isAnalytics &&
+              (editor.isPublished ? (
+                <Button
+                  disabled={editor.isBusy}
+                  icon={<EyeOff aria-hidden="true" size={17} />}
+                  onClick={editor.unpublishActiveScenario}
+                  variant="danger"
+                >
+                  Снять с публикации
+                </Button>
+              ) : !editor.isArchived ? (
+                <Button
+                  disabled={editor.isBusy}
+                  icon={<Send aria-hidden="true" size={17} />}
+                  onClick={editor.publishActiveScenario}
+                  variant="primary"
+                >
+                  Опубликовать
+                </Button>
+              ) : null)}
           </div>
         </header>
 
@@ -161,8 +172,7 @@ export function AdminPage({ apiMode }: AdminPageProps) {
             activeScenario={editor.activeScenario}
             activeStep={editor.activeStep}
             scenarios={editor.scenarios}
-            workflow={editor.workflow}
-            readOnly={apiMode === 'real' && editor.isPublished}
+            readOnly={editor.isReadOnly}
             showExtendedFields={apiMode === 'mock'}
             onAddStep={editor.addStep}
             onOpenDemo={() =>

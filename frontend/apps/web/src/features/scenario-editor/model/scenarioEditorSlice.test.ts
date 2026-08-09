@@ -6,6 +6,7 @@ import {
   buildInitialScenarioEditorState,
   publishScenario,
   scenarioEditorReducer,
+  unpublishScenario,
   updateScenarioMeta,
   updateStep,
 } from './scenarioEditorSlice'
@@ -84,6 +85,38 @@ describe('scenarioEditorReducer', () => {
       'draft-id',
     ])
     expect(nextState.selectedScenarioId).toBe('published-v2')
+  })
+
+  it('turns the published scenario into the only editable draft after unpublish', () => {
+    const published = {
+      ...cloneScenario(),
+      id: 'published-id',
+      status: 'published' as const,
+    }
+    const staleDraft = {
+      ...cloneScenario(),
+      id: 'stale-draft-id',
+      status: 'draft' as const,
+    }
+    const unpublished = {
+      ...published,
+      status: 'draft' as const,
+      publishedAt: undefined,
+    }
+    const state = buildInitialScenarioEditorState([published, staleDraft])
+
+    const nextState = scenarioEditorReducer(
+      state,
+      unpublishScenario.fulfilled(
+        unpublished,
+        'request-unpublish',
+        published,
+      ),
+    )
+
+    expect(nextState.scenarios).toEqual([unpublished])
+    expect(nextState.selectedScenarioId).toBe('published-id')
+    expect(nextState.workflow).toEqual({ status: 'ready' })
   })
 
   it('adds a step without unsupported custom button labels', () => {

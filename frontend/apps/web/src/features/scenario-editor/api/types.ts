@@ -7,6 +7,7 @@ export type ScenarioRepository = {
   addStep: (scenario: OnboardingScenario) => Promise<OnboardingScenario>
   saveScenario: (scenario: OnboardingScenario) => Promise<OnboardingScenario>
   publishScenario: (scenario: OnboardingScenario) => Promise<OnboardingScenario>
+  unpublishScenario: (scenario: OnboardingScenario) => Promise<OnboardingScenario>
   resetScenarios: () => Promise<OnboardingScenario[]>
 }
 

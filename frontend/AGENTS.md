@@ -307,7 +307,7 @@ Validated on 2026-08-09:
 - `apps/web` follows the intended FSD direction: route pages are thin, scenario
   editing lives in `features/scenario-editor`, analytics lives in
   `features/scenario-analytics`, shared browser/storage helpers live under
-  `shared/hooks` and `shared/lib`.
+  `shared/hooks` and `shared/lib`. The current layer scan has no upward imports.
 - Redux Toolkit is wired in `apps/web/src/app/store`. Scenario editor state,
   selected scenario/step and publish workflow are modeled in a slice.
 - Jest + React Testing Library are wired at the workspace root. Existing tests
@@ -329,11 +329,13 @@ Validated on 2026-08-09:
   by `projectKey + pageUrl`.
 - Demo navigation uses React Router without document reloads. The SDK delegates
   cross-page transitions to the host navigation adapter and keeps a full-page
-  fallback for non-SPA integrations.
+  fallback for non-SPA integrations. Before following a step's `nextUrl`, it
+  awaits `step_completed` and blocks repeated actions during the handoff.
 - Admin scenarios, steps, publication, widget config/events, analytics and PDF
   reports use the generated MVP OpenAPI contracts through `packages/api-client`.
 - The SDK injects isolated `.onboarding-sdk*` styles, has no Radix/UI-package
-  dependency and keeps its mobile tooltip inside the viewport.
+  dependency and keeps its mobile tooltip inside the viewport. Session ids are
+  backend-compatible UUIDs even in insecure LAN HTTP contexts.
 - The production frontend is built by `frontend/Dockerfile`; the root gateway
   serves the SPA and proxies `/api/v1/admin/*` and `/api/v1/widget/*`.
 

@@ -58,7 +58,85 @@ describe('OnboardingWidget', () => {
 
     fireEvent.click(await screen.findByText(/далее/i))
 
-    expect(navigate).toHaveBeenCalledWith('/demo/new')
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/demo/new'))
+  })
+
+  it('waits for step completion before navigating to nextUrl', async () => {
+    createTarget('create-button')
+    const navigate = jest.fn<(url: string) => void>()
+    const step = createStep({
+      completion: 'navigate',
+      nextUrl: '/demo/new',
+    })
+    const apiClient = createApiClient(step)
+    let finishStepCompletion: (() => void) | undefined
+
+    jest.mocked(apiClient.trackEvent).mockImplementation(async (event) => {
+      if (event.type === 'step_completed') {
+        await new Promise<void>((resolve) => {
+          finishStepCompletion = resolve
+        })
+      }
+    })
+
+    render(
+      <OnboardingWidget
+        apiClient={apiClient}
+        navigate={navigate}
+        pageUrl="/demo/profile"
+        projectKey="avito-demo"
+      />,
+    )
+
+    const nextButton = await screen.findByRole('button', { name: /далее/i })
+    fireEvent.click(nextButton)
+
+    expect(nextButton).toBeDisabled()
+    expect(navigate).not.toHaveBeenCalled()
+
+    finishStepCompletion?.()
+
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/demo/new'))
+  })
+
+  it('remembers a completed cross-page scenario before navigation', async () => {
+    createTarget('create-button')
+    const navigate = jest.fn<(url: string) => void>()
+    const apiClient = createApiClient(
+      createStep({
+        completion: 'navigate',
+        nextUrl: '/demo/new',
+      }),
+    )
+    const firstView = render(
+      <OnboardingWidget
+        apiClient={apiClient}
+        navigate={navigate}
+        pageUrl="/demo/profile"
+        projectKey="avito-demo"
+      />,
+    )
+
+    fireEvent.click(await screen.findByText(/далее/i))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/demo/new'))
+    firstView.unmount()
+
+    render(
+      <OnboardingWidget
+        apiClient={apiClient}
+        navigate={navigate}
+        pageUrl="/demo/profile"
+        projectKey="avito-demo"
+      />,
+    )
+
+    await waitFor(() => expect(apiClient.getConfig).toHaveBeenCalledTimes(2))
+    expect(screen.queryByText('Начните сценарий')).toBeNull()
+    expect(
+      jest
+        .mocked(apiClient.trackEvent)
+        .mock.calls.filter(([event]) => event.type === 'step_viewed'),
+    ).toHaveLength(1)
   })
 
   it('requests a fresh scenario when the SPA path changes', async () => {

@@ -46,6 +46,22 @@ describe('real scenario repository', () => {
           },
         ],
       },
+      '/api/v1/admin/scenarios/scenario-archived': {
+        id: 'scenario-archived',
+        projectId: 'project-1',
+        name: 'Old profile version',
+        url: '/demo/profile',
+        status: 'archived',
+        steps: [
+          {
+            id: 'step-archived',
+            orderNum: 1,
+            selector: '[data-onboarding-id="profile-create-button"]',
+            title: 'Archived start',
+            body: 'Historical copy',
+          },
+        ],
+      },
     })
     const repository = createRealScenarioRepository({
       apiBaseUrl: '/api/v1',
@@ -61,6 +77,11 @@ describe('real scenario repository', () => {
         projectKey: 'interactive-onboarding',
         status: 'published',
         steps: [expect.objectContaining({ nextUrl: '/demo/new' })],
+      }),
+      expect.objectContaining({
+        id: 'scenario-archived',
+        status: 'archived',
+        steps: [expect.objectContaining({ id: 'step-archived' })],
       }),
     ])
   })
@@ -107,6 +128,37 @@ describe('real scenario repository', () => {
 
     expect(published).toEqual(
       expect.objectContaining({ id: 'published-1', status: 'published' }),
+    )
+  })
+
+  it('unpublishes and reloads the editable scenario from the API', async () => {
+    const published = {
+      ...createDraft(),
+      id: 'published-1',
+      status: 'published' as const,
+    }
+    const fetchClient = createMethodRouter({
+      'POST /api/v1/admin/scenarios/published-1/unpublish': undefined,
+      'GET /api/v1/admin/scenarios/published-1': {
+        ...toAdminScenario(published),
+        status: 'draft',
+      },
+    })
+    const repository = createRealScenarioRepository({
+      apiBaseUrl: '/api/v1',
+      projectId: 'project-1',
+      projectKey: 'interactive-onboarding',
+      fetchClient,
+    })
+
+    const unpublished = await repository.unpublishScenario(published)
+
+    expect(unpublished).toEqual(
+      expect.objectContaining({ id: 'published-1', status: 'draft' }),
+    )
+    expect(fetchClient).toHaveBeenCalledWith(
+      '/api/v1/admin/scenarios/published-1/unpublish',
+      { method: 'POST' },
     )
   })
 })

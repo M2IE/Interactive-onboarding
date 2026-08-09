@@ -35,7 +35,7 @@ The CI verifies the same `build → vet → test` and `lint` steps for both `adm
 - OpenAPI specs live in `api/openapi/v1/{service}/specs.yaml`
 - `oapi-codegen` configs are in `api/openapi/v1/{service}/*.yaml` (split into `dto.yaml` and `server.yaml`)
 - Generated Go output goes to `gen/rest/v1/go/{service}/`
-- Generated TypeScript types go to `gen/rest/v1/ts/{service}/`
+- Generated TypeScript types go to `frontend/packages/api-client/src/generated/`
 - After editing a spec, run `make rest-gen-admin` to regenerate both Go and TS
 
 ## Architecture
