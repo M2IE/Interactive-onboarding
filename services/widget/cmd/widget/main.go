@@ -6,8 +6,9 @@ import (
 	"os"
 
 	apiv1 "github.com/M2IE/Interactive-onboarding/gen/rest/v1/go/widget"
+	"github.com/M2IE/Interactive-onboarding/pkg/clickhouse"
 	"github.com/M2IE/Interactive-onboarding/pkg/database"
-	config "github.com/M2IE/Interactive-onboarding/services/widget/internal/config"
+	"github.com/M2IE/Interactive-onboarding/services/widget/internal/config"
 	delivery "github.com/M2IE/Interactive-onboarding/services/widget/internal/delivery/http"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/infrastructure"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/service"
@@ -34,8 +35,26 @@ func main() {
 		}
 	}()
 
+	chConn, err := clickhouse.New(context.Background(), clickhouse.Options{
+		Addr:     cfg.ClickHouseConfig.Addr(),
+		Database: cfg.ClickHouseConfig.DBName,
+		Username: cfg.ClickHouseConfig.User,
+		Password: cfg.ClickHouseConfig.Password,
+	})
+
+	if err != nil {
+		slog.Error("ClickHouse connection error", "error", err)
+		return
+	}
+
+	defer func() {
+		if err = chConn.Close(); err != nil {
+			slog.Error("error while closing clickhouse", "error", err)
+		}
+	}()
+
 	q := queries.New()
-	infra := infrastructure.NewWidgetInfrastructure(db, q)
+	infra := infrastructure.NewWidgetInfrastructure(db, q, chConn)
 	svc := service.NewWidgetService(infra, db)
 	handler := delivery.NewWidgetHandler(svc)
 
@@ -45,5 +64,4 @@ func main() {
 	if err := srv.ListenAndServe(); err != nil {
 		slog.Error("server stopped", "error", err)
 	}
-
 }

@@ -36,6 +36,8 @@ services:
     depends_on:
       db_scenarios:
         condition: service_healthy
+      clickhouse:
+        condition: service_healthy
 
   frontend:
     container_name: frontend
