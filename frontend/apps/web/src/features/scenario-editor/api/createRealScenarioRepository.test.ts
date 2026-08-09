@@ -46,6 +46,22 @@ describe('real scenario repository', () => {
           },
         ],
       },
+      '/api/v1/admin/scenarios/scenario-archived': {
+        id: 'scenario-archived',
+        projectId: 'project-1',
+        name: 'Old profile version',
+        url: '/demo/profile',
+        status: 'archived',
+        steps: [
+          {
+            id: 'step-archived',
+            orderNum: 1,
+            selector: '[data-onboarding-id="profile-create-button"]',
+            title: 'Archived start',
+            body: 'Historical copy',
+          },
+        ],
+      },
     })
     const repository = createRealScenarioRepository({
       apiBaseUrl: '/api/v1',
@@ -61,6 +77,11 @@ describe('real scenario repository', () => {
         projectKey: 'interactive-onboarding',
         status: 'published',
         steps: [expect.objectContaining({ nextUrl: '/demo/new' })],
+      }),
+      expect.objectContaining({
+        id: 'scenario-archived',
+        status: 'archived',
+        steps: [expect.objectContaining({ id: 'step-archived' })],
       }),
     ])
   })

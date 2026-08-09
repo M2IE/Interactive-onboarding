@@ -110,7 +110,7 @@ export function AdminPage({ apiMode }: AdminPageProps) {
             )}
             {!isAnalytics && (
               <Button
-                disabled={editor.isBusy || editor.isPublished}
+                disabled={editor.isBusy || editor.isReadOnly}
                 icon={<Save aria-hidden="true" size={17} />}
                 onClick={editor.saveActiveScenario}
                 variant="secondary"
@@ -128,7 +128,7 @@ export function AdminPage({ apiMode }: AdminPageProps) {
                 >
                   Снять с публикации
                 </Button>
-              ) : (
+              ) : !editor.isArchived ? (
                 <Button
                   disabled={editor.isBusy}
                   icon={<Send aria-hidden="true" size={17} />}
@@ -137,7 +137,7 @@ export function AdminPage({ apiMode }: AdminPageProps) {
                 >
                   Опубликовать
                 </Button>
-              ))}
+              ) : null)}
           </div>
         </header>
 
@@ -172,8 +172,7 @@ export function AdminPage({ apiMode }: AdminPageProps) {
             activeScenario={editor.activeScenario}
             activeStep={editor.activeStep}
             scenarios={editor.scenarios}
-            workflow={editor.workflow}
-            readOnly={apiMode === 'real' && editor.isPublished}
+            readOnly={editor.isReadOnly}
             showExtendedFields={apiMode === 'mock'}
             onAddStep={editor.addStep}
             onOpenDemo={() =>

@@ -60,16 +60,20 @@ export function useScenarioEditor() {
   }, [dispatch, workflow.status])
 
   const isPublished = activeScenario?.status === 'published'
+  const isArchived = activeScenario?.status === 'archived'
+  const isReadOnly = isPublished || isArchived
 
   return {
     activeScenario,
     activeStep,
     isBusy: workflow.status === 'loading',
+    isArchived,
     isPublished,
+    isReadOnly,
     scenarios,
     workflow,
     addStep: () => {
-      if (activeScenario && !isPublished) {
+      if (activeScenario && !isReadOnly) {
         void dispatch(addScenarioStep(activeScenario))
       }
     },
@@ -77,7 +81,7 @@ export function useScenarioEditor() {
       void dispatch(createScenario())
     },
     publishActiveScenario: () => {
-      if (activeScenario && !isPublished) {
+      if (activeScenario && !isReadOnly) {
         void dispatch(publishScenario(activeScenario))
       }
     },
@@ -90,7 +94,7 @@ export function useScenarioEditor() {
       void dispatch(resetScenarios())
     },
     saveActiveScenario: () => {
-      if (activeScenario && !isPublished) {
+      if (activeScenario && !isReadOnly) {
         void dispatch(saveScenario(activeScenario))
       }
     },
@@ -101,12 +105,12 @@ export function useScenarioEditor() {
       description?: string
       url?: string
     }) => {
-      if (activeScenario && !isPublished) {
+      if (activeScenario && !isReadOnly) {
         dispatch(updateScenarioMeta({ scenarioId: activeScenario.id, patch }))
       }
     },
     updateStep: (patch: Partial<OnboardingStep>) => {
-      if (activeScenario && activeStep && !isPublished) {
+      if (activeScenario && activeStep && !isReadOnly) {
         dispatch(
           updateStep({
             scenarioId: activeScenario.id,
