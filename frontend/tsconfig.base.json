@@ -28,10 +28,10 @@
       ],
       "@interactive-onboarding/ui": ["packages/ui/src/index.tsx"],
       "@interactive-onboarding/ui/*": ["packages/ui/src/*"],
-      "@interactive-onboarding/onboarding-sdk": [
-        "packages/onboarding-sdk/src/index.tsx"
+      "@m2ie/onboarding-sdk": [
+        "packages/onboarding-sdk/src/index.ts"
       ],
-      "@interactive-onboarding/onboarding-sdk/*": [
+      "@m2ie/onboarding-sdk/*": [
         "packages/onboarding-sdk/src/*"
       ]
     }

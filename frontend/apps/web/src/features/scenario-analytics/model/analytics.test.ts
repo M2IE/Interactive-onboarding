@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals'
 import type {
   OnboardingEventPayload,
   OnboardingScenario,
-} from '@interactive-onboarding/shared'
+} from '@m2ie/onboarding-sdk'
 import { defaultScenario } from '@/entities/scenario/defaultScenario'
 import {
   buildAnalyticsSummaryFromEvents,

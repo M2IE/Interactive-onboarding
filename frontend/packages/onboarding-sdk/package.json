@@ -1,34 +1,69 @@
 {
-  "name": "@interactive-onboarding/onboarding-sdk",
-  "private": true,
+  "name": "@m2ie/onboarding-sdk",
   "version": "0.1.0",
+  "description": "Embeddable onboarding widget and React integration for configurable product tours.",
+  "author": "M2IE",
   "type": "module",
-  "main": "./dist/index.js",
+  "license": "UNLICENSED",
+  "sideEffects": false,
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.cjs",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.cts",
+    "dist/**/*.js.map",
+    "dist/**/*.cjs.map",
+    "README.md"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./react": {
       "types": "./dist/react/index.d.ts",
-      "import": "./dist/react/index.js"
-    }
+      "import": "./dist/react/index.js",
+      "require": "./dist/react/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/M2IE/Interactive-onboarding.git",
+    "directory": "frontend/packages/onboarding-sdk"
+  },
+  "homepage": "https://github.com/M2IE/Interactive-onboarding#readme",
+  "bugs": {
+    "url": "https://github.com/M2IE/Interactive-onboarding/issues"
+  },
+  "keywords": [
+    "onboarding",
+    "product-tour",
+    "react",
+    "widget",
+    "spotlight"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsup",
+    "pack:check": "npm pack --dry-run",
+    "prepack": "npm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit"
-  },
-  "dependencies": {
-    "@interactive-onboarding/api-client": "*",
-    "@interactive-onboarding/shared": "*"
-  },
-  "peerDependencies": {
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "tsup": "^8.5.1"
+  },
+  "peerDependencies": {
+    "react": ">=18.2.0 <20",
+    "react-dom": ">=18.2.0 <20"
   }
 }

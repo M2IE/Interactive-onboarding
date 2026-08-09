@@ -1,5 +1,7 @@
-import { createHttpOnboardingClient } from '@interactive-onboarding/onboarding-sdk'
-import type { OnboardingApiClient } from '@interactive-onboarding/shared'
+import {
+  createHttpOnboardingClient,
+  type OnboardingApiClient,
+} from '@m2ie/onboarding-sdk'
 import {
   createMockAnalyticsRepository,
   createRealAnalyticsRepository,

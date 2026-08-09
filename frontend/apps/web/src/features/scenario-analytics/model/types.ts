@@ -1,7 +1,7 @@
 import type {
   OnboardingEventPayload,
   ScenarioStatus,
-} from '@interactive-onboarding/shared'
+} from '@m2ie/onboarding-sdk'
 
 export type AnalyticsSource = 'real' | 'mock'
 

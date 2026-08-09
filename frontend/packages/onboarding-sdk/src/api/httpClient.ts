@@ -3,30 +3,52 @@ import type {
   OnboardingEventPayload,
   WidgetConfig,
   WidgetConfigRequest,
-} from '@interactive-onboarding/shared'
-import {
-  createWidgetApiClient,
-  type FetchClient,
-  type WidgetScenarioResponse,
-} from '@interactive-onboarding/api-client'
+} from '../types/contracts'
 
-type HttpClientOptions = {
+export type FetchClient = typeof fetch
+
+export type HttpOnboardingClientOptions = {
   apiBaseUrl: string
   fetchClient?: FetchClient
 }
 
+type BackendScenario = {
+  id: string
+  name: string
+  steps: BackendStep[]
+}
+
+type BackendStep = {
+  id: string
+  orderNum: number
+  selector: string
+  title: string
+  body: string
+  nextUrl?: string
+}
+
+type WidgetScenarioResponse = {
+  scenario?: BackendScenario
+}
+
 export function createHttpOnboardingClient({
   apiBaseUrl,
-  fetchClient,
-}: HttpClientOptions): OnboardingApiClient {
-  const widgetApi = createWidgetApiClient({ apiBaseUrl, fetchClient })
+  fetchClient = fetch,
+}: HttpOnboardingClientOptions): OnboardingApiClient {
+  const normalizedBaseUrl = apiBaseUrl.replace(/\/$/, '')
 
   return {
     async getConfig(request: WidgetConfigRequest): Promise<WidgetConfig | null> {
-      const response = await widgetApi.getScenario({
+      const params = new URLSearchParams({
         projectKey: request.projectKey,
         pageUrl: request.pageUrl,
       })
+      const response = await requestJson<WidgetScenarioResponse>(
+        fetchClient,
+        `${normalizedBaseUrl}/widget/scenario?${params}`,
+        undefined,
+        [204, 404],
+      )
       const scenario = response?.scenario
 
       if (!scenario || scenario.steps.length === 0) {
@@ -41,24 +63,29 @@ export function createHttpOnboardingClient({
         return
       }
 
-      await widgetApi.postEvent({
-        session_id: event.sessionId,
-        type: event.type,
-        step_id:
-          event.type === 'step_viewed' || event.type === 'step_completed'
-            ? event.stepId
-            : undefined,
-        scenario_id:
-          event.type === 'scenario_dismissed'
-            ? event.scenarioId
-            : undefined,
-        event_key: event.eventKey,
+      await requestVoid(fetchClient, `${normalizedBaseUrl}/widget/event`, {
+        method: 'POST',
+        keepalive: true,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session_id: event.sessionId,
+          type: event.type,
+          step_id:
+            event.type === 'step_viewed' || event.type === 'step_completed'
+              ? event.stepId
+              : undefined,
+          scenario_id:
+            event.type === 'scenario_dismissed'
+              ? event.scenarioId
+              : undefined,
+          event_key: event.eventKey,
+        }),
       })
     },
   }
 }
-
-type BackendScenario = NonNullable<WidgetScenarioResponse['scenario']>
 
 function mapWidgetConfig(
   request: WidgetConfigRequest,
@@ -100,4 +127,65 @@ function isBackendEvent(
     event.type === 'step_completed' ||
     event.type === 'scenario_dismissed'
   )
+}
+
+async function requestJson<T>(
+  fetchClient: FetchClient,
+  url: string,
+  init?: RequestInit,
+  emptyStatuses: number[] = [],
+): Promise<T | null> {
+  const response = await fetchClient(url, init)
+
+  if (emptyStatuses.includes(response.status)) {
+    return null
+  }
+
+  if (!response.ok) {
+    throw await toApiError(response)
+  }
+
+  return (await response.json()) as T
+}
+
+async function requestVoid(
+  fetchClient: FetchClient,
+  url: string,
+  init?: RequestInit,
+): Promise<void> {
+  const response = await fetchClient(url, init)
+
+  if (!response.ok) {
+    throw await toApiError(response)
+  }
+}
+
+async function toApiError(response: Response) {
+  const fallbackMessage = `API request failed with status ${response.status}`
+
+  try {
+    const payload = (await response.json()) as {
+      error?: { code?: string; message?: string }
+    }
+
+    return new OnboardingApiError(
+      payload.error?.message ?? fallbackMessage,
+      response.status,
+      payload.error?.code,
+    )
+  } catch {
+    return new OnboardingApiError(fallbackMessage, response.status)
+  }
+}
+
+export class OnboardingApiError extends Error {
+  readonly status: number
+  readonly code?: string
+
+  constructor(message: string, status: number, code?: string) {
+    super(message)
+    this.name = 'OnboardingApiError'
+    this.status = status
+    this.code = code
+  }
 }

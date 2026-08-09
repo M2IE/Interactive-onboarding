@@ -1,4 +1,4 @@
-import type { OnboardingScenario } from '@interactive-onboarding/shared'
+import type { OnboardingScenario } from '@m2ie/onboarding-sdk'
 import { appRoutes } from '@/shared/config/routes'
 
 const now = '2026-08-04T10:00:00.000Z'

@@ -1,6 +1,7 @@
+import { createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import type { OnboardingApiClient } from '@interactive-onboarding/shared'
 import { createHttpOnboardingClient } from './api/httpClient'
+import type { OnboardingApiClient } from './types/contracts'
 import { OnboardingWidget } from './ui/OnboardingWidget'
 
 export type OnboardingInitOptions = {
@@ -35,15 +36,15 @@ export function initOnboarding(options: OnboardingInitOptions): OnboardingInstan
 
   const render = () => {
     root.render(
-      <OnboardingWidget
-        apiClient={apiClient}
-        enabled={options.enabled}
-        navigate={options.navigate}
-        pageUrl={options.pageUrl}
-        projectKey={options.projectKey}
-        refreshKey={refreshKey}
-        userId={options.userId}
-      />,
+      createElement(OnboardingWidget, {
+        apiClient,
+        enabled: options.enabled,
+        navigate: options.navigate,
+        pageUrl: options.pageUrl,
+        projectKey: options.projectKey,
+        refreshKey,
+        userId: options.userId,
+      }),
     )
   }
 
@@ -60,14 +61,26 @@ export function initOnboarding(options: OnboardingInitOptions): OnboardingInstan
   }
 }
 
-export { createHttpOnboardingClient } from './api/httpClient'
+export {
+  createHttpOnboardingClient,
+  OnboardingApiError,
+} from './api/httpClient'
+export type {
+  FetchClient,
+  HttpOnboardingClientOptions,
+} from './api/httpClient'
 export type {
   OnboardingApiClient,
   OnboardingEventPayload,
+  OnboardingEventType,
   OnboardingScenario,
   OnboardingStep,
+  ScenarioStatus,
+  StepCompletionMode,
+  StepPlacement,
   WidgetConfig,
-} from '@interactive-onboarding/shared'
+  WidgetConfigRequest,
+} from './types/contracts'
 
 function unmount(root: Root, container: HTMLDivElement) {
   root.unmount()

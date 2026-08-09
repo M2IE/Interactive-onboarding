@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@interactive-onboarding/api-client": "*",
-    "@interactive-onboarding/onboarding-sdk": "*",
+    "@m2ie/onboarding-sdk": "*",
     "@interactive-onboarding/shared": "*",
     "@interactive-onboarding/ui": "*",
     "@reduxjs/toolkit": "^2.12.0",

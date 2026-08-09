@@ -10,7 +10,7 @@ import type {
   OnboardingEventType,
   OnboardingStep,
   WidgetConfig,
-} from "@interactive-onboarding/shared";
+} from "../types/contracts";
 import {
   getOrCreateSessionId,
   hasScenarioOutcome,

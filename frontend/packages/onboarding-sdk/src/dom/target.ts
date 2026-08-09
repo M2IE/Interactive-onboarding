@@ -1,4 +1,4 @@
-import type { StepPlacement } from '@interactive-onboarding/shared'
+import type { StepPlacement } from '../types/contracts'
 
 export type TargetSnapshot = {
   element: Element
