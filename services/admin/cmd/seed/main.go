@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"os"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	clickhouse "github.com/M2IE/Interactive-onboarding/pkg/clickhouse"
 	"github.com/M2IE/Interactive-onboarding/pkg/database"
 	config "github.com/M2IE/Interactive-onboarding/services/admin/internal/config"
 	"github.com/google/uuid"
@@ -41,6 +42,18 @@ func main() {
 	defer func() { _ = db.Close() }()
 
 	ctx := context.Background()
+
+	chConn, err := clickhouse.New(ctx, clickhouse.Options{
+		Addr:     cfg.ClickHouseConfig.Addr(),
+		Database: cfg.ClickHouseConfig.DBName,
+		Username: cfg.ClickHouseConfig.User,
+		Password: cfg.ClickHouseConfig.Password,
+	})
+	if err != nil {
+		slog.Error("failed to connect to clickhouse", "error", err)
+		os.Exit(1)
+	}
+	defer func() { _ = chConn.Close() }()
 
 	projectID, err := ensureProject(ctx, db)
 	if err != nil {
@@ -83,7 +96,7 @@ func main() {
 	}
 
 	for _, s := range scenarios {
-		if err := ensureScenarioPair(ctx, db, projectID, s); err != nil {
+		if err := ensureScenarioPair(ctx, db, chConn, projectID, s); err != nil {
 			slog.Error("failed to seed scenario", "url", s.url, "error", err)
 			os.Exit(1)
 		}
@@ -107,7 +120,7 @@ func ensureProject(ctx context.Context, db database.Database) (uuid.UUID, error)
 	return id, nil
 }
 
-func ensureScenarioPair(ctx context.Context, db database.Database, projectID uuid.UUID, def scenarioDef) error {
+func ensureScenarioPair(ctx context.Context, db database.Database, ch driver.Conn, projectID uuid.UUID, def scenarioDef) error {
 	if _, err := db.ExecContext(ctx,
 		`DELETE FROM scenario WHERE project_id = $1 AND url = $2`,
 		projectID, def.url,
@@ -129,7 +142,7 @@ func ensureScenarioPair(ctx context.Context, db database.Database, projectID uui
 		return nil
 	}
 
-	if err := seedEvents(ctx, db, projectID, pubID, stepIDs); err != nil {
+	if err := seedEvents(ctx, ch, projectID, pubID, stepIDs); err != nil {
 		return fmt.Errorf("seed events: %w", err)
 	}
 	slog.Info("events seeded", "scenario_id", pubID, "url", def.url)
@@ -162,48 +175,41 @@ func createScenario(ctx context.Context, db database.Database, projectID uuid.UU
 	return scenarioID, stepIDs, nil
 }
 
-func seedEvents(ctx context.Context, db database.Database, projectID, scenarioID uuid.UUID, stepIDs []uuid.UUID) error {
-	exec := func(stepID sql.NullString, sessionID, eventType string) error {
-		_, err := db.ExecContext(ctx,
-			`INSERT INTO event (id, project_id, scenario_id, step_id, session_id, type, event_key, created_at)
-			 VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
-			uuid.New(), projectID, scenarioID, stepID, sessionID, eventType, uuid.New(),
-		)
+func seedEvents(ctx context.Context, ch driver.Conn, projectID, scenarioID uuid.UUID, stepIDs []uuid.UUID) error {
+	batch, err := ch.PrepareBatch(ctx,
+		"INSERT INTO analytics.events (id, project_id, scenario_id, step_id, session_id, type, event_key)")
+	if err != nil {
 		return err
 	}
 
-	nullStep := sql.NullString{Valid: false}
-	step1 := sql.NullString{String: stepIDs[0].String(), Valid: true}
-	step2 := sql.NullString{String: stepIDs[1].String(), Valid: true}
-
-	for i := range 10 {
-		if err := exec(step1, fmt.Sprintf("session-s1-%d", i), "step_viewed"); err != nil {
-			return err
-		}
-	}
-	for i := range 7 {
-		if err := exec(step2, fmt.Sprintf("session-s2-%d", i), "step_viewed"); err != nil {
-			return err
-		}
-	}
-	for i := range 5 {
-		if err := exec(step1, fmt.Sprintf("session-c1-%d", i), "step_completed"); err != nil {
-			return err
-		}
-	}
-	for i := range 3 {
-		if err := exec(step2, fmt.Sprintf("session-c2-%d", i), "step_completed"); err != nil {
-			return err
-		}
-	}
-	for i := range 2 {
-		if err := exec(nullStep, fmt.Sprintf("session-sc-%d", i), "scenario_completed"); err != nil {
-			return err
-		}
-	}
-	if err := exec(nullStep, "session-dismiss", "scenario_dismissed"); err != nil {
-		return err
+	add := func(stepID *uuid.UUID, sessionID, eventType string) error {
+		return batch.Append(uuid.New(), projectID, scenarioID, stepID, sessionID, eventType, uuid.NewString())
 	}
 
-	return nil
+	step1 := &stepIDs[0]
+	step2 := &stepIDs[1]
+
+	specs := []struct {
+		count     int
+		stepID    *uuid.UUID
+		prefix    string
+		eventType string
+	}{
+		{10, step1, "session-s1", "step_viewed"},
+		{7, step2, "session-s2", "step_viewed"},
+		{5, step1, "session-c1", "step_completed"},
+		{3, step2, "session-c2", "step_completed"},
+		{2, nil, "session-sc", "scenario_completed"},
+		{1, nil, "session-dismiss", "scenario_dismissed"},
+	}
+
+	for _, sp := range specs {
+		for i := range sp.count {
+			if err := add(sp.stepID, fmt.Sprintf("%s-%d", sp.prefix, i), sp.eventType); err != nil {
+				return err
+			}
+		}
+	}
+
+	return batch.Send()
 }
