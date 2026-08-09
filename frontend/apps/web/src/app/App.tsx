@@ -3,13 +3,29 @@ import { AdminPage } from "@/pages/admin/AdminPage";
 import { DemoPage } from "@/pages/demo/DemoPage";
 import { appRoutes } from '@/shared/config/routes'
 import { AppShell } from "@/widgets/app-shell/AppShell";
+import type { AppServices } from './services/createAppServices'
 
-export function App() {
+type AppProps = {
+  services: AppServices
+}
+
+export function App({ services }: AppProps) {
   return (
     <Routes>
       <Route element={<AppShell />} path={appRoutes.home} />
-      <Route element={<AdminPage />} path="/admin/*" />
-      <Route element={<DemoPage />} path="/demo/*" />
+      <Route
+        element={<AdminPage apiMode={services.apiMode} />}
+        path="/admin/*"
+      />
+      <Route
+        element={
+          <DemoPage
+            onboardingClient={services.onboardingClient}
+            projectKey={services.projectKey}
+          />
+        }
+        path="/demo/*"
+      />
       <Route element={<Navigate replace to={appRoutes.home} />} path="*" />
     </Routes>
   )

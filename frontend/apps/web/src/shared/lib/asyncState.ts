@@ -4,16 +4,18 @@ export type AsyncState<T> =
   | { status: 'success'; data: T }
   | { status: 'error'; error: string }
 
-export const idleState = <T>(): AsyncState<T> => ({ status: 'idle' })
+export function idleState<T>(): AsyncState<T> {
+  return { status: 'idle' }
+}
 
-export const loadingState = <T>(): AsyncState<T> => ({ status: 'loading' })
+export function loadingState<T>(): AsyncState<T> {
+  return { status: 'loading' }
+}
 
-export const successState = <T>(data: T): AsyncState<T> => ({
-  status: 'success',
-  data,
-})
+export function successState<T>(data: T): AsyncState<T> {
+  return { status: 'success', data }
+}
 
-export const errorState = <T>(error: string): AsyncState<T> => ({
-  status: 'error',
-  error,
-})
+export function errorState<T>(error: string): AsyncState<T> {
+  return { status: 'error', error }
+}
