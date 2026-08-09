@@ -140,6 +140,13 @@ func (h *WidgetHandler) PostWidgetEvent(ctx context.Context, request apiv1.PostW
 					Message string                       `json:"message"`
 				}{Code: "MISSING_REQUIRED_FIELD", Message: err.Error()},
 			}, nil
+		case errors.Is(err, domain.ErrScenarioNotFound):
+			return apiv1.PostWidgetEvent404JSONResponse{
+				Error: struct {
+					Code    apiv1.ErrorResponseErrorCode `json:"code"`
+					Message string                       `json:"message"`
+				}{Code: "SCENARIO_NOT_FOUND", Message: err.Error()},
+			}, nil
 		default:
 			slog.Error("post widget event: internal error", "error", err)
 			return apiv1.PostWidgetEvent500JSONResponse{Error: struct {
