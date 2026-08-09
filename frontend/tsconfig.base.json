@@ -20,6 +20,12 @@
       "@/*": ["apps/web/src/*"],
       "@interactive-onboarding/shared": ["packages/shared/src/index.ts"],
       "@interactive-onboarding/shared/*": ["packages/shared/src/*"],
+      "@interactive-onboarding/api-client": [
+        "packages/api-client/src/index.ts"
+      ],
+      "@interactive-onboarding/api-client/*": [
+        "packages/api-client/src/*"
+      ],
       "@interactive-onboarding/ui": ["packages/ui/src/index.tsx"],
       "@interactive-onboarding/ui/*": ["packages/ui/src/*"],
       "@interactive-onboarding/onboarding-sdk": [
