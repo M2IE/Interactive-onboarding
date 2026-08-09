@@ -5,6 +5,7 @@ package analytics
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,15 +14,21 @@ import (
 
 	"github.com/M2IE/Interactive-onboarding/pkg/database"
 	"github.com/M2IE/Interactive-onboarding/pkg/pdfengine"
-	"github.com/M2IE/Interactive-onboarding/tests/admin"
+	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/M2IE/Interactive-onboarding/services/admin/queries"
 	"github.com/M2IE/Interactive-onboarding/services/admin/queries/sqlc/gen"
+	"github.com/M2IE/Interactive-onboarding/tests/dbScenario"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/google/uuid"
 )
 
 var testDB database.Database
 
-type mockS3 struct{ storage map[string][]byte }
+type mockS3 struct {
+	storage     map[string][]byte
+	downloadErr error
+}
 
 func (m *mockS3) Upload(ctx context.Context, bucket, key string, body io.Reader, contentType string) error {
 	data, _ := io.ReadAll(body)
@@ -29,9 +36,12 @@ func (m *mockS3) Upload(ctx context.Context, bucket, key string, body io.Reader,
 	return nil
 }
 func (m *mockS3) Download(ctx context.Context, bucket, key string) (io.ReadCloser, error) {
+	if m.downloadErr != nil {
+		return nil, m.downloadErr
+	}
 	data, ok := m.storage[key]
 	if !ok {
-		return nil, fmt.Errorf("not found: %s", key)
+		return nil, &types.NoSuchKey{Message: aws.String("not found")}
 	}
 	return io.NopCloser(bytes.NewReader(data)), nil
 }
@@ -46,7 +56,7 @@ func TestMain(m *testing.M) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	db, cleanup, err := admin.StartPostgres(ctx)
+	db, cleanup, err := dbScenario.StartPostgres(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "setup: %v\n", err)
 		os.Exit(1)
@@ -147,6 +157,160 @@ func TestAnalytics_GetAnalytics(t *testing.T) {
 	}
 	if steps[0].Views != 10 {
 		t.Errorf("step1 views = %d, want 10", steps[0].Views)
+	}
+}
+
+func TestAnalytics_UploadAnalytics(t *testing.T) {
+	ctx := context.Background()
+	q := queries.New()
+	s3Client := &mockS3{storage: make(map[string][]byte)}
+	pdfEngine := &mockPDF{}
+	infra := NewAnalyticsInfrastructure(testDB, q, s3Client, pdfEngine, "reports")
+	projID := createProject(t, ctx)
+	scID := createScenario(t, ctx, projID)
+
+	stepID := uuid.New()
+	_, err := q.CreateStep(ctx, testDB, gen.CreateStepParams{
+		ID:         stepID,
+		ScenarioID: scID,
+		OrderNum:   1,
+		Selector:   "#1",
+		Title:      "S1",
+		Body:       "B1",
+	})
+	if err != nil {
+		t.Fatalf("create step: %v", err)
+	}
+
+	for i := 0; i < 5; i++ {
+		testDB.ExecContext(ctx, `INSERT INTO event (id, project_id, scenario_id, step_id, session_id, type, event_key, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7, NOW())`,
+			uuid.New(), projID, scID, stepID, fmt.Sprintf("s%d", i), "step_viewed", uuid.New())
+	}
+
+	result, err := infra.GetScenarioAnalytics(ctx, nil, scID)
+	if err != nil {
+		t.Fatalf("get analytics: %v", err)
+	}
+	steps, err := infra.GetStepAnalytics(ctx, nil, scID)
+	if err != nil {
+		t.Fatalf("get step analytics: %v", err)
+	}
+	result.Steps = steps
+
+	key, err := infra.UploadAnalytics(ctx, scID, result)
+	if err != nil {
+		t.Fatalf("upload analytics: %v", err)
+	}
+	if key == "" {
+		t.Error("expected non-empty key")
+	}
+	if _, ok := s3Client.storage[key]; !ok {
+		t.Error("PDF was not uploaded to S3")
+	}
+	if string(s3Client.storage[key]) != "PDF" {
+		t.Errorf("uploaded content = %q, want PDF", string(s3Client.storage[key]))
+	}
+}
+
+func TestAnalytics_DownloadAnalytics(t *testing.T) {
+	ctx := context.Background()
+	q := queries.New()
+	s3Client := &mockS3{storage: make(map[string][]byte)}
+	pdfEngine := &mockPDF{}
+	infra := NewAnalyticsInfrastructure(testDB, q, s3Client, pdfEngine, "reports")
+	projID := createProject(t, ctx)
+	scID := createScenario(t, ctx, projID)
+
+	stepID := uuid.New()
+	_, err := q.CreateStep(ctx, testDB, gen.CreateStepParams{
+		ID:         stepID,
+		ScenarioID: scID,
+		OrderNum:   1,
+		Selector:   "#1",
+		Title:      "S1",
+		Body:       "B1",
+	})
+	if err != nil {
+		t.Fatalf("create step: %v", err)
+	}
+
+	for i := 0; i < 2; i++ {
+		testDB.ExecContext(ctx, `INSERT INTO event (id, project_id, scenario_id, step_id, session_id, type, event_key, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7, NOW())`,
+			uuid.New(), projID, scID, stepID, fmt.Sprintf("s%d", i), "step_viewed", uuid.New())
+	}
+
+	result, err := infra.GetScenarioAnalytics(ctx, nil, scID)
+	if err != nil {
+		t.Fatalf("get analytics: %v", err)
+	}
+	steps, err := infra.GetStepAnalytics(ctx, nil, scID)
+	if err != nil {
+		t.Fatalf("get step analytics: %v", err)
+	}
+	result.Steps = steps
+
+	key, err := infra.UploadAnalytics(ctx, scID, result)
+	if err != nil {
+		t.Fatalf("upload: %v", err)
+	}
+
+	reader, err := infra.DownloadAnalytics(ctx, key)
+	if err != nil {
+		t.Fatalf("download: %v", err)
+	}
+	defer reader.Close()
+
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		t.Fatalf("read download: %v", err)
+	}
+	if string(data) != "PDF" {
+		t.Errorf("downloaded = %q, want PDF", string(data))
+	}
+}
+
+func TestAnalytics_DownloadAnalytics_NotFound(t *testing.T) {
+	ctx := context.Background()
+	q := queries.New()
+	s3Client := &mockS3{storage: make(map[string][]byte)}
+	pdfEngine := &mockPDF{}
+	infra := NewAnalyticsInfrastructure(testDB, q, s3Client, pdfEngine, "reports")
+
+	_, err := infra.DownloadAnalytics(ctx, "nonexistent.pdf")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if !errors.Is(err, domain.ErrReportNotFound) {
+		t.Errorf("err = %v, want ErrReportNotFound", err)
+	}
+}
+
+func TestAnalytics_GetAnalytics_Empty(t *testing.T) {
+	ctx := context.Background()
+	q := queries.New()
+	s3Client := &mockS3{storage: make(map[string][]byte)}
+	pdfEngine := &mockPDF{}
+	infra := NewAnalyticsInfrastructure(testDB, q, s3Client, pdfEngine, "reports")
+	projID := createProject(t, ctx)
+	scID := createScenario(t, ctx, projID)
+
+	result, err := infra.GetScenarioAnalytics(ctx, nil, scID)
+	if err != nil {
+		t.Fatalf("get analytics: %v", err)
+	}
+	if result.TotalViews != 0 {
+		t.Errorf("totalViews = %d, want 0", result.TotalViews)
+	}
+	if result.Completed != 0 {
+		t.Errorf("completed = %d, want 0", result.Completed)
+	}
+
+	steps, err := infra.GetStepAnalytics(ctx, nil, scID)
+	if err != nil {
+		t.Fatalf("get step analytics: %v", err)
+	}
+	if len(steps) != 0 {
+		t.Errorf("steps count = %d, want 0", len(steps))
 	}
 }
 

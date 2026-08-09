@@ -1,6 +1,6 @@
 //go:build integration
 
-package admin
+package dbScenario
 
 import (
 	"context"
@@ -21,11 +21,11 @@ import (
 
 func StartPostgres(ctx context.Context) (database.Database, func(), error) {
 	var (
-		db      database.Database
-		pg      *postgres.PostgresContainer
-		net     *testcontainers.DockerNetwork
-		migCtr  testcontainers.Container
-		err     error
+		db     database.Database
+		pg     *postgres.PostgresContainer
+		net    *testcontainers.DockerNetwork
+		migCtr testcontainers.Container
+		err    error
 	)
 
 	net, err = network.New(ctx)

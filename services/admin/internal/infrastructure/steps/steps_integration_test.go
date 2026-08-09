@@ -11,9 +11,9 @@ import (
 
 	"github.com/M2IE/Interactive-onboarding/pkg/database"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
-	"github.com/M2IE/Interactive-onboarding/tests/admin"
 	"github.com/M2IE/Interactive-onboarding/services/admin/queries"
 	"github.com/M2IE/Interactive-onboarding/services/admin/queries/sqlc/gen"
+	"github.com/M2IE/Interactive-onboarding/tests/dbScenario"
 	"github.com/google/uuid"
 )
 
@@ -23,7 +23,7 @@ func TestMain(m *testing.M) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	db, cleanup, err := admin.StartPostgres(ctx)
+	db, cleanup, err := dbScenario.StartPostgres(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "setup: %v\n", err)
 		os.Exit(1)
