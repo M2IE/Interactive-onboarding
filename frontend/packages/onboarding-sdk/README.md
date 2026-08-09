@@ -1,36 +1,29 @@
-# Onboarding SDK: подключение к React
+# @m2ie/onboarding-sdk
 
-SDK загружает опубликованный сценарий для текущей страницы, находит целевой
-DOM-элемент по CSS-селектору, показывает spotlight и подсказку, а затем отправляет
-события прохождения на бэкенд.
+An embeddable onboarding SDK for configurable product tours. It loads the
+published scenario for the current page, finds the target DOM element by CSS
+selector, renders a spotlight and tooltip, and reports progress to the backend.
 
-## Текущий статус пакета
+## Installation
 
-Сейчас `@interactive-onboarding/onboarding-sdk` является приватным пакетом npm
-workspace внутри этого monorepo. Приложения в `frontend/apps/*` подключают его как
-обычную workspace-зависимость:
+After publication, install the package from the public npm registry. The SDK
+supports React 18.2 and React 19.
 
-```json
-{
-  "dependencies": {
-    "@interactive-onboarding/onboarding-sdk": "*"
-  }
-}
+```bash
+npm install @m2ie/onboarding-sdk
 ```
 
-Для установки в отдельный репозиторий пакет сначала нужно опубликовать во
-внутреннем npm registry или подготовить самостоятельный дистрибутив. Публичный
-React API и изолированные стили виджета уже входят в пакет; стили подключаются
-автоматически при первом рендере Provider.
+The package includes its public React API and isolated widget styles. Styles are
+injected automatically when the provider renders for the first time.
 
-## Базовое подключение
+## Basic React setup
 
-Создавайте HTTP-клиент один раз за пределами React-компонента. Если создавать
-его при каждом рендере, Provider будет повторно запрашивать конфигурацию.
+Create the HTTP client once, outside the React component. Creating it during
+each render would cause the provider to request the configuration repeatedly.
 
 ```tsx
-import { createHttpOnboardingClient } from '@interactive-onboarding/onboarding-sdk'
-import { OnboardingProvider } from '@interactive-onboarding/onboarding-sdk/react'
+import { createHttpOnboardingClient } from '@m2ie/onboarding-sdk'
+import { OnboardingProvider } from '@m2ie/onboarding-sdk/react'
 
 const onboardingClient = createHttpOnboardingClient({
   apiBaseUrl: 'https://onboarding-api.example.com',
@@ -50,19 +43,18 @@ export function App() {
 }
 ```
 
-Provider нужно разместить внутри React-приложения после подключения основных
-провайдеров. Целевые элементы страницы должны существовать в DOM к моменту
-показа шага.
+Place the provider inside the React application, after its primary providers.
+The target elements must exist in the DOM when their onboarding steps are
+displayed.
 
-## Подключение к React Router
+## React Router integration
 
-Для SPA рекомендуется явно передавать текущий путь и функцию навигации. Тогда
-при переходе между страницами документ не перезагружается, а SDK запрашивает
-сценарий нового URL.
+For an SPA, pass the current path and navigation function explicitly. This lets
+the SDK request the scenario for the new URL without reloading the document.
 
 ```tsx
-import { createHttpOnboardingClient } from '@interactive-onboarding/onboarding-sdk'
-import { OnboardingProvider } from '@interactive-onboarding/onboarding-sdk/react'
+import { createHttpOnboardingClient } from '@m2ie/onboarding-sdk'
+import { OnboardingProvider } from '@m2ie/onboarding-sdk/react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 const onboardingClient = createHttpOnboardingClient({
@@ -86,72 +78,73 @@ export function OnboardingIntegration() {
 }
 ```
 
-`OnboardingIntegration` должен находиться внутри Router, чтобы `useLocation` и
-`useNavigate` были доступны.
+`OnboardingIntegration` must be rendered inside the router so `useLocation` and
+`useNavigate` are available.
 
-## Пропсы Provider
+## Provider props
 
-| Проп | Обязателен | Тип | Назначение |
+| Prop | Required | Type | Description |
 | --- | --- | --- | --- |
-| `projectKey` | Да | `string` | Стабильный ключ проекта из onboarding-платформы. По нему бэкенд отделяет сценарии разных приложений. |
-| `apiClient` | Да | `OnboardingApiClient` | Клиент получения конфигурации и отправки аналитических событий. Обычно создаётся через `createHttpOnboardingClient`. |
-| `pageUrl` | Нет | `string` | Текущий путь страницы. По умолчанию используется `window.location.pathname`. Для SPA рекомендуется передавать значение из роутера. |
-| `navigate` | Нет | `(url: string) => void` | Адаптер клиентской навигации. Без него межстраничный шаг использует `window.location.assign` и перезагружает документ. |
-| `userId` | Нет | `string` | Стабильный обезличенный ID авторизованного пользователя из системы хоста. Для анонимного пользователя проп нужно опустить. |
-| `enabled` | Нет | `boolean` | Разрешает загрузку и показ онбординга. По умолчанию `true`. Можно связать с feature flag или правилом аудитории. |
-| `refreshKey` | Нет | `number` | При изменении значения принудительно запрашивает конфигурацию заново. Обычно не требуется. |
+| `projectKey` | Yes | `string` | Stable project key from the onboarding platform. The backend uses it to isolate scenarios belonging to different applications. |
+| `apiClient` | Yes | `OnboardingApiClient` | Client used to load configuration and report analytics events. Usually created with `createHttpOnboardingClient`. |
+| `pageUrl` | No | `string` | Current page path. Defaults to `window.location.pathname`. SPA integrations should pass the router location explicitly. |
+| `navigate` | No | `(url: string) => void` | Client-side navigation adapter. Without it, cross-page steps use `window.location.assign` and reload the document. |
+| `userId` | No | `string` | Stable pseudonymous identifier from the host application's authentication system. Omit it for anonymous users. |
+| `enabled` | No | `boolean` | Enables configuration loading and widget rendering. Defaults to `true`; it can be connected to a feature flag or audience rule. |
+| `refreshKey` | No | `number` | Changing the value forces the provider to request its configuration again. Most integrations do not need it. |
 
-### Откуда брать `userId`
+### Providing `userId`
 
-`userId` передаёт само приложение из своей системы авторизации. SDK не создаёт
-ID пользователя и не должен получать email, телефон или другие персональные
-данные. Значение должно быть стабильным между страницами, но его можно не
-передавать для анонимного прохождения.
+The host application supplies `userId` from its authentication system. The SDK
+does not create a user identifier and should not receive an email address,
+phone number, or other personal data. Keep the value stable between pages, or
+omit it for anonymous onboarding.
 
-SDK самостоятельно создаёт отдельный `sessionId`, сохраняет его в
-`sessionStorage` и прикладывает к запросам и событиям. Передавать `sessionId` в
-Provider не нужно.
+The SDK creates a separate `sessionId`, stores it in `sessionStorage`, and
+includes it in requests and analytics events. Do not pass `sessionId` to the
+provider.
 
-## Стабильные селекторы элементов
+## Stable target selectors
 
-Шаг сценария содержит CSS-селектор целевого элемента. Для интеграции лучше
-добавлять специальные атрибуты, не зависящие от CSS-классов и текста:
+Each scenario step contains a CSS selector for its target element. Prefer
+dedicated attributes that do not depend on visual classes or text content.
 
 ```tsx
 <button data-onboarding-id="create-listing" type="button">
-  Разместить объявление
+  Post a listing
 </button>
 ```
 
-В конструкторе шага указывается:
+Use the following selector in the step editor:
 
 ```text
 [data-onboarding-id="create-listing"]
 ```
 
-Не рекомендуется использовать сгенерированные CSS-классы, длинные цепочки
-вложенности или `nth-child`: такие селекторы легко ломаются после изменения
-вёрстки.
+Avoid generated CSS classes, long descendant chains, and `nth-child`. These
+selectors are likely to break after layout changes.
 
-## HTTP-контракт встроенного клиента
+## Built-in HTTP client contract
 
-`createHttpOnboardingClient` выполняет два запроса:
+`createHttpOnboardingClient` makes two requests:
 
 ```text
 GET  {apiBaseUrl}/widget/scenario?projectKey=...&pageUrl=...
 POST {apiBaseUrl}/widget/event
 ```
 
-В GET-запрос передаются `projectKey` и точный `pageUrl`. POST отправляет
-`step_viewed`, `step_completed` или `scenario_dismissed` в формате MVP API с
-полями `session_id`, `type`, `step_id`/`scenario_id` и `event_key`. Ответ `204`
-или `404` на получение конфигурации означает, что для страницы нет доступного
-сценария, и виджет не показывается. Остальные ошибки не подменяются mock-данными.
+The GET request includes `projectKey` and the exact `pageUrl`. The POST request
+sends `step_viewed`, `step_completed`, or `scenario_dismissed` using the MVP API
+fields `session_id`, `type`, `step_id`/`scenario_id`, and `event_key`.
 
-Если API приложения имеет другой контракт, можно реализовать адаптер:
+A `204` or `404` response while loading configuration means that no onboarding
+scenario is available for the page, so the widget remains hidden. Other errors
+are surfaced and never replaced with mock data.
+
+If the host application uses a different API contract, provide an adapter:
 
 ```tsx
-import type { OnboardingApiClient } from '@interactive-onboarding/onboarding-sdk'
+import type { OnboardingApiClient } from '@m2ie/onboarding-sdk'
 
 const apiClient: OnboardingApiClient = {
   async getConfig(request) {
@@ -163,12 +156,12 @@ const apiClient: OnboardingApiClient = {
 }
 ```
 
-Ссылку на `apiClient` также нужно сохранять стабильной между рендерами.
+Keep the `apiClient` reference stable between renders.
 
-## Управление показом
+## Controlling eligibility
 
-Решение о доступности онбординга может принимать бэкенд, возвращая сценарий или
-`404`. Хост-приложение также может отключить SDK локально:
+The backend can determine eligibility by returning either a scenario or `404`.
+The host application can also disable the SDK locally.
 
 ```tsx
 <OnboardingProvider
@@ -178,23 +171,23 @@ const apiClient: OnboardingApiClient = {
 />
 ```
 
-Проверки аудитории и бизнес-правила не следует зашивать внутрь SDK.
+Keep audience checks and business eligibility rules outside the SDK.
 
-## Стили и инфраструктура
+## Styles and infrastructure
 
-Для работы HTTP-клиента API должен разрешать запросы с домена приложения через
-CORS. CSP хоста также должна разрешать соединение с `apiBaseUrl`.
+The API must allow requests from the host application's domain through CORS.
+The host application's CSP must also allow connections to `apiBaseUrl`.
 
-SDK один раз добавляет в `document.head` собственный stylesheet с префиксом
-`.onboarding-sdk`. Он не зависит от Radix, UI-пакета админки или глобальных CSS
-переменных хост-приложения.
+The SDK injects one stylesheet into `document.head`. All selectors use the
+`.onboarding-sdk` prefix. The widget does not depend on Radix, the admin UI
+package, or global CSS variables from the host application.
 
-## Приложения без React
+## Non-React applications
 
-Для сайта без React-обвязки доступен императивный API:
+An imperative API is available for applications without a React integration.
 
 ```ts
-import { initOnboarding } from '@interactive-onboarding/onboarding-sdk'
+import { initOnboarding } from '@m2ie/onboarding-sdk'
 
 const onboarding = initOnboarding({
   apiBaseUrl: 'https://onboarding-api.example.com',
@@ -204,3 +197,22 @@ const onboarding = initOnboarding({
 onboarding.refresh()
 onboarding.destroy()
 ```
+
+## Publishing
+
+Run publishing commands from the `frontend` directory. Before each release,
+update the package version according to SemVer, run the complete checks, and
+inspect the tarball contents.
+
+```bash
+npm version patch --workspace @m2ie/onboarding-sdk --no-git-tag-version
+npm run ci
+npm run sdk:pack
+npm publish --workspace @m2ie/onboarding-sdk
+```
+
+Version `0.1.0` is already set for the first publication, so only the final
+three commands are required. `publishConfig` publishes the scoped package with
+public access automatically.
+
+The package remains marked as `UNLICENSED` until the team selects a license.

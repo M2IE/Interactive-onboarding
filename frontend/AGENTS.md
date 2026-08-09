@@ -84,14 +84,16 @@ packages/onboarding-sdk/src/
 └── ui/
 ```
 
-The SDK must not import from `apps/web`. Shared contracts belong in
-`packages/shared`.
+The SDK must not import from `apps/web` or private workspace packages. Types
+that are part of the published SDK API belong in `packages/onboarding-sdk/src/types`
+and are imported directly from `@m2ie/onboarding-sdk` by consumers.
 
 ### `packages/shared`
 
-Put cross-package types, DTOs, discriminated unions, API contracts and pure
-helpers here. Do not put browser-only logic here unless the package contract is
-explicitly browser-only.
+Put app-level cross-package types, DTOs, discriminated unions, API contracts and
+pure helpers here. Do not duplicate the published SDK contract in this package.
+Do not put browser-only logic here unless the package contract is explicitly
+browser-only.
 
 ### `packages/ui`
 
@@ -263,7 +265,7 @@ user journey can group page-local scenarios with `flowKey` and `flowOrder`.
 Public integration shape:
 
 ```ts
-import { initOnboarding } from '@interactive-onboarding/onboarding-sdk'
+import { initOnboarding } from '@m2ie/onboarding-sdk'
 
 initOnboarding({
   projectKey: 'avito-demo',
@@ -274,7 +276,7 @@ initOnboarding({
 React integration shape:
 
 ```tsx
-import { OnboardingProvider } from '@interactive-onboarding/onboarding-sdk/react'
+import { OnboardingProvider } from '@m2ie/onboarding-sdk/react'
 
 <OnboardingProvider
   apiClient={apiClient}
@@ -317,8 +319,9 @@ Validated on 2026-08-09:
   `apps/web`.
 - Admin primitives wrap Radix UI in `packages/ui`; Lucide provides action icons.
   The SDK remains independent from both dependencies.
-- Shared domain contracts exist in `packages/shared`; unsupported custom widget
-  button-label fields are not part of `OnboardingStep`.
+- Published SDK contracts have a single source in
+  `packages/onboarding-sdk/src/types`; unsupported custom widget button-label
+  fields are not part of `OnboardingStep`.
 - Real API mode is the default. Mock persistence is available only through
   `VITE_API_MODE=mock` and remains behind repositories/adapters rather than
   presentational UI.
@@ -334,7 +337,9 @@ Validated on 2026-08-09:
 - Admin scenarios, steps, publication, widget config/events, analytics and PDF
   reports use the generated MVP OpenAPI contracts through `packages/api-client`.
 - The SDK injects isolated `.onboarding-sdk*` styles, has no Radix/UI-package
-  dependency and keeps its mobile tooltip inside the viewport. Session ids are
+  dependency and keeps its mobile tooltip inside the viewport. The standalone
+  `@m2ie/onboarding-sdk` artifact ships ESM, CommonJS and bundled declarations;
+  only React and React DOM remain peer dependencies. Session ids are
   backend-compatible UUIDs even in insecure LAN HTTP contexts.
 - The production frontend is built by `frontend/Dockerfile`; the root gateway
   serves the SPA and proxies `/api/v1/admin/*` and `/api/v1/widget/*`.
@@ -362,6 +367,12 @@ When tests are added, also run:
 
 ```bash
 npm test
+```
+
+When SDK packaging or its public API changes, also run:
+
+```bash
+npm run sdk:pack
 ```
 
 If a rendered UI flow changes, verify it in the browser:
