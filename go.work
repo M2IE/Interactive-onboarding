@@ -8,4 +8,5 @@ use (
 	./pkg/s3
 	./services/admin
 	./services/widget
+	./tests
 )
