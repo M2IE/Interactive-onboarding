@@ -45,7 +45,7 @@ func (s *StepsService) ensureScenarioNotPublished(ctx context.Context, db databa
 }
 
 // CreateStep - создаёт новый шаг в черновике.
-func (s *StepsService) CreateStep(ctx context.Context, scenarioID uuid.UUID, selector, title, body string, nextURL *string) (*domain.Step, error) {
+func (s *StepsService) CreateStep(ctx context.Context, scenarioID uuid.UUID, selector, title, body string, nextURL *string) (step *domain.Step, err error) {
 	tx, err := s.txManager.Begin()
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (s *StepsService) CreateStep(ctx context.Context, scenarioID uuid.UUID, sel
 		return nil, err
 	}
 
-	step := &domain.Step{
+	step = &domain.Step{
 		ID:         id,
 		ScenarioID: scenarioID,
 		OrderNum:   newOrder,
@@ -96,7 +96,7 @@ func (s *StepsService) CreateStep(ctx context.Context, scenarioID uuid.UUID, sel
 }
 
 // UpdateStep - обновляет поля шага (selector, title, body).
-func (s *StepsService) UpdateStep(ctx context.Context, stepID uuid.UUID, selector, title, body *string, nextURL *string) (*domain.Step, error) {
+func (s *StepsService) UpdateStep(ctx context.Context, stepID uuid.UUID, selector, title, body *string, nextURL *string) (step *domain.Step, err error) {
 	tx, err := s.txManager.Begin()
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func (s *StepsService) UpdateStep(ctx context.Context, stepID uuid.UUID, selecto
 	}()
 
 	// Получаем шаг
-	step, err := s.infra.GetStepByID(ctx, tx, stepID)
+	step, err = s.infra.GetStepByID(ctx, tx, stepID)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func (s *StepsService) UpdateStep(ctx context.Context, stepID uuid.UUID, selecto
 }
 
 // DeleteStep - удаляет шаг и перестраивает порядок оставшихся.
-func (s *StepsService) DeleteStep(ctx context.Context, stepID uuid.UUID) error {
+func (s *StepsService) DeleteStep(ctx context.Context, stepID uuid.UUID) (err error) {
 	tx, err := s.txManager.Begin()
 	if err != nil {
 		return err
@@ -187,7 +187,7 @@ func (s *StepsService) DeleteStep(ctx context.Context, stepID uuid.UUID) error {
 }
 
 // ReorderSteps - массовое обновление порядка шагов.
-func (s *StepsService) ReorderSteps(ctx context.Context, scenarioID uuid.UUID, items []domain.ReorderItem) error {
+func (s *StepsService) ReorderSteps(ctx context.Context, scenarioID uuid.UUID, items []domain.ReorderItem) (err error) {
 	tx, err := s.txManager.Begin()
 	if err != nil {
 		return err
