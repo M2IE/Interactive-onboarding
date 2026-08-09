@@ -198,50 +198,6 @@ onboarding.refresh()
 onboarding.destroy()
 ```
 
-## Publishing
+## License
 
-Releases are published by
-`.github/workflows/publish-onboarding-sdk.yml` through npm Trusted Publishing.
-The workflow does not use a long-lived npm token. It runs the complete frontend
-checks, inspects the tarball, and publishes only when all of the following are
-true:
-
-- the tag matches `onboarding-sdk-vX.Y.Z`;
-- the tag version matches the package version;
-- the tagged commit belongs to the `main` branch history;
-- that package version does not already exist in npm.
-
-To prepare a release, update the package version from the `frontend` directory:
-
-```bash
-npm version patch --workspace @m2ie/onboarding-sdk --no-git-tag-version
-npm run ci
-npm run sdk:pack
-```
-
-Commit the version change through the normal pull request process. After that
-commit reaches `main`, tag the exact `main` commit and push the tag:
-
-```bash
-SDK_VERSION=$(node -p "require('./frontend/packages/onboarding-sdk/package.json').version")
-git tag "onboarding-sdk-v${SDK_VERSION}"
-git push origin "onboarding-sdk-v${SDK_VERSION}"
-```
-
-Before the first automated release, configure the package's Trusted Publisher
-on npm with these exact values:
-
-| Setting | Value |
-| --- | --- |
-| Provider | GitHub Actions |
-| Organization | `M2IE` |
-| Repository | `Interactive-onboarding` |
-| Workflow filename | `publish-onboarding-sdk.yml` |
-| Environment | Not set |
-| Allowed action | `npm publish` |
-
-The workflow uses GitHub OIDC. npm automatically attaches provenance when the
-GitHub repository is public. Once Trusted Publishing works, disable token-based
-publishing in the npm package settings and revoke any old automation token.
-
-The package remains marked as `UNLICENSED` until the team selects a license.
+This package is currently `UNLICENSED`.
