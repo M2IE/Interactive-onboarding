@@ -2,6 +2,7 @@ go 1.26.5
 
 use (
 	./gen/rest/v1/go
+	./pkg/clickhouse
 	./pkg/configs
 	./pkg/database
 	./pkg/pdfengine

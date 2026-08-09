@@ -17,6 +17,18 @@ func (c PostgresConfig) DSN() string {
 	return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", c.User, c.Password, c.Host, c.Port, c.DBName, c.SSLMode)
 }
 
+type ClickHouseConfig struct {
+	Host     string `env:"CLICKHOUSE_HOST" envDefault:"localhost"`
+	Port     int    `env:"CLICKHOUSE_PORT" envDefault:"9000"`
+	User     string `env:"CLICKHOUSE_USER" envDefault:"default"`
+	Password string `env:"CLICKHOUSE_PASSWORD"`
+	DBName   string `env:"CLICKHOUSE_DB" envDefault:"default"`
+}
+
+func (c ClickHouseConfig) Addr() string {
+	return fmt.Sprintf("%s:%d", c.Host, c.Port)
+}
+
 type ConfigRustFS struct {
 	RustFSRegion          string `env:"RUSTFS_REGION" envDefault:"us-east-1"`
 	RustFSAccessKey       string `env:"RUSTFS_ACCESS_KEY"`
