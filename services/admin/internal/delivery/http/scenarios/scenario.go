@@ -10,7 +10,7 @@ import (
 type IScenarioService interface {
 	List(ctx context.Context, command domain.ListScenarios) ([]domain.Scenario, int64, error)
 	Create(ctx context.Context, command domain.CreateScenario) (*domain.Scenario, error)
-	GetByID(ctx context.Context, scenarioID uuid.UUID) (*domain.Scenario, error)
+	GetByID(ctx context.Context, scenarioID uuid.UUID) (*domain.Scenario, []domain.Step, error)
 	Update(ctx context.Context, scenarioID uuid.UUID, command domain.UpdateScenario) (*domain.Scenario, error)
 }
 
@@ -35,12 +35,12 @@ func (h *ScenarioHandler) ListScenarios(ctx context.Context, request apiv1.ListS
 }
 
 func (h *ScenarioHandler) GetScenario(ctx context.Context, request apiv1.GetScenarioRequestObject) (apiv1.GetScenarioResponseObject, error) {
-	scenario, err := h.service.GetByID(ctx, request.Id)
+	scenario, steps, err := h.service.GetByID(ctx, request.Id)
 	if err != nil {
 		return ToGetErrorResponse(err), nil
 	}
 
-	return apiv1.GetScenario200JSONResponse(ToDTOScenario(scenario)), nil
+	return apiv1.GetScenario200JSONResponse(ToDTOScenarioWithSteps(scenario, steps)), nil
 }
 
 func (h *ScenarioHandler) CreateScenario(ctx context.Context, request apiv1.CreateScenarioRequestObject) (apiv1.CreateScenarioResponseObject, error) {

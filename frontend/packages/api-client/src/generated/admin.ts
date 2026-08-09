@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/admin/projects/{projectKey}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get project by key */
+        get: operations["getProjectByKey"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/scenarios": {
         parameters: {
             query?: never;
@@ -170,7 +187,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "INVALID_REQUEST" | "INVALID_PARAMETER" | "INVALID_BODY" | "SCENARIO_NOT_FOUND" | "STEP_NOT_FOUND" | "SCENARIO_ALREADY_PUBLISHED" | "SCENARIO_ALREADY_UNPUBLISHED" | "SCENARIO_HAS_NO_STEPS" | "SCENARIO_STATE_CONFLICT" | "STEP_ORDER_CONFLICT" | "INVALID_SCENARIO_NAME" | "INVALID_SCENARIO_URL" | "INVALID_STEP_SELECTOR" | "INVALID_STEP_TITLE" | "INVALID_STEP_BODY";
+                code: "INVALID_REQUEST" | "INVALID_PARAMETER" | "INVALID_BODY" | "SCENARIO_NOT_FOUND" | "STEP_NOT_FOUND" | "PROJECT_NOT_FOUND" | "SCENARIO_ALREADY_PUBLISHED" | "SCENARIO_ALREADY_UNPUBLISHED" | "SCENARIO_HAS_NO_STEPS" | "SCENARIO_STATE_CONFLICT" | "STEP_ORDER_CONFLICT" | "INVALID_SCENARIO_NAME" | "INVALID_SCENARIO_URL" | "INVALID_STEP_SELECTOR" | "INVALID_STEP_TITLE" | "INVALID_STEP_BODY";
                 message: string;
             };
         };
@@ -231,6 +248,28 @@ export interface components {
             /** Format: int64 */
             total: number;
         };
+        ScenarioWithSteps: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            name: string;
+            url: string;
+            status: components["schemas"]["ScenarioStatus"];
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+            steps: components["schemas"]["Step"][];
+        };
+        Project: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            projectKey: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
         CreateScenarioRequest: {
             /** Format: uuid */
             projectId: string;
@@ -248,16 +287,22 @@ export interface components {
             selector: string;
             title: string;
             body: string;
+            /** @description URL для перехода после завершения шага (опционально) */
+            nextUrl?: string;
         };
         CreateStepRequest: {
             selector: string;
             title: string;
             body: string;
+            /** @description URL для перехода после завершения шага (опционально) */
+            nextUrl?: string;
         };
         UpdateStepRequest: {
             selector?: string;
             title?: string;
             body?: string;
+            /** @description URL для перехода после завершения шага (опционально) */
+            nextUrl?: string;
         };
     };
     responses: never;
@@ -270,6 +315,46 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getProjectByKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Project */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            /** @description Не найден */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalErrorResponse"];
+                };
+            };
+        };
+    };
     listScenarios: {
         parameters: {
             query?: {
@@ -389,7 +474,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Scenario"];
+                    "application/json": components["schemas"]["ScenarioWithSteps"];
                 };
             };
             /** @description Не найден */

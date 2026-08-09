@@ -9,5 +9,6 @@ services:
       depends_on:
         - admin_service
         - widget_service
+        - frontend
       networks:
         - interactive_onboarding

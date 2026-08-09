@@ -11,17 +11,17 @@ import (
 )
 
 type mockStepsService struct {
-	createFunc  func(ctx context.Context, scenarioID uuid.UUID, selector, title, body string) (*domain.Step, error)
-	updateFunc  func(ctx context.Context, stepID uuid.UUID, selector, title, body *string) (*domain.Step, error)
+	createFunc  func(ctx context.Context, scenarioID uuid.UUID, selector, title, body string, nextURL *string) (*domain.Step, error)
+	updateFunc  func(ctx context.Context, stepID uuid.UUID, selector, title, body, nextURL *string) (*domain.Step, error)
 	deleteFunc  func(ctx context.Context, stepID uuid.UUID) error
 	reorderFunc func(ctx context.Context, scenarioID uuid.UUID, items []domain.ReorderItem) error
 }
 
-func (m *mockStepsService) CreateStep(ctx context.Context, scenarioID uuid.UUID, selector, title, body string) (*domain.Step, error) {
-	return m.createFunc(ctx, scenarioID, selector, title, body)
+func (m *mockStepsService) CreateStep(ctx context.Context, scenarioID uuid.UUID, selector, title, body string, nextURL *string) (*domain.Step, error) {
+	return m.createFunc(ctx, scenarioID, selector, title, body, nextURL)
 }
-func (m *mockStepsService) UpdateStep(ctx context.Context, stepID uuid.UUID, selector, title, body *string) (*domain.Step, error) {
-	return m.updateFunc(ctx, stepID, selector, title, body)
+func (m *mockStepsService) UpdateStep(ctx context.Context, stepID uuid.UUID, selector, title, body, nextURL *string) (*domain.Step, error) {
+	return m.updateFunc(ctx, stepID, selector, title, body, nextURL)
 }
 func (m *mockStepsService) DeleteStep(ctx context.Context, stepID uuid.UUID) error {
 	return m.deleteFunc(ctx, stepID)
@@ -48,7 +48,7 @@ func testStep() *domain.Step {
 
 func TestCreateStepHandler_Success(t *testing.T) {
 	svc := &mockStepsService{
-		createFunc: func(ctx context.Context, scenarioID uuid.UUID, selector, title, body string) (*domain.Step, error) {
+		createFunc: func(ctx context.Context, scenarioID uuid.UUID, selector, title, body string, _ *string) (*domain.Step, error) {
 			return testStep(), nil
 		},
 	}
@@ -69,7 +69,7 @@ func TestCreateStepHandler_Success(t *testing.T) {
 
 func TestCreateStepHandler_ScenarioNotFound(t *testing.T) {
 	svc := &mockStepsService{
-		createFunc: func(ctx context.Context, scenarioID uuid.UUID, selector, title, body string) (*domain.Step, error) {
+		createFunc: func(ctx context.Context, scenarioID uuid.UUID, selector, title, body string, _ *string) (*domain.Step, error) {
 			return nil, domain.ErrScenarioNotFound
 		},
 	}
@@ -90,7 +90,7 @@ func TestCreateStepHandler_ScenarioNotFound(t *testing.T) {
 
 func TestCreateStepHandler_ScenarioPublished(t *testing.T) {
 	svc := &mockStepsService{
-		createFunc: func(ctx context.Context, scenarioID uuid.UUID, selector, title, body string) (*domain.Step, error) {
+		createFunc: func(ctx context.Context, scenarioID uuid.UUID, selector, title, body string, _ *string) (*domain.Step, error) {
 			return nil, domain.ErrScenarioPublished
 		},
 	}
@@ -111,7 +111,7 @@ func TestCreateStepHandler_ScenarioPublished(t *testing.T) {
 
 func TestCreateStepHandler_InternalError(t *testing.T) {
 	svc := &mockStepsService{
-		createFunc: func(ctx context.Context, scenarioID uuid.UUID, selector, title, body string) (*domain.Step, error) {
+		createFunc: func(ctx context.Context, scenarioID uuid.UUID, selector, title, body string, _ *string) (*domain.Step, error) {
 			return nil, errors.New("db error")
 		},
 	}
@@ -134,7 +134,7 @@ func TestCreateStepHandler_InternalError(t *testing.T) {
 
 func TestUpdateStepHandler_Success(t *testing.T) {
 	svc := &mockStepsService{
-		updateFunc: func(ctx context.Context, stepID uuid.UUID, selector, title, body *string) (*domain.Step, error) {
+		updateFunc: func(ctx context.Context, stepID uuid.UUID, selector, title, body, _ *string) (*domain.Step, error) {
 			return testStep(), nil
 		},
 	}
@@ -156,7 +156,7 @@ func TestUpdateStepHandler_Success(t *testing.T) {
 
 func TestUpdateStepHandler_NotFound(t *testing.T) {
 	svc := &mockStepsService{
-		updateFunc: func(ctx context.Context, stepID uuid.UUID, selector, title, body *string) (*domain.Step, error) {
+		updateFunc: func(ctx context.Context, stepID uuid.UUID, selector, title, body, _ *string) (*domain.Step, error) {
 			return nil, domain.ErrStepNotFound
 		},
 	}
@@ -176,7 +176,7 @@ func TestUpdateStepHandler_NotFound(t *testing.T) {
 
 func TestUpdateStepHandler_Published(t *testing.T) {
 	svc := &mockStepsService{
-		updateFunc: func(ctx context.Context, stepID uuid.UUID, selector, title, body *string) (*domain.Step, error) {
+		updateFunc: func(ctx context.Context, stepID uuid.UUID, selector, title, body, _ *string) (*domain.Step, error) {
 			return nil, domain.ErrScenarioPublished
 		},
 	}
@@ -196,7 +196,7 @@ func TestUpdateStepHandler_Published(t *testing.T) {
 
 func TestUpdateStepHandler_InternalError(t *testing.T) {
 	svc := &mockStepsService{
-		updateFunc: func(ctx context.Context, stepID uuid.UUID, selector, title, body *string) (*domain.Step, error) {
+		updateFunc: func(ctx context.Context, stepID uuid.UUID, selector, title, body, _ *string) (*domain.Step, error) {
 			return nil, errors.New("db error")
 		},
 	}

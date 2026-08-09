@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/M2IE/Interactive-onboarding/pkg/database"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/service/analytics"
+	"github.com/M2IE/Interactive-onboarding/services/admin/internal/service/projects"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/service/publishes"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/service/scenarios"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/service/steps"
@@ -13,6 +14,7 @@ type IInfrastructure interface {
 	analytics.IAnalyticsInfrastructure
 	scenarios.IScenarioInfrastructure
 	steps.IStepsInfrastructure
+	projects.IProjectInfrastructure
 }
 
 type Service struct {
@@ -20,6 +22,7 @@ type Service struct {
 	*analytics.AnalyticsService
 	*scenarios.ScenarioService
 	*steps.StepsService
+	*projects.ProjectService
 }
 
 func NewService(infra IInfrastructure, txManager database.Database) *Service {
@@ -28,5 +31,6 @@ func NewService(infra IInfrastructure, txManager database.Database) *Service {
 		PublishService:   publishes.NewPublishService(infra, txManager),
 		ScenarioService:  scenarios.NewScenarioService(infra),
 		StepsService:     steps.NewStepsService(infra, txManager),
+		ProjectService:   projects.NewProjectService(infra),
 	}
 }

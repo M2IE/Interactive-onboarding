@@ -2,9 +2,12 @@ import { Button } from '@interactive-onboarding/ui'
 import {
   BarChart3,
   BookOpenCheck,
+  EyeOff,
   MonitorPlay,
   Plus,
+  RefreshCw,
   RotateCcw,
+  Save,
   Send,
   UserRound,
 } from 'lucide-react'
@@ -16,13 +19,18 @@ import {
 import { ScenarioEditor, useScenarioEditor } from '@/features/scenario-editor'
 import { appRoutes } from '@/shared/config/routes'
 import { AvitoLogo } from '@/shared/ui/AvitoLogo'
+import type { ApiMode } from '@/shared/config/appConfig'
 
-export function AdminPage() {
+type AdminPageProps = {
+  apiMode: ApiMode
+}
+
+export function AdminPage({ apiMode }: AdminPageProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const isAnalytics = location.pathname === appRoutes.adminAnalytics
   const editor = useScenarioEditor()
-  const analytics = useScenarioAnalytics(editor.activeScenario)
+  const analytics = useScenarioAnalytics()
 
   return (
     <div className="admin-shell">
@@ -67,15 +75,33 @@ export function AdminPage() {
           <div
             className={`admin-topbar__actions${isAnalytics ? ' is-compact' : ''}`}
           >
-            <Button
-              icon={<RotateCcw aria-hidden="true" size={17} />}
-              onClick={editor.restoreDemoScenario}
-              variant="ghost"
-            >
-              Сбросить
-            </Button>
+            {isAnalytics ? (
+              <Button
+                icon={<RefreshCw aria-hidden="true" size={17} />}
+                onClick={analytics.refreshAnalytics}
+                variant="ghost"
+              >
+                Обновить
+              </Button>
+            ) : (
+              <Button
+                disabled={editor.isBusy}
+                icon={
+                  apiMode === 'mock' ? (
+                    <RotateCcw aria-hidden="true" size={17} />
+                  ) : (
+                    <RefreshCw aria-hidden="true" size={17} />
+                  )
+                }
+                onClick={editor.reloadScenarios}
+                variant="ghost"
+              >
+                {apiMode === 'mock' ? 'Сбросить' : 'Обновить'}
+              </Button>
+            )}
             {!isAnalytics && (
               <Button
+                disabled={editor.isBusy}
                 icon={<Plus aria-hidden="true" size={18} />}
                 onClick={editor.createDraft}
               >
@@ -84,31 +110,70 @@ export function AdminPage() {
             )}
             {!isAnalytics && (
               <Button
-                icon={<Send aria-hidden="true" size={17} />}
-                onClick={editor.publishActiveScenario}
-                variant="primary"
+                disabled={editor.isBusy || editor.isReadOnly}
+                icon={<Save aria-hidden="true" size={17} />}
+                onClick={editor.saveActiveScenario}
+                variant="secondary"
               >
-                Опубликовать
+                Сохранить
               </Button>
             )}
+            {!isAnalytics &&
+              (editor.isPublished ? (
+                <Button
+                  disabled={editor.isBusy}
+                  icon={<EyeOff aria-hidden="true" size={17} />}
+                  onClick={editor.unpublishActiveScenario}
+                  variant="danger"
+                >
+                  Снять с публикации
+                </Button>
+              ) : !editor.isArchived ? (
+                <Button
+                  disabled={editor.isBusy}
+                  icon={<Send aria-hidden="true" size={17} />}
+                  onClick={editor.publishActiveScenario}
+                  variant="primary"
+                >
+                  Опубликовать
+                </Button>
+              ) : null)}
           </div>
         </header>
 
         {isAnalytics ? (
           <ScenarioAnalytics
-            events={analytics.events}
-            funnel={analytics.funnel}
             reportState={analytics.reportState}
-            summary={analytics.summary}
+            source={analytics.source}
+            workspace={analytics.workspace}
             onDownloadReport={analytics.downloadReport}
             onResetAnalytics={analytics.resetAnalytics}
+            onRetry={analytics.refreshAnalytics}
+            onSelectScenario={analytics.selectScenario}
           />
+        ) : editor.workflow.status === 'loading' && !editor.activeScenario ? (
+          <section className="editor-state" aria-live="polite">
+            <h2>Загружаем сценарии</h2>
+            <p>Получаем актуальные настройки и шаги из API.</p>
+          </section>
+        ) : editor.workflow.status === 'error' ? (
+          <section className="editor-state editor-state--error" role="alert">
+            <h2>Не удалось загрузить конструктор</h2>
+            <p>{editor.workflow.message}</p>
+            <Button onClick={editor.reloadScenarios}>Повторить</Button>
+          </section>
+        ) : !editor.activeScenario ? (
+          <section className="editor-state">
+            <h2>Сценариев пока нет</h2>
+            <p>Создайте первую точку входа и настройте шаги онбординга.</p>
+          </section>
         ) : (
           <ScenarioEditor
             activeScenario={editor.activeScenario}
             activeStep={editor.activeStep}
             scenarios={editor.scenarios}
-            workflow={editor.workflow}
+            readOnly={editor.isReadOnly}
+            showExtendedFields={apiMode === 'mock'}
             onAddStep={editor.addStep}
             onOpenDemo={() =>
               navigate(editor.activeScenario?.url ?? appRoutes.demo.profile)

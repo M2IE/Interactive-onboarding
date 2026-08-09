@@ -9,8 +9,39 @@ tags:
   - name: Steps
   - name: Publishing
   - name: Analytics
+  - name: Projects
 
 paths:
+  /admin/projects/{projectKey}:
+    get:
+      tags:
+        - Projects
+      summary: Get project by key
+      operationId: getProjectByKey
+      parameters:
+        - name: projectKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "404":
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+
   /admin/scenarios:
     post:
       tags:
@@ -109,7 +140,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Scenario"
+                $ref: "#/components/schemas/ScenarioWithSteps"
         "404":
           description: Не найден
           content:
@@ -494,6 +525,7 @@ components:
                 # HTTP 404
                 - SCENARIO_NOT_FOUND
                 - STEP_NOT_FOUND
+                - PROJECT_NOT_FOUND
 
                 # HTTP 409
                 - SCENARIO_ALREADY_PUBLISHED
@@ -665,6 +697,57 @@ components:
           type: integer
           format: int64
 
+    ScenarioWithSteps:
+      type: object
+      required:
+        - id
+        - projectId
+        - name
+        - url
+        - status
+        - steps
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        url:
+          type: string
+        status:
+          $ref: "#/components/schemas/ScenarioStatus"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/Step"
+
+    Project:
+      type: object
+      required:
+        - id
+        - name
+        - projectKey
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        projectKey:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
     CreateScenarioRequest:
       type: object
       required:
@@ -709,6 +792,9 @@ components:
           type: string
         body:
           type: string
+        nextUrl:
+          type: string
+          description: URL для перехода после завершения шага (опционально)
 
     CreateStepRequest:
       type: object
@@ -723,6 +809,9 @@ components:
           type: string
         body:
           type: string
+        nextUrl:
+          type: string
+          description: URL для перехода после завершения шага (опционально)
 
     UpdateStepRequest:
       type: object
@@ -733,3 +822,6 @@ components:
           type: string
         body:
           type: string
+        nextUrl:
+          type: string
+          description: URL для перехода после завершения шага (опционально)

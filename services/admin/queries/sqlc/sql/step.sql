@@ -1,6 +1,6 @@
 -- name: CopyStepsToScenario :exec
-INSERT INTO step (scenario_id, order_num, selector, title, body)
-SELECT sqlc.arg(dest_scenario_id)::uuid, order_num, selector, title, body
+INSERT INTO step (scenario_id, order_num, selector, title, body, next_url)
+SELECT sqlc.arg(dest_scenario_id)::uuid, order_num, selector, title, body, next_url
 FROM step WHERE scenario_id = sqlc.arg(src_scenario_id)::uuid;
 
 -- name: DecrementOrdersAfter :exec
@@ -15,14 +15,14 @@ SELECT * FROM step WHERE id = $1;
 SELECT * FROM step WHERE scenario_id = $1 ORDER BY order_num;
 
 -- name: CreateStep :one
-INSERT INTO step (id, scenario_id, order_num, selector, title, body)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO step (id, scenario_id, order_num, selector, title, body, next_url)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING *;
 
 -- name: UpdateStep :exec
 UPDATE step
-SET selector = $1, title = $2, body = $3
-WHERE id = $4;
+SET selector = $1, title = $2, body = $3, next_url = $4
+WHERE id = $5;
 
 -- name: DeleteStep :exec
 DELETE FROM step WHERE id = $1;

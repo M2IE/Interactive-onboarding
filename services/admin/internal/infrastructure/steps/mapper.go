@@ -1,6 +1,8 @@
 package steps
 
 import (
+	"database/sql"
+
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/M2IE/Interactive-onboarding/services/admin/queries/sqlc/gen"
 )
@@ -10,6 +12,12 @@ func toDomainStep(row *gen.Step) *domain.Step {
 	if row == nil {
 		return nil
 	}
+
+	var nextURL *string
+	if row.NextUrl.Valid {
+		nextURL = &row.NextUrl.String
+	}
+
 	return &domain.Step{
 		ID:         row.ID,
 		ScenarioID: row.ScenarioID,
@@ -17,6 +25,7 @@ func toDomainStep(row *gen.Step) *domain.Step {
 		Selector:   row.Selector,
 		Title:      row.Title,
 		Body:       row.Body,
+		NextURL:    nextURL,
 	}
 }
 
@@ -29,6 +38,7 @@ func toGenCreateStepParams(step *domain.Step) gen.CreateStepParams {
 		Selector:   step.Selector,
 		Title:      step.Title,
 		Body:       step.Body,
+		NextUrl:    toNullString(step.NextURL),
 	}
 }
 
@@ -39,5 +49,14 @@ func toGenUpdateStepParams(step *domain.Step) gen.UpdateStepParams {
 		Selector: step.Selector,
 		Title:    step.Title,
 		Body:     step.Body,
+		NextUrl:  toNullString(step.NextURL),
 	}
+}
+
+func toNullString(value *string) sql.NullString {
+	if value == nil {
+		return sql.NullString{}
+	}
+
+	return sql.NullString{String: *value, Valid: true}
 }

@@ -20,6 +20,39 @@ func ToDTOScenario(v *domain.Scenario) apiv1.Scenario {
 	}
 }
 
+func ToDTOScenarioWithSteps(v *domain.Scenario, steps []domain.Step) apiv1.ScenarioWithSteps {
+	return apiv1.ScenarioWithSteps{
+		Id:        v.ID,
+		ProjectId: v.ProjectID,
+		Url:       v.URL,
+		Name:      v.Name,
+		Status:    apiv1.ScenarioStatus(v.Status),
+		CreatedAt: &v.CreatedAt,
+		UpdatedAt: &v.UpdatedAt,
+		Steps:     toDTOSteps(steps),
+	}
+}
+
+func toDTOStep(s domain.Step) apiv1.Step {
+	return apiv1.Step{
+		Id:       s.ID,
+		OrderNum: s.OrderNum,
+		Selector: s.Selector,
+		Title:    s.Title,
+		Body:     s.Body,
+		NextUrl:  s.NextURL,
+	}
+}
+
+func toDTOSteps(steps []domain.Step) []apiv1.Step {
+	results := make([]apiv1.Step, 0, len(steps))
+	for _, s := range steps {
+		results = append(results, toDTOStep(s))
+	}
+
+	return results
+}
+
 func ToDTOsScenarios(v []domain.Scenario) []apiv1.Scenario {
 	results := make([]apiv1.Scenario, 0, len(v))
 	for _, v := range v {

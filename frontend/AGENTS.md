@@ -301,26 +301,27 @@ Do not make the SDK depend on the demo classifieds implementation.
 
 ## Current Compliance Snapshot
 
-Validated on 2026-08-07:
+Validated on 2026-08-09:
 
 - Monorepo workspaces exist under `apps/*` and `packages/*`.
 - `apps/web` follows the intended FSD direction: route pages are thin, scenario
   editing lives in `features/scenario-editor`, analytics lives in
   `features/scenario-analytics`, shared browser/storage helpers live under
-  `shared/hooks` and `shared/lib`.
+  `shared/hooks` and `shared/lib`. The current layer scan has no upward imports.
 - Redux Toolkit is wired in `apps/web/src/app/store`. Scenario editor state,
   selected scenario/step and publish workflow are modeled in a slice.
 - Jest + React Testing Library are wired at the workspace root. Existing tests
-  cover scenario publication/versioning, analytics aggregation and fixed SDK
-  button labels.
+  cover HTTP DTO mapping, scenario CRUD/publication, analytics states and PDF,
+  SPA navigation, mobile tooltip placement and fixed SDK button labels.
 - SDK is split into `packages/onboarding-sdk` and does not import from
   `apps/web`.
 - Admin primitives wrap Radix UI in `packages/ui`; Lucide provides action icons.
   The SDK remains independent from both dependencies.
 - Shared domain contracts exist in `packages/shared`; unsupported custom widget
   button-label fields are not part of `OnboardingStep`.
-- Mock persistence is behind `shared/lib/storage` and `shared/api`, not direct
-  `localStorage` calls in presentational UI.
+- Real API mode is the default. Mock persistence is available only through
+  `VITE_API_MODE=mock` and remains behind repositories/adapters rather than
+  presentational UI.
 - Workflow/report states use discriminated unions (`ScenarioEditorWorkflow`,
   `AsyncState<T>`) instead of contradictory boolean flag sets.
 - Scenario URL is edited as free text in the admin constructor and stored once
@@ -328,7 +329,15 @@ Validated on 2026-08-07:
   by `projectKey + pageUrl`.
 - Demo navigation uses React Router without document reloads. The SDK delegates
   cross-page transitions to the host navigation adapter and keeps a full-page
-  fallback for non-SPA integrations.
+  fallback for non-SPA integrations. Before following a step's `nextUrl`, it
+  awaits `step_completed` and blocks repeated actions during the handoff.
+- Admin scenarios, steps, publication, widget config/events, analytics and PDF
+  reports use the generated MVP OpenAPI contracts through `packages/api-client`.
+- The SDK injects isolated `.onboarding-sdk*` styles, has no Radix/UI-package
+  dependency and keeps its mobile tooltip inside the viewport. Session ids are
+  backend-compatible UUIDs even in insecure LAN HTTP contexts.
+- The production frontend is built by `frontend/Dockerfile`; the root gateway
+  serves the SPA and proxies `/api/v1/admin/*` and `/api/v1/widget/*`.
 
 Treat regressions from this snapshot as architectural debt to fix before
 expanding product surface area.

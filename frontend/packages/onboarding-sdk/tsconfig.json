@@ -10,5 +10,8 @@
   },
   "include": ["src"],
   "exclude": ["**/*.test.ts", "**/*.test.tsx"],
-  "references": [{ "path": "../shared" }]
+  "references": [
+    { "path": "../api-client" },
+    { "path": "../shared" }
+  ]
 }

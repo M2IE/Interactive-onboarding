@@ -44,6 +44,36 @@ func toDomainListScenarios(rows []gen.ListScenariosRow) ([]domain.Scenario, int6
 	return scenarios, total
 }
 
+func toDomainStep(row *gen.Step) *domain.Step {
+	if row == nil {
+		return nil
+	}
+
+	var nextURL *string
+	if row.NextUrl.Valid {
+		nextURL = &row.NextUrl.String
+	}
+
+	return &domain.Step{
+		ID:         row.ID,
+		ScenarioID: row.ScenarioID,
+		OrderNum:   int(row.OrderNum),
+		Selector:   row.Selector,
+		Title:      row.Title,
+		Body:       row.Body,
+		NextURL:    nextURL,
+	}
+}
+
+func toDomainSteps(rows []gen.Step) []domain.Step {
+	steps := make([]domain.Step, 0, len(rows))
+	for i := range rows {
+		steps = append(steps, *toDomainStep(&rows[i]))
+	}
+
+	return steps
+}
+
 func toGenCreateScenarioParams(projectID uuid.UUID, name, url string, status domain.ScenarioStatus) gen.CreateScenarioParams {
 	return gen.CreateScenarioParams{
 		ProjectID: projectID,

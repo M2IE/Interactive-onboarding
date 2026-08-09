@@ -52,11 +52,17 @@ type mockInfra struct {
 	listResp   []domain.Scenario
 	listTotal  int64
 	listErr    error
+	stepsResp  []domain.Step
+	stepsErr   error
 }
 
 func (m *mockInfra) Get(_ context.Context, _ database.Querier, id uuid.UUID) (*domain.Scenario, error) {
 	m.getID = id
 	return m.getResp, m.getErr
+}
+
+func (m *mockInfra) GetSteps(_ context.Context, _ database.Querier, _ uuid.UUID) ([]domain.Step, error) {
+	return m.stepsResp, m.stepsErr
 }
 
 func (m *mockInfra) Create(_ context.Context, _ database.Querier, projectID uuid.UUID, name, url string, status domain.ScenarioStatus) (*domain.Scenario, error) {
@@ -124,16 +130,20 @@ func TestCreate_DraftAlreadyExists(t *testing.T) {
 
 func TestGetByID_Success(t *testing.T) {
 	want := testScenario(domain.ScenarioStatusPublished)
-	infra := &mockInfra{getResp: want}
+	steps := []domain.Step{{ID: uuid.New(), ScenarioID: testScenarioID, OrderNum: 1}}
+	infra := &mockInfra{getResp: want, stepsResp: steps}
 	svc := NewScenarioService(infra)
 
-	got, err := svc.GetByID(context.Background(), testScenarioID)
+	got, gotSteps, err := svc.GetByID(context.Background(), testScenarioID)
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if got.ID != want.ID {
 		t.Errorf("result ID = %s, want %s", got.ID, want.ID)
+	}
+	if len(gotSteps) != 1 {
+		t.Errorf("got %d steps, want 1", len(gotSteps))
 	}
 	if infra.getID != testScenarioID {
 		t.Errorf("getID = %s, want %s", infra.getID, testScenarioID)
@@ -144,10 +154,21 @@ func TestGetByID_NotFound(t *testing.T) {
 	infra := &mockInfra{getErr: domain.ErrScenarioNotFound}
 	svc := NewScenarioService(infra)
 
-	_, err := svc.GetByID(context.Background(), testScenarioID)
+	_, _, err := svc.GetByID(context.Background(), testScenarioID)
 
 	if !errors.Is(err, domain.ErrScenarioNotFound) {
 		t.Errorf("err = %v, want ErrScenarioNotFound", err)
+	}
+}
+
+func TestGetByID_StepsError(t *testing.T) {
+	infra := &mockInfra{getResp: testScenario(domain.ScenarioStatusDraft), stepsErr: errors.New("db down")}
+	svc := NewScenarioService(infra)
+
+	_, _, err := svc.GetByID(context.Background(), testScenarioID)
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
 	}
 }
 

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type {
   OnboardingScenario,
   OnboardingStep,
+  ScenarioStatus,
 } from '@interactive-onboarding/shared'
 import {
   Badge,
@@ -25,7 +26,6 @@ import {
   Sparkles,
   Workflow,
 } from 'lucide-react'
-import type { ScenarioEditorWorkflow } from '../model/scenarioEditorSlice'
 
 const placementOptions: Array<{
   label: string
@@ -46,11 +46,23 @@ const completionOptions: Array<{
   { label: 'Переход', value: 'navigate' },
 ]
 
+type ScenarioStatusFilter = 'active' | 'archived' | 'all'
+
+const scenarioStatusPresentation: Record<
+  ScenarioStatus,
+  { label: string; tone: 'blue' | 'green' | 'gray' }
+> = {
+  draft: { label: 'Черновик', tone: 'blue' },
+  published: { label: 'Опубликован', tone: 'green' },
+  archived: { label: 'Архивный', tone: 'gray' },
+}
+
 type ScenarioEditorProps = {
   scenarios: OnboardingScenario[]
   activeScenario?: OnboardingScenario
   activeStep?: OnboardingStep
-  workflow: ScenarioEditorWorkflow
+  readOnly?: boolean
+  showExtendedFields?: boolean
   onAddStep: () => void
   onOpenDemo: () => void
   onSelectScenario: (scenarioId: string) => void
@@ -67,7 +79,8 @@ export function ScenarioEditor({
   scenarios,
   activeScenario,
   activeStep,
-  workflow,
+  readOnly = false,
+  showExtendedFields = true,
   onAddStep,
   onOpenDemo,
   onSelectScenario,
@@ -75,8 +88,20 @@ export function ScenarioEditor({
   onUpdateScenarioMeta,
   onUpdateStep,
 }: ScenarioEditorProps) {
-  if (!activeScenario || !activeStep) {
+  if (!activeScenario) {
     return null
+  }
+
+  if (!activeStep) {
+    return (
+      <section className="editor-state">
+        <h2>В сценарии пока нет шагов</h2>
+        <p>Добавьте первую подсказку и укажите элемент страницы.</p>
+        <Button disabled={readOnly} onClick={onAddStep}>
+          Добавить шаг
+        </Button>
+      </section>
+    )
   }
 
   return (
@@ -116,16 +141,24 @@ export function ScenarioEditor({
         >
           <ScenarioMetaForm
             scenario={activeScenario}
+            readOnly={readOnly}
+            showExtendedFields={showExtendedFields}
             onUpdateScenarioMeta={onUpdateScenarioMeta}
           />
           <div className="scenario-editor-body">
             <StepTimeline
               activeScenario={activeScenario}
               activeStep={activeStep}
+              readOnly={readOnly}
               onAddStep={onAddStep}
               onSelectStep={onSelectStep}
             />
-            <StepForm activeStep={activeStep} onUpdateStep={onUpdateStep} />
+            <StepForm
+              activeStep={activeStep}
+              readOnly={readOnly}
+              showExtendedFields={showExtendedFields}
+              onUpdateStep={onUpdateStep}
+            />
           </div>
         </TabsContent>
 
@@ -136,10 +169,7 @@ export function ScenarioEditor({
         >
           <ScenarioPreview
             activeStep={activeStep}
-            published={
-              activeScenario.status === 'published' ||
-              workflow.status === 'published'
-            }
+            status={activeScenario.status}
             onOpenDemo={onOpenDemo}
           />
         </TabsContent>
@@ -160,15 +190,24 @@ function ScenarioRegistry({
   onSelectScenario,
 }: ScenarioRegistryProps) {
   const [query, setQuery] = useState('')
+  const [statusFilter, setStatusFilter] =
+    useState<ScenarioStatusFilter>('active')
   const normalizedQuery = query.trim().toLocaleLowerCase('ru')
   const filteredScenarios = useMemo(
     () =>
-      scenarios.filter((scenario) =>
-        `${scenario.name} ${scenario.url}`
+      scenarios.filter((scenario) => {
+        const matchesStatus =
+          statusFilter === 'all' ||
+          (statusFilter === 'archived'
+            ? scenario.status === 'archived'
+            : scenario.status !== 'archived')
+        const matchesQuery = `${scenario.name} ${scenario.url}`
           .toLocaleLowerCase('ru')
-          .includes(normalizedQuery),
-      ),
-    [normalizedQuery, scenarios],
+          .includes(normalizedQuery)
+
+        return matchesStatus && matchesQuery
+      }),
+    [normalizedQuery, scenarios, statusFilter],
   )
 
   return (
@@ -176,8 +215,36 @@ function ScenarioRegistry({
       <div className="workspace-section-header">
         <div>
           <h2>Сценарии</h2>
-          <span>{scenarios.length} точки входа</span>
+          <span>{filteredScenarios.length} сценариев</span>
         </div>
+      </div>
+
+      <div
+        aria-label="Фильтр сценариев"
+        className="scenario-status-filter"
+        role="group"
+      >
+        <button
+          aria-pressed={statusFilter === 'active'}
+          onClick={() => setStatusFilter('active')}
+          type="button"
+        >
+          Активные
+        </button>
+        <button
+          aria-pressed={statusFilter === 'archived'}
+          onClick={() => setStatusFilter('archived')}
+          type="button"
+        >
+          Архив
+        </button>
+        <button
+          aria-pressed={statusFilter === 'all'}
+          onClick={() => setStatusFilter('all')}
+          type="button"
+        >
+          Все
+        </button>
       </div>
 
       <label className="scenario-search">
@@ -205,13 +272,10 @@ function ScenarioRegistry({
             <span className="scenario-list__content">
               <strong>{scenario.name}</strong>
               <small>{scenario.url}</small>
-              <Badge
+              <ScenarioStatusBadge
                 className="scenario-status"
-                dot
-                tone={scenario.status === 'published' ? 'green' : 'gray'}
-              >
-                {scenario.status === 'published' ? 'Опубликован' : 'Черновик'}
-              </Badge>
+                status={scenario.status}
+              />
             </span>
           </button>
         ))}
@@ -226,6 +290,8 @@ function ScenarioRegistry({
 
 type ScenarioMetaFormProps = {
   scenario: OnboardingScenario
+  readOnly: boolean
+  showExtendedFields: boolean
   onUpdateScenarioMeta: (patch: {
     name?: string
     description?: string
@@ -235,6 +301,8 @@ type ScenarioMetaFormProps = {
 
 function ScenarioMetaForm({
   scenario,
+  readOnly,
+  showExtendedFields,
   onUpdateScenarioMeta,
 }: ScenarioMetaFormProps) {
   return (
@@ -244,15 +312,14 @@ function ScenarioMetaForm({
           <h2>Настройки сценария</h2>
           <span>Основные данные точки входа</span>
         </div>
-        <Badge dot tone={scenario.status === 'published' ? 'green' : 'gray'}>
-          {scenario.status === 'published' ? 'Опубликован' : 'Черновик'}
-        </Badge>
+        <ScenarioStatusBadge status={scenario.status} />
       </div>
 
       <div className="scenario-meta">
         <label>
           <span>Название сценария</span>
           <input
+            disabled={readOnly}
             value={scenario.name}
             onChange={(event) =>
               onUpdateScenarioMeta({ name: event.target.value })
@@ -262,6 +329,7 @@ function ScenarioMetaForm({
         <label>
           <span>Путь страницы</span>
           <input
+            disabled={readOnly}
             placeholder="/demo/new/auto"
             value={scenario.url}
             onChange={(event) =>
@@ -269,15 +337,18 @@ function ScenarioMetaForm({
             }
           />
         </label>
-        <label className="scenario-meta__description">
-          <span>Описание</span>
-          <textarea
-            value={scenario.description}
-            onChange={(event) =>
-              onUpdateScenarioMeta({ description: event.target.value })
-            }
-          />
-        </label>
+        {showExtendedFields && (
+          <label className="scenario-meta__description">
+            <span>Описание</span>
+            <textarea
+              disabled={readOnly}
+              value={scenario.description}
+              onChange={(event) =>
+                onUpdateScenarioMeta({ description: event.target.value })
+              }
+            />
+          </label>
+        )}
       </div>
     </section>
   )
@@ -286,6 +357,7 @@ function ScenarioMetaForm({
 type StepTimelineProps = {
   activeScenario: OnboardingScenario
   activeStep: OnboardingStep
+  readOnly: boolean
   onAddStep: () => void
   onSelectStep: (stepId: string) => void
 }
@@ -293,6 +365,7 @@ type StepTimelineProps = {
 function StepTimeline({
   activeScenario,
   activeStep,
+  readOnly,
   onAddStep,
   onSelectStep,
 }: StepTimelineProps) {
@@ -310,6 +383,7 @@ function StepTimeline({
         <IconButton
           icon={<Plus aria-hidden="true" size={18} />}
           label="Добавить шаг"
+          disabled={readOnly}
           onClick={onAddStep}
           variant="secondary"
         />
@@ -339,10 +413,17 @@ function StepTimeline({
 
 type StepFormProps = {
   activeStep: OnboardingStep
+  readOnly: boolean
+  showExtendedFields: boolean
   onUpdateStep: (patch: Partial<OnboardingStep>) => void
 }
 
-function StepForm({ activeStep, onUpdateStep }: StepFormProps) {
+function StepForm({
+  activeStep,
+  readOnly,
+  showExtendedFields,
+  onUpdateStep,
+}: StepFormProps) {
   return (
     <section className="step-inspector">
       <div className="workspace-section-header workspace-section-header--compact">
@@ -356,6 +437,7 @@ function StepForm({ activeStep, onUpdateStep }: StepFormProps) {
         <label>
           <span>Заголовок подсказки</span>
           <input
+            disabled={readOnly}
             value={activeStep.title}
             onChange={(event) => onUpdateStep({ title: event.target.value })}
           />
@@ -363,6 +445,7 @@ function StepForm({ activeStep, onUpdateStep }: StepFormProps) {
         <label>
           <span>Текст подсказки</span>
           <textarea
+            disabled={readOnly}
             value={activeStep.body}
             onChange={(event) => onUpdateStep({ body: event.target.value })}
           />
@@ -370,27 +453,31 @@ function StepForm({ activeStep, onUpdateStep }: StepFormProps) {
         <label>
           <span>Селектор элемента</span>
           <input
+            disabled={readOnly}
             value={activeStep.selector}
             onChange={(event) => onUpdateStep({ selector: event.target.value })}
           />
         </label>
-        <div className="form-grid">
-          <SelectField
-            label="Позиция подсказки"
-            options={placementOptions}
-            value={activeStep.placement}
-            onValueChange={(placement) => onUpdateStep({ placement })}
-          />
-          <SelectField
-            label="Завершение шага"
-            options={completionOptions}
-            value={activeStep.completion}
-            onValueChange={(completion) => onUpdateStep({ completion })}
-          />
-        </div>
+        {showExtendedFields && (
+          <div className="form-grid">
+            <SelectField
+              label="Позиция подсказки"
+              options={placementOptions}
+              value={activeStep.placement}
+              onValueChange={(placement) => onUpdateStep({ placement })}
+            />
+            <SelectField
+              label="Завершение шага"
+              options={completionOptions}
+              value={activeStep.completion}
+              onValueChange={(completion) => onUpdateStep({ completion })}
+            />
+          </div>
+        )}
         <label>
           <span>URL перехода</span>
           <input
+            disabled={readOnly}
             placeholder="Опционально"
             value={activeStep.nextUrl ?? ''}
             onChange={(event) =>
@@ -398,16 +485,21 @@ function StepForm({ activeStep, onUpdateStep }: StepFormProps) {
             }
           />
         </label>
-        <label>
-          <span>Условие показа</span>
-          <input
-            placeholder="Например: firstListing=true"
-            value={activeStep.condition ?? ''}
-            onChange={(event) =>
-              onUpdateStep({ condition: event.target.value || undefined })
-            }
-          />
-        </label>
+        {showExtendedFields && (
+          <>
+            <label>
+              <span>Условие показа</span>
+              <input
+                disabled={readOnly}
+                placeholder="Например: firstListing=true"
+                value={activeStep.condition ?? ''}
+                onChange={(event) =>
+                  onUpdateStep({ condition: event.target.value || undefined })
+                }
+              />
+            </label>
+          </>
+        )}
       </div>
     </section>
   )
@@ -415,13 +507,13 @@ function StepForm({ activeStep, onUpdateStep }: StepFormProps) {
 
 type ScenarioPreviewProps = {
   activeStep: OnboardingStep
-  published: boolean
+  status: ScenarioStatus
   onOpenDemo: () => void
 }
 
 function ScenarioPreview({
   activeStep,
-  published,
+  status,
   onOpenDemo,
 }: ScenarioPreviewProps) {
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>(
@@ -484,12 +576,15 @@ function ScenarioPreview({
       </div>
 
       <div className="preview-footer">
-        <Badge tone={published ? 'green' : 'blue'} dot>
-          {published
+        <Badge tone={scenarioStatusPresentation[status].tone} dot>
+          {status === 'published'
             ? 'Конфигурация опубликована'
-            : 'Предпросмотр черновика'}
+            : status === 'archived'
+              ? 'Архивная версия'
+              : 'Предпросмотр черновика'}
         </Badge>
         <Button
+          disabled={status === 'archived'}
           icon={<ExternalLink aria-hidden="true" size={17} />}
           onClick={onOpenDemo}
           variant="primary"
@@ -498,5 +593,21 @@ function ScenarioPreview({
         </Button>
       </div>
     </section>
+  )
+}
+
+function ScenarioStatusBadge({
+  status,
+  className,
+}: {
+  status: ScenarioStatus
+  className?: string
+}) {
+  const presentation = scenarioStatusPresentation[status]
+
+  return (
+    <Badge className={className} dot tone={presentation.tone}>
+      {presentation.label}
+    </Badge>
   )
 }

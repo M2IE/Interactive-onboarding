@@ -14,18 +14,19 @@ type Querier interface {
 	ArchiveByProjectAndStatus(ctx context.Context, db DBTX, arg ArchiveByProjectAndStatusParams) (int64, error)
 	CopyStepsToScenario(ctx context.Context, db DBTX, arg CopyStepsToScenarioParams) error
 	CreateScenario(ctx context.Context, db DBTX, arg CreateScenarioParams) (Scenario, error)
-	GetAnalytics(ctx context.Context, db DBTX, scenarioID uuid.NullUUID) (GetAnalyticsRow, error)
-	GetScenario(ctx context.Context, db DBTX, id uuid.UUID) (Scenario, error)
-	GetStepAnalytics(ctx context.Context, db DBTX, scenarioID uuid.NullUUID) ([]GetStepAnalyticsRow, error)
-	ScenarioExists(ctx context.Context, db DBTX, id uuid.UUID) (bool, error)
 	CreateStep(ctx context.Context, db DBTX, arg CreateStepParams) (Step, error)
 	DecrementOrdersAfter(ctx context.Context, db DBTX, arg DecrementOrdersAfterParams) error
 	DeleteStep(ctx context.Context, db DBTX, id uuid.UUID) error
+	GetAnalytics(ctx context.Context, db DBTX, scenarioID uuid.NullUUID) (GetAnalyticsRow, error)
 	GetMaxOrderByScenario(ctx context.Context, db DBTX, scenarioID uuid.UUID) (int32, error)
+	GetProjectByKey(ctx context.Context, db DBTX, projectKey string) (Project, error)
+	GetScenario(ctx context.Context, db DBTX, id uuid.UUID) (Scenario, error)
 	GetScenarioStatus(ctx context.Context, db DBTX, id uuid.UUID) (ScenarioStatus, error)
+	GetStepAnalytics(ctx context.Context, db DBTX, scenarioID uuid.NullUUID) ([]GetStepAnalyticsRow, error)
 	GetStepByID(ctx context.Context, db DBTX, id uuid.UUID) (Step, error)
 	GetStepsByScenario(ctx context.Context, db DBTX, scenarioID uuid.UUID) ([]Step, error)
 	ListScenarios(ctx context.Context, db DBTX, arg ListScenariosParams) ([]ListScenariosRow, error)
+	ScenarioExists(ctx context.Context, db DBTX, id uuid.UUID) (bool, error)
 	UpdateScenario(ctx context.Context, db DBTX, arg UpdateScenarioParams) (Scenario, error)
 	UpdateScenarioStatusById(ctx context.Context, db DBTX, arg UpdateScenarioStatusByIdParams) error
 	UpdateStep(ctx context.Context, db DBTX, arg UpdateStepParams) error

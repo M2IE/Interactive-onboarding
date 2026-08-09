@@ -7,13 +7,14 @@ package gen
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
 
 const copyStepsToScenario = `-- name: CopyStepsToScenario :exec
-INSERT INTO step (scenario_id, order_num, selector, title, body)
-SELECT $1::uuid, order_num, selector, title, body
+INSERT INTO step (scenario_id, order_num, selector, title, body, next_url)
+SELECT $1::uuid, order_num, selector, title, body, next_url
 FROM step WHERE scenario_id = $2::uuid
 `
 
@@ -28,18 +29,19 @@ func (q *Queries) CopyStepsToScenario(ctx context.Context, db DBTX, arg CopyStep
 }
 
 const createStep = `-- name: CreateStep :one
-INSERT INTO step (id, scenario_id, order_num, selector, title, body)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, scenario_id, order_num, selector, title, body
+INSERT INTO step (id, scenario_id, order_num, selector, title, body, next_url)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, scenario_id, order_num, selector, title, body, next_url
 `
 
 type CreateStepParams struct {
-	ID         uuid.UUID `db:"id"`
-	ScenarioID uuid.UUID `db:"scenario_id"`
-	OrderNum   int32     `db:"order_num"`
-	Selector   string    `db:"selector"`
-	Title      string    `db:"title"`
-	Body       string    `db:"body"`
+	ID         uuid.UUID      `db:"id"`
+	ScenarioID uuid.UUID      `db:"scenario_id"`
+	OrderNum   int32          `db:"order_num"`
+	Selector   string         `db:"selector"`
+	Title      string         `db:"title"`
+	Body       string         `db:"body"`
+	NextUrl    sql.NullString `db:"next_url"`
 }
 
 func (q *Queries) CreateStep(ctx context.Context, db DBTX, arg CreateStepParams) (Step, error) {
@@ -50,6 +52,7 @@ func (q *Queries) CreateStep(ctx context.Context, db DBTX, arg CreateStepParams)
 		arg.Selector,
 		arg.Title,
 		arg.Body,
+		arg.NextUrl,
 	)
 	var i Step
 	err := row.Scan(
@@ -59,6 +62,7 @@ func (q *Queries) CreateStep(ctx context.Context, db DBTX, arg CreateStepParams)
 		&i.Selector,
 		&i.Title,
 		&i.Body,
+		&i.NextUrl,
 	)
 	return i, err
 }
@@ -100,7 +104,7 @@ func (q *Queries) GetMaxOrderByScenario(ctx context.Context, db DBTX, scenarioID
 }
 
 const getStepByID = `-- name: GetStepByID :one
-SELECT id, scenario_id, order_num, selector, title, body FROM step WHERE id = $1
+SELECT id, scenario_id, order_num, selector, title, body, next_url FROM step WHERE id = $1
 `
 
 func (q *Queries) GetStepByID(ctx context.Context, db DBTX, id uuid.UUID) (Step, error) {
@@ -113,12 +117,13 @@ func (q *Queries) GetStepByID(ctx context.Context, db DBTX, id uuid.UUID) (Step,
 		&i.Selector,
 		&i.Title,
 		&i.Body,
+		&i.NextUrl,
 	)
 	return i, err
 }
 
 const getStepsByScenario = `-- name: GetStepsByScenario :many
-SELECT id, scenario_id, order_num, selector, title, body FROM step WHERE scenario_id = $1 ORDER BY order_num
+SELECT id, scenario_id, order_num, selector, title, body, next_url FROM step WHERE scenario_id = $1 ORDER BY order_num
 `
 
 func (q *Queries) GetStepsByScenario(ctx context.Context, db DBTX, scenarioID uuid.UUID) ([]Step, error) {
@@ -137,6 +142,7 @@ func (q *Queries) GetStepsByScenario(ctx context.Context, db DBTX, scenarioID uu
 			&i.Selector,
 			&i.Title,
 			&i.Body,
+			&i.NextUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -153,15 +159,16 @@ func (q *Queries) GetStepsByScenario(ctx context.Context, db DBTX, scenarioID uu
 
 const updateStep = `-- name: UpdateStep :exec
 UPDATE step
-SET selector = $1, title = $2, body = $3
-WHERE id = $4
+SET selector = $1, title = $2, body = $3, next_url = $4
+WHERE id = $5
 `
 
 type UpdateStepParams struct {
-	Selector string    `db:"selector"`
-	Title    string    `db:"title"`
-	Body     string    `db:"body"`
-	ID       uuid.UUID `db:"id"`
+	Selector string         `db:"selector"`
+	Title    string         `db:"title"`
+	Body     string         `db:"body"`
+	NextUrl  sql.NullString `db:"next_url"`
+	ID       uuid.UUID      `db:"id"`
 }
 
 func (q *Queries) UpdateStep(ctx context.Context, db DBTX, arg UpdateStepParams) error {
@@ -169,6 +176,7 @@ func (q *Queries) UpdateStep(ctx context.Context, db DBTX, arg UpdateStepParams)
 		arg.Selector,
 		arg.Title,
 		arg.Body,
+		arg.NextUrl,
 		arg.ID,
 	)
 	return err

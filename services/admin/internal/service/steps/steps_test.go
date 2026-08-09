@@ -135,7 +135,7 @@ func TestCreateStep_Success(t *testing.T) {
 	}
 	svc := newSvc(infra, &mockDB{tx: tx})
 
-	step, err := svc.CreateStep(context.Background(), testScenarioID, "#test", "Test", "Body")
+	step, err := svc.CreateStep(context.Background(), testScenarioID, "#test", "Test", "Body", nil)
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -155,7 +155,7 @@ func TestCreateStep_ScenarioPublished(t *testing.T) {
 	}
 	svc := newSvc(infra, &mockDB{tx: tx})
 
-	_, err := svc.CreateStep(context.Background(), testScenarioID, "#test", "Test", "Body")
+	_, err := svc.CreateStep(context.Background(), testScenarioID, "#test", "Test", "Body", nil)
 
 	if !errors.Is(err, domain.ErrScenarioPublished) {
 		t.Errorf("err = %v, want ErrScenarioPublished", err)
@@ -174,7 +174,7 @@ func TestCreateStep_CreateFails(t *testing.T) {
 	}
 	svc := newSvc(infra, &mockDB{tx: tx})
 
-	_, err := svc.CreateStep(context.Background(), testScenarioID, "#test", "Test", "Body")
+	_, err := svc.CreateStep(context.Background(), testScenarioID, "#test", "Test", "Body", nil)
 
 	if err == nil {
 		t.Fatal("expected error, got nil")
@@ -197,7 +197,7 @@ func TestUpdateStep_Success(t *testing.T) {
 
 	newSelector := "#updated"
 	newTitle := "Updated"
-	step, err := svc.UpdateStep(context.Background(), testStepID, &newSelector, &newTitle, nil)
+	step, err := svc.UpdateStep(context.Background(), testStepID, &newSelector, &newTitle, nil, nil)
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -220,7 +220,7 @@ func TestUpdateStep_NotFound(t *testing.T) {
 	}
 	svc := newSvc(infra, &mockDB{tx: tx})
 
-	_, err := svc.UpdateStep(context.Background(), testStepID, nil, nil, nil)
+	_, err := svc.UpdateStep(context.Background(), testStepID, nil, nil, nil, nil)
 
 	if !errors.Is(err, domain.ErrStepNotFound) {
 		t.Errorf("err = %v, want ErrStepNotFound", err)
@@ -238,7 +238,7 @@ func TestUpdateStep_Published(t *testing.T) {
 	}
 	svc := newSvc(infra, &mockDB{tx: tx})
 
-	_, err := svc.UpdateStep(context.Background(), testStepID, nil, nil, nil)
+	_, err := svc.UpdateStep(context.Background(), testStepID, nil, nil, nil, nil)
 
 	if !errors.Is(err, domain.ErrScenarioPublished) {
 		t.Errorf("err = %v, want ErrScenarioPublished", err)

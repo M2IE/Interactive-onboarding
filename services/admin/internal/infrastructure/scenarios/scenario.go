@@ -51,6 +51,15 @@ func (s *ScenarioInfrastructure) Get(ctx context.Context, db database.Querier, s
 	return toDomainScenario(&row), nil
 }
 
+func (s *ScenarioInfrastructure) GetSteps(ctx context.Context, db database.Querier, scenarioID uuid.UUID) ([]domain.Step, error) {
+	rows, err := s.q.GetStepsByScenario(ctx, s.querier(db), scenarioID)
+	if err != nil {
+		return nil, err
+	}
+
+	return toDomainSteps(rows), nil
+}
+
 func (s *ScenarioInfrastructure) List(ctx context.Context, db database.Querier, size, page int, projectID *uuid.UUID) ([]domain.Scenario, int64, error) {
 	offset := (page - 1) * size
 	rows, err := s.q.ListScenarios(ctx, s.querier(db), toGenListScenarioParams(offset, size, projectID))

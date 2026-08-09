@@ -13,7 +13,7 @@ import (
 type mockScenarioService struct {
 	listFunc   func(ctx context.Context, cmd domain.ListScenarios) ([]domain.Scenario, int64, error)
 	createFunc func(ctx context.Context, cmd domain.CreateScenario) (*domain.Scenario, error)
-	getFunc    func(ctx context.Context, id uuid.UUID) (*domain.Scenario, error)
+	getFunc    func(ctx context.Context, id uuid.UUID) (*domain.Scenario, []domain.Step, error)
 	updateFunc func(ctx context.Context, id uuid.UUID, cmd domain.UpdateScenario) (*domain.Scenario, error)
 }
 
@@ -23,7 +23,7 @@ func (m *mockScenarioService) List(ctx context.Context, cmd domain.ListScenarios
 func (m *mockScenarioService) Create(ctx context.Context, cmd domain.CreateScenario) (*domain.Scenario, error) {
 	return m.createFunc(ctx, cmd)
 }
-func (m *mockScenarioService) GetByID(ctx context.Context, id uuid.UUID) (*domain.Scenario, error) {
+func (m *mockScenarioService) GetByID(ctx context.Context, id uuid.UUID) (*domain.Scenario, []domain.Step, error) {
 	return m.getFunc(ctx, id)
 }
 func (m *mockScenarioService) Update(ctx context.Context, id uuid.UUID, cmd domain.UpdateScenario) (*domain.Scenario, error) {
@@ -81,8 +81,8 @@ func TestListHandler_Error(t *testing.T) {
 
 func TestGetHandler_Success(t *testing.T) {
 	svc := &mockScenarioService{
-		getFunc: func(ctx context.Context, id uuid.UUID) (*domain.Scenario, error) {
-			return testScenario(), nil
+		getFunc: func(ctx context.Context, id uuid.UUID) (*domain.Scenario, []domain.Step, error) {
+			return testScenario(), nil, nil
 		},
 	}
 	h := NewScenarioHandler(svc)
@@ -98,8 +98,8 @@ func TestGetHandler_Success(t *testing.T) {
 
 func TestGetHandler_NotFound(t *testing.T) {
 	svc := &mockScenarioService{
-		getFunc: func(ctx context.Context, id uuid.UUID) (*domain.Scenario, error) {
-			return nil, domain.ErrScenarioNotFound
+		getFunc: func(ctx context.Context, id uuid.UUID) (*domain.Scenario, []domain.Step, error) {
+			return nil, nil, domain.ErrScenarioNotFound
 		},
 	}
 	h := NewScenarioHandler(svc)

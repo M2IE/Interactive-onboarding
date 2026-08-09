@@ -1,82 +1,61 @@
-import { useMemo, useState } from 'react'
-import type { OnboardingScenario } from '@interactive-onboarding/shared'
+import { useEffect } from 'react'
+import type { ThunkDispatch, UnknownAction } from '@reduxjs/toolkit'
+import { useDispatch, useSelector } from 'react-redux'
 import {
-  clearEvents,
-  downloadAnalyticsPdf,
-  readEvents,
-} from '@/shared/api/mockOnboardingApi'
-import {
-  errorState,
-  idleState,
-  loadingState,
-  successState,
-  type AsyncState,
-} from '@/shared/lib/asyncState'
-import {
-  buildAnalyticsSummaryFromEvents,
-  buildStepFunnelFromEvents,
-} from '../model/analytics'
+  downloadScenarioAnalyticsReport,
+  loadScenarioAnalytics,
+  resetScenarioAnalytics,
+  type AnalyticsRepositoryServices,
+  type ScenarioAnalyticsState,
+} from '../model/scenarioAnalyticsSlice'
 
-type ReportResult = {
-  message: string
+type ScenarioAnalyticsRootState = {
+  scenarioAnalytics: ScenarioAnalyticsState
 }
 
-export function useScenarioAnalytics(scenario?: OnboardingScenario) {
-  const [events, setEvents] = useState(readEvents)
-  const [reportState, setReportState] =
-    useState<AsyncState<ReportResult>>(() => idleState())
+type ScenarioAnalyticsDispatch = ThunkDispatch<
+  ScenarioAnalyticsRootState,
+  AnalyticsRepositoryServices,
+  UnknownAction
+>
 
-  const summary = useMemo(
-    () => buildAnalyticsSummaryFromEvents(events),
-    [events],
+const useScenarioAnalyticsDispatch =
+  useDispatch.withTypes<ScenarioAnalyticsDispatch>()
+const useScenarioAnalyticsSelector =
+  useSelector.withTypes<ScenarioAnalyticsRootState>()
+
+export function useScenarioAnalytics() {
+  const dispatch = useScenarioAnalyticsDispatch()
+  const state = useScenarioAnalyticsSelector(
+    (rootState) => rootState.scenarioAnalytics,
   )
-  const funnel = useMemo(
-    () => (scenario ? buildStepFunnelFromEvents(scenario, events) : []),
-    [events, scenario],
-  )
 
-  function refreshEvents() {
-    setEvents(readEvents())
-  }
-
-  function resetAnalytics() {
-    clearEvents()
-    setEvents([])
-    setReportState(idleState())
-  }
-
-  function downloadReport() {
-    if (!scenario) {
-      return
+  useEffect(() => {
+    if (state.workspace.status === 'idle') {
+      void dispatch(loadScenarioAnalytics())
     }
-
-    setReportState(loadingState())
-
-    try {
-      downloadAnalyticsPdf(scenario)
-      setReportState(
-        successState({
-          message: 'PDF-отчет сформирован и отправлен на скачивание',
-        }),
-      )
-    } catch (error) {
-      setReportState(
-        errorState(
-          error instanceof Error
-            ? error.message
-            : 'Не удалось сформировать PDF-отчет',
-        ),
-      )
-    }
-  }
+  }, [dispatch, state.workspace.status])
 
   return {
-    events,
-    funnel,
-    reportState,
-    summary,
-    downloadReport,
-    refreshEvents,
-    resetAnalytics,
+    reportState: state.report,
+    source: state.source,
+    workspace: state.workspace,
+    downloadReport: () => {
+      void dispatch(downloadScenarioAnalyticsReport())
+    },
+    refreshAnalytics: () => {
+      const scenarioId =
+        state.workspace.status === 'success'
+          ? state.workspace.data.selectedScenarioId
+          : undefined
+
+      void dispatch(loadScenarioAnalytics(scenarioId))
+    },
+    resetAnalytics: () => {
+      void dispatch(resetScenarioAnalytics())
+    },
+    selectScenario: (scenarioId: string) => {
+      void dispatch(loadScenarioAnalytics(scenarioId))
+    },
   }
 }

@@ -23,7 +23,7 @@ func (q *Queries) GetMaxOrderByScenario(ctx context.Context, db DBTX, scenarioID
 }
 
 const getStepByID = `-- name: GetStepByID :one
-SELECT id, scenario_id, order_num, selector, title, body
+SELECT id, scenario_id, order_num, selector, title, body, next_url
 FROM step
 WHERE id = $1
 `
@@ -38,12 +38,13 @@ func (q *Queries) GetStepByID(ctx context.Context, db DBTX, id uuid.UUID) (Step,
 		&i.Selector,
 		&i.Title,
 		&i.Body,
+		&i.NextUrl,
 	)
 	return i, err
 }
 
 const getStepsByScenario = `-- name: GetStepsByScenario :many
-SELECT id, scenario_id, order_num, selector, title, body
+SELECT id, scenario_id, order_num, selector, title, body, next_url
 FROM step
 WHERE scenario_id = $1
 ORDER BY order_num
@@ -65,6 +66,7 @@ func (q *Queries) GetStepsByScenario(ctx context.Context, db DBTX, scenarioID uu
 			&i.Selector,
 			&i.Title,
 			&i.Body,
+			&i.NextUrl,
 		); err != nil {
 			return nil, err
 		}
