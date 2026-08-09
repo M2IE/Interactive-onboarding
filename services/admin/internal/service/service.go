@@ -24,7 +24,7 @@ type Service struct {
 
 func NewService(infra IInfrastructure, txManager database.Database) *Service {
 	return &Service{
-    AnalyticsService: analytics.NewAnalyticsService(infra, txManager),
+		AnalyticsService: analytics.NewAnalyticsService(infra, txManager),
 		PublishService:   publishes.NewPublishService(infra, txManager),
 		ScenarioService:  scenarios.NewScenarioService(infra),
 		StepsService:     steps.NewStepsService(infra, txManager),
