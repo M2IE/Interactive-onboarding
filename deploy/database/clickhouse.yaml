@@ -12,6 +12,7 @@ services:
       - "9100:9000" # delete in prod
     volumes:
       - clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse/init:/docker-entrypoint-initdb.d:ro
     networks:
       - interactive_onboarding
     ulimits:
