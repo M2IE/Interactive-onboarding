@@ -375,6 +375,12 @@ When SDK packaging or its public API changes, also run:
 npm run sdk:pack
 ```
 
+SDK releases are handled by
+`.github/workflows/publish-onboarding-sdk.yml` through npm Trusted Publishing.
+Release tags must use `onboarding-sdk-vX.Y.Z`, match the package version, and
+point to a commit in the `main` branch history. Do not add a long-lived npm
+publish token to the workflow.
+
 If a rendered UI flow changes, verify it in the browser:
 
 - `/admin`

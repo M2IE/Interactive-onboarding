@@ -1,0 +1,60 @@
+name: Publish onboarding SDK
+run-name: "Publish @m2ie/onboarding-sdk from ${{ github.ref_name }}"
+
+on:
+  push:
+    tags:
+      - "onboarding-sdk-v*"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-onboarding-sdk
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish to npm
+    if: github.repository == 'M2IE/Interactive-onboarding'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Verify release commit
+        working-directory: .
+        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+
+      - name: Verify release version
+        id: package
+        env:
+          CHECK_NPM_REGISTRY: "true"
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: npm run sdk:verify-release
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run frontend checks
+        run: npm run ci
+
+      - name: Inspect package
+        run: npm run sdk:pack
+
+      - name: Publish package
+        run: npm publish --workspace @m2ie/onboarding-sdk --access public

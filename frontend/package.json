@@ -17,6 +17,7 @@
     "lint": "eslint .",
     "preview": "npm run preview --workspace @interactive-onboarding/web",
     "sdk:pack": "npm run pack:check --workspace @m2ie/onboarding-sdk",
+    "sdk:verify-release": "node scripts/verify-sdk-release.mjs",
     "test": "jest --runInBand",
     "typecheck": "tsc -b"
   },
