@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"log/slog"
-	"net/http"
+	"os"
 
 	apiv1 "github.com/M2IE/Interactive-onboarding/gen/rest/v1/go/widget"
 	"github.com/M2IE/Interactive-onboarding/pkg/database"
@@ -12,9 +12,13 @@ import (
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/infrastructure"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/service"
 	"github.com/M2IE/Interactive-onboarding/services/widget/queries"
+	"github.com/M2IE/Interactive-onboarding/services/widget/server"
 )
 
 func main() {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
 	cfg, err := config.Load()
 	if err != nil {
 		slog.Error("Config did not parsed", "error", err)
@@ -35,14 +39,11 @@ func main() {
 	svc := service.NewWidgetService(infra, db)
 	handler := delivery.NewWidgetHandler(svc)
 
-	strictHandler := apiv1.NewStrictHandler(handler, nil)
+	srv := server.New(apiv1.NewStrictHandler(handler, nil), cfg.ServicePort, logger)
 
-	r := apiv1.HandlerWithOptions(strictHandler, apiv1.ChiServerOptions{
-		ErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-		},
-	})
+	slog.Info("widget service listening", "port", cfg.ServicePort)
+	if err := srv.ListenAndServe(); err != nil {
+		slog.Error("server stopped", "error", err)
+	}
 
-	slog.Info("widget-service listening on port", "info", cfg.ServicePort)
-	slog.Error("error while listening server", "error", http.ListenAndServe(cfg.ServicePort, r))
 }
