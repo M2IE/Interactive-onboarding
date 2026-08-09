@@ -48,10 +48,10 @@ rest-gen-widget-go:
 	oapi-codegen -config api/openapi/v1/widget/server.yaml api/openapi/v1/widget/specs.yaml
 
 rest-gen-admin-ts:
-	npx openapi-typescript api/openapi/v1/admin/specs.yaml -o gen/rest/v1/ts/admin/admin.ts
+	npm --prefix frontend run api:generate:admin
 
 rest-gen-widget-ts:
-	npx openapi-typescript api/openapi/v1/widget/specs.yaml -o gen/rest/v1/ts/widget/widget.ts
+	npm --prefix frontend run api:generate:widget
 
 rest-gen-admin:
 	make rest-gen-admin-go
