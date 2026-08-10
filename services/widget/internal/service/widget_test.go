@@ -188,7 +188,7 @@ func TestProcessEvent_StepViewed(t *testing.T) {
 		stepByIDResp:     &domain.Step{ID: stepID, ScenarioID: testScenarioID},
 		scenarioByIDResp: &domain.Scenario{ID: testScenarioID, ProjectID: testProjectID},
 	}
-	svc := newSvc(infra, &mockDB{})
+	svc := newSvc(infra, &mockDB{tx: &mockTx{}})
 
 	err := svc.ProcessEvent(context.Background(), "session-1", domain.StepViewed, &stepID, nil, nil)
 
@@ -219,7 +219,7 @@ func TestProcessEvent_ScenarioDismissed(t *testing.T) {
 	infra := &mockInfra{
 		scenarioByIDResp: &domain.Scenario{ID: testScenarioID, ProjectID: testProjectID},
 	}
-	svc := newSvc(infra, &mockDB{})
+	svc := newSvc(infra, &mockDB{tx: &mockTx{}})
 
 	err := svc.ProcessEvent(context.Background(), "session-1", domain.ScenarioDismissed, nil, &scenarioID, nil)
 
@@ -249,7 +249,7 @@ func TestProcessEvent_StepCompleted_LastStep(t *testing.T) {
 		scenarioByIDResp: &domain.Scenario{ID: testScenarioID, ProjectID: testProjectID},
 		maxOrder:         2,
 	}
-	svc := newSvc(infra, &mockDB{})
+	svc := newSvc(infra, &mockDB{tx: &mockTx{}})
 
 	err := svc.ProcessEvent(context.Background(), "session-1", domain.StepCompleted, &stepID, nil, nil)
 
