@@ -7,9 +7,9 @@ import (
 	"os"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	clickhouse "github.com/M2IE/Interactive-onboarding/pkg/clickhouse"
+	"github.com/M2IE/Interactive-onboarding/pkg/clickhouse"
 	"github.com/M2IE/Interactive-onboarding/pkg/database"
-	config "github.com/M2IE/Interactive-onboarding/services/admin/internal/config"
+	"github.com/M2IE/Interactive-onboarding/services/admin/internal/config"
 	chq "github.com/M2IE/Interactive-onboarding/services/admin/queries/clickhouse"
 	"github.com/google/uuid"
 )
@@ -40,20 +40,23 @@ func main() {
 		slog.Error("failed to connect to database", "error", err)
 		os.Exit(1)
 	}
+	
 	defer func() { _ = db.Close() }()
 
 	ctx := context.Background()
 
 	chConn, err := clickhouse.New(ctx, clickhouse.Options{
-		Addr:     cfg.ClickHouseConfig.Addr(),
+		Addr:     cfg.Addr(),
 		Database: cfg.ClickHouseConfig.DBName,
 		Username: cfg.ClickHouseConfig.User,
 		Password: cfg.ClickHouseConfig.Password,
 	})
+
 	if err != nil {
 		slog.Error("failed to connect to clickhouse", "error", err)
 		os.Exit(1)
 	}
+
 	defer func() { _ = chConn.Close() }()
 
 	projectID, err := ensureProject(ctx, db)
@@ -61,6 +64,7 @@ func main() {
 		slog.Error("failed to create project", "error", err)
 		os.Exit(1)
 	}
+
 	slog.Info("project ready", "id", projectID)
 
 	scenarios := []scenarioDef{

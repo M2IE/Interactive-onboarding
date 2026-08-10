@@ -5,11 +5,11 @@ import (
 	"log/slog"
 	"os"
 
-	clickhouse "github.com/M2IE/Interactive-onboarding/pkg/clickhouse"
+	"github.com/M2IE/Interactive-onboarding/pkg/clickhouse"
 	"github.com/M2IE/Interactive-onboarding/pkg/database"
 	"github.com/M2IE/Interactive-onboarding/pkg/pdfengine"
 	"github.com/M2IE/Interactive-onboarding/pkg/s3"
-	config "github.com/M2IE/Interactive-onboarding/services/admin/internal/config"
+	"github.com/M2IE/Interactive-onboarding/services/admin/internal/config"
 	delivery "github.com/M2IE/Interactive-onboarding/services/admin/internal/delivery/http"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/infrastructure"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/server"
@@ -50,7 +50,7 @@ func main() {
 	}
 
 	chConn, err := clickhouse.New(context.Background(), clickhouse.Options{
-		Addr:     cfg.ClickHouseConfig.Addr(),
+		Addr:     cfg.Addr(),
 		Database: cfg.ClickHouseConfig.DBName,
 		Username: cfg.ClickHouseConfig.User,
 		Password: cfg.ClickHouseConfig.Password,
