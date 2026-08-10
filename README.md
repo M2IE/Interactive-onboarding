@@ -90,7 +90,7 @@ docker compose --profile seed up seed --build
 | ----------------- | ------------------------------------------------------------------ |
 | Языки             | Go 1.26, TypeScript, SQL                                           |
 | Бэкенд-фреймворки | chi (роутер), sqlc (типизированный SQL), golang-migrate (миграции) |
-| Базы данных       | PostgreSQL 18                                                      |
+| Базы данных       | PostgreSQL 18, ClickHouse 26.3                                                      |
 | Фронтенд          | React 19, Vite, Redux Toolkit                                      |
 | UI-библиотеки     | Radix UI, Lucide                                                   |
 | SDK виджета       | Собственный `onboarding-sdk` (React)                               |
@@ -110,7 +110,7 @@ graph TD
         UI[UI<br/>]
     end
 
-    subgraph Gateway["nginx_gateway"]
+    subgraph Gateway["gateway"]
         NG[nginx]
     end
 
@@ -121,6 +121,7 @@ graph TD
 
     subgraph Storage
         PG[(db_scenarios<br/>PostgreSQL)]
+        CH[(db_analytics<br/>ClickHouse)]
         S3[(report_storage<br/>RustFS)]
     end
 
@@ -132,8 +133,9 @@ graph TD
 
     Admin -->|CRUD| PG
     Admin -->|PDF-отчёты| S3
-    Admin -->|аналитика| PG
+    Admin -->|аналитика| CH
     Widget -->|запись событий| PG
+    Widget -.->|аналитика| CH
 ```
 
 | Сервис                     | Назначение                                    |
@@ -142,6 +144,7 @@ graph TD
 | admin_service              | Управление сценариями, шагами, аналитика, PDF |
 | widget_service             | Выдача сценариев виджету, приём событий       |
 | db_scenarios (PostgreSQL)  | Хранение сценариев и шагов                    |
+| db_analytics (ClickHouse)  | Аналитические запросы                         |
 | report_storage (RustFS/S3) | Хранение PDF-отчётов                          |
 
 ## API
@@ -196,6 +199,7 @@ graph TD
 - Разработка модуля Шагов черновика (часть Admin API)
 - Написание CI/CD
 - Имплементация линтеров для backend'а
+- Переход с Postgres на Clickhouse для аналитики
 
 [@isOdin-l](https://github.com/isOdin-l) - Ivan Bildyagin
 
@@ -392,6 +396,14 @@ CREATE UNIQUE INDEX ON scenario (project_id, url) WHERE status = 'published';
 ### Разработка на основе OpenAPI
 
 Контракты API находятся в `api/openapi/v1/{service}/specs.yaml`. Интерфейсы сервера и запросы клиента генерируются из этих спецификаций, что упрощает разработку в случае изменения API спецификации.
+
+### Использование колоночной БД (ClickHouse) под аналитику
+
+Для хранения и агрегации событий онбординга используется **ClickHouse** - колоночная аналитическая база данных. Почему он, а не только PostgreSQL:
+
+- **Колоночное хранение** - данные лежат по столбцам, а не по строкам. Когда нужно посчитать просмотры или построить воронку, запрос читает только нужные столбцы, а не всю строку целиком. Это в разы быстрее.
+- **Сильное сжатие** - за счёт сортировки и колоночного формата ClickHouse сжимает данные в 5–20 раз. Сотни миллионов событий занимают минимум места.
+- **Быстрые агрегации** - `COUNT`, `SUM`, `GROUP BY` выполняются на уровне процессора с векторными инструкциями, а не обходом каждой строки по очереди.
 
 ### Публичный SDK в npm registry
 
