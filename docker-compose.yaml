@@ -1,0 +1,55 @@
+include:
+  - path: deploy/database/postgres.yaml
+  - path: deploy/migrations/go-migrate.yaml
+  - path: deploy/report_storage/rustfs/rustfs.yaml
+  - path: deploy/gateway/nginx/nginx.yaml
+  - path: deploy/seed/seed.yaml
+
+services:
+  admin_service:
+    container_name: admin_service
+    build:
+      context: .
+      dockerfile: services/admin/Dockerfile
+    image: admin_service:0.1
+    env_file:
+      - ./.env
+    networks:
+      - interactive_onboarding
+    depends_on:
+      db_scenarios:
+        condition: service_healthy
+      init-s3:
+        condition: service_completed_successfully
+
+  widget_service:
+    container_name: widget_service
+    build:
+      context: .
+      dockerfile: services/widget/Dockerfile
+    image: widget_service:0.1
+    env_file:
+      - ./.env
+    networks:
+      - interactive_onboarding
+    depends_on:
+      db_scenarios:
+        condition: service_healthy
+
+  frontend:
+    container_name: frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_MODE: ${VITE_API_MODE:-real}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
+        VITE_ONBOARDING_PROJECT_KEY: ${VITE_ONBOARDING_PROJECT_KEY:-interactive-onboarding}
+        VITE_ONBOARDING_PROJECT_ID: ${VITE_ONBOARDING_PROJECT_ID:-}
+    image: interactive_onboarding_frontend:0.1
+    networks:
+      - interactive_onboarding
+
+networks:
+  interactive_onboarding:
+    driver: bridge

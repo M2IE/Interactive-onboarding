@@ -1,0 +1,10 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/api-client" },
+    { "path": "./packages/ui" },
+    { "path": "./packages/onboarding-sdk" },
+    { "path": "./apps/web" }
+  ]
+}

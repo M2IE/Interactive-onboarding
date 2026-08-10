@@ -1,0 +1,8 @@
+FROM golang:1.26.5-alpine3.24 AS builder
+WORKDIR /app
+COPY . .
+RUN cd services/admin && CGO_ENABLED=0 go build -o /seed ./cmd/seed
+
+FROM alpine:3.24
+COPY --from=builder /seed /seed
+CMD ["/seed"]

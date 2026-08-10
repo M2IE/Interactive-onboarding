@@ -1,6 +1,12 @@
 go 1.26.5
 
 use (
+	./gen/rest/v1/go
+	./pkg/configs
+	./pkg/database
+	./pkg/pdfengine
+	./pkg/s3
 	./services/admin
 	./services/widget
+	./tests
 )
