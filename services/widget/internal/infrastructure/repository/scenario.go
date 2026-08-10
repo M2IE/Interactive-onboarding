@@ -21,8 +21,8 @@ func NewScenarioRepository(db database.Querier, q *queries.Query) *ScenarioRepos
 	return &ScenarioRepository{q: q, db: db}
 }
 
-func (r *ScenarioRepository) GetPublishedScenarioByURL(ctx context.Context, projectID uuid.UUID, url string) (*domain.Scenario, error) {
-	row, err := r.q.GetPublishedScenarioByURL(ctx, r.db, gen.GetPublishedScenarioByURLParams{
+func (r *ScenarioRepository) GetPublishedScenarioByURL(ctx context.Context, db database.Querier, projectID uuid.UUID, url string) (*domain.Scenario, error) {
+	row, err := r.q.GetPublishedScenarioByURL(ctx, r.querier(db), gen.GetPublishedScenarioByURLParams{
 		ProjectID: projectID,
 		Url:       url,
 	})
@@ -35,8 +35,8 @@ func (r *ScenarioRepository) GetPublishedScenarioByURL(ctx context.Context, proj
 	return toDomainScenario(&row), nil
 }
 
-func (r *ScenarioRepository) GetScenarioByID(ctx context.Context, id uuid.UUID) (*domain.Scenario, error) {
-	row, err := r.q.GetScenarioByID(ctx, r.db, id)
+func (r *ScenarioRepository) GetScenarioByID(ctx context.Context, db database.Querier, id uuid.UUID) (*domain.Scenario, error) {
+	row, err := r.q.GetScenarioByID(ctx, r.querier(db), id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrScenarioNotFound
@@ -44,4 +44,11 @@ func (r *ScenarioRepository) GetScenarioByID(ctx context.Context, id uuid.UUID) 
 		return nil, err
 	}
 	return toDomainScenario(&row), nil
+}
+
+func (s *ScenarioRepository) querier(db database.Querier) database.Querier {
+	if db != nil {
+		return db
+	}
+	return s.db
 }

@@ -70,7 +70,7 @@ func TestProject_GetByKey(t *testing.T) {
 	key := "test-key-" + uuid.New().String()
 	projID := createProject(t, ctx, key)
 
-	project, err := repo.GetProjectByKey(ctx, key)
+	project, err := repo.GetProjectByKey(ctx, testDB, key)
 	if err != nil {
 		t.Fatalf("get project: %v", err)
 	}
@@ -87,7 +87,7 @@ func TestProject_GetByKey_NotFound(t *testing.T) {
 	q := queries.New()
 	repo := NewProjectRepository(testDB, q)
 
-	_, err := repo.GetProjectByKey(ctx, "nonexistent")
+	_, err := repo.GetProjectByKey(ctx, testDB, "nonexistent")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -102,7 +102,7 @@ func TestScenario_GetPublishedByURL(t *testing.T) {
 	projID := createProject(t, ctx, "sc-"+uuid.New().String())
 	scID := createScenario(t, ctx, projID, "/test-pub", domain.ScenarioStatusPublished)
 
-	scenario, err := repo.GetPublishedScenarioByURL(ctx, projID, "/test-pub")
+	scenario, err := repo.GetPublishedScenarioByURL(ctx, testDB, projID, "/test-pub")
 	if err != nil {
 		t.Fatalf("get scenario: %v", err)
 	}
@@ -121,7 +121,7 @@ func TestScenario_GetPublishedByURL_DraftOnly(t *testing.T) {
 	projID := createProject(t, ctx, "sc-"+uuid.New().String())
 	createScenario(t, ctx, projID, "/test-draft", domain.ScenarioStatusDraft)
 
-	_, err := repo.GetPublishedScenarioByURL(ctx, projID, "/test-draft")
+	_, err := repo.GetPublishedScenarioByURL(ctx, testDB, projID, "/test-draft")
 	if err == nil {
 		t.Fatal("expected error for draft scenario")
 	}
@@ -133,7 +133,7 @@ func TestScenario_GetPublishedByURL_NotFound(t *testing.T) {
 	repo := NewScenarioRepository(testDB, q)
 	projID := createProject(t, ctx, "sc-"+uuid.New().String())
 
-	_, err := repo.GetPublishedScenarioByURL(ctx, projID, "/nonexistent")
+	_, err := repo.GetPublishedScenarioByURL(ctx, testDB, projID, "/nonexistent")
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -146,7 +146,7 @@ func TestScenario_GetByID(t *testing.T) {
 	projID := createProject(t, ctx, "sc-"+uuid.New().String())
 	scID := createScenario(t, ctx, projID, "/test-id", domain.ScenarioStatusDraft)
 
-	scenario, err := repo.GetScenarioByID(ctx, scID)
+	scenario, err := repo.GetScenarioByID(ctx, testDB, scID)
 	if err != nil {
 		t.Fatalf("get scenario: %v", err)
 	}
@@ -160,7 +160,7 @@ func TestScenario_GetByID_NotFound(t *testing.T) {
 	q := queries.New()
 	repo := NewScenarioRepository(testDB, q)
 
-	_, err := repo.GetScenarioByID(ctx, uuid.New())
+	_, err := repo.GetScenarioByID(ctx, testDB, uuid.New())
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -178,7 +178,7 @@ func TestStep_GetByScenario(t *testing.T) {
 	createStep(t, ctx, scID, 1, "#a", "A", "Body A")
 	createStep(t, ctx, scID, 2, "#b", "B", "Body B")
 
-	steps, err := repo.GetStepsByScenario(ctx, scID)
+	steps, err := repo.GetStepsByScenario(ctx, testDB, scID)
 	if err != nil {
 		t.Fatalf("get steps: %v", err)
 	}
@@ -197,7 +197,7 @@ func TestStep_GetByScenario_Empty(t *testing.T) {
 	projID := createProject(t, ctx, "st-"+uuid.New().String())
 	scID := createScenario(t, ctx, projID, "/st-empty", domain.ScenarioStatusPublished)
 
-	steps, err := repo.GetStepsByScenario(ctx, scID)
+	steps, err := repo.GetStepsByScenario(ctx, testDB, scID)
 	if err != nil {
 		t.Fatalf("get steps: %v", err)
 	}
@@ -214,7 +214,7 @@ func TestStep_GetByID(t *testing.T) {
 	scID := createScenario(t, ctx, projID, "/st-byid", domain.ScenarioStatusPublished)
 	stepID := createStep(t, ctx, scID, 1, "#x", "X", "Body X")
 
-	step, err := repo.GetStepByID(ctx, stepID)
+	step, err := repo.GetStepByID(ctx, testDB, stepID)
 	if err != nil {
 		t.Fatalf("get step: %v", err)
 	}
@@ -228,7 +228,7 @@ func TestStep_GetByID_NotFound(t *testing.T) {
 	q := queries.New()
 	repo := NewStepRepository(testDB, q)
 
-	_, err := repo.GetStepByID(ctx, uuid.New())
+	_, err := repo.GetStepByID(ctx, testDB, uuid.New())
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -245,7 +245,7 @@ func TestStep_GetMaxOrder(t *testing.T) {
 	createStep(t, ctx, scID, 3, "#3", "Three", "B3")
 	createStep(t, ctx, scID, 2, "#2", "Two", "B2")
 
-	max, err := repo.GetMaxOrderByScenario(ctx, scID)
+	max, err := repo.GetMaxOrderByScenario(ctx, testDB, scID)
 	if err != nil {
 		t.Fatalf("get max order: %v", err)
 	}
@@ -273,7 +273,7 @@ func TestEvent_Insert(t *testing.T) {
 		EventKey:   uuid.New().String(),
 	}
 
-	err := repo.InsertEvent(ctx, event)
+	err := repo.InsertEvent(ctx, testDB, event)
 	if err != nil {
 		t.Fatalf("insert event: %v", err)
 	}
@@ -297,7 +297,7 @@ func TestEvent_Insert_OnConflictNoop(t *testing.T) {
 		Type:       domain.StepViewed,
 		EventKey:   eventKey,
 	}
-	if err := repo.InsertEvent(ctx, event); err != nil {
+	if err := repo.InsertEvent(ctx, testDB, event); err != nil {
 		t.Fatalf("first insert: %v", err)
 	}
 
@@ -309,7 +309,7 @@ func TestEvent_Insert_OnConflictNoop(t *testing.T) {
 		Type:       domain.StepViewed,
 		EventKey:   eventKey,
 	}
-	if err := repo.InsertEvent(ctx, event2); err != nil {
+	if err := repo.InsertEvent(ctx, testDB, event2); err != nil {
 		t.Fatalf("second insert (ON CONFLICT DO NOTHING): %v", err)
 	}
 

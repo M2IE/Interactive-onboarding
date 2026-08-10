@@ -47,8 +47,8 @@ func (m *mockTx) QueryContext(context.Context, string, ...any) (*sql.Rows, error
 	return nil, nil
 }
 func (m *mockTx) QueryRowContext(context.Context, string, ...any) *sql.Row { return nil }
-func (m *mockTx) Commit() error   { m.committed = true; return m.commitErr }
-func (m *mockTx) Rollback() error { m.rolledBack = true; return m.rollbackErr }
+func (m *mockTx) Commit() error                                            { m.committed = true; return m.commitErr }
+func (m *mockTx) Rollback() error                                          { m.rolledBack = true; return m.rollbackErr }
 
 type mockDB struct {
 	beginErr error
@@ -63,8 +63,8 @@ func (m *mockDB) QueryContext(context.Context, string, ...any) (*sql.Rows, error
 	return nil, nil
 }
 func (m *mockDB) QueryRowContext(context.Context, string, ...any) *sql.Row { return nil }
-func (m *mockDB) Ping() error  { return nil }
-func (m *mockDB) Close() error { return nil }
+func (m *mockDB) Ping() error                                              { return nil }
+func (m *mockDB) Close() error                                             { return nil }
 func (m *mockDB) Begin() (database.Tx, error) {
 	if m.beginErr != nil {
 		return nil, m.beginErr
@@ -89,33 +89,41 @@ type mockInfra struct {
 	insertedEvent     *domain.Event
 }
 
-func (m *mockInfra) InsertEvent(ctx context.Context, event *domain.Event) error {
+func (m *mockInfra) InsertEvent(ctx context.Context, db database.Querier, event *domain.Event) error {
 	m.insertedEvent = event
 	return m.insertEventErr
 }
 
-func (m *mockInfra) GetProjectByKey(ctx context.Context, key string) (*domain.Project, error) {
+func (m *mockInfra) GetProjectByKey(ctx context.Context, db database.Querier, key string) (*domain.Project, error) {
 	return m.projectResp, m.projectErr
 }
 
-func (m *mockInfra) GetPublishedScenarioByURL(ctx context.Context, projectID uuid.UUID, url string) (*domain.Scenario, error) {
+func (m *mockInfra) GetPublishedScenarioByURL(ctx context.Context, db database.Querier, projectID uuid.UUID, url string) (*domain.Scenario, error) {
 	return m.publishedScenario, m.publishedErr
 }
 
-func (m *mockInfra) GetScenarioByID(ctx context.Context, id uuid.UUID) (*domain.Scenario, error) {
+func (m *mockInfra) GetScenarioByID(ctx context.Context, db database.Querier, id uuid.UUID) (*domain.Scenario, error) {
 	return m.scenarioByIDResp, m.scenarioByIDErr
 }
 
-func (m *mockInfra) GetStepsByScenario(ctx context.Context, scenarioID uuid.UUID) ([]domain.Step, error) {
+func (m *mockInfra) GetStepsByScenario(ctx context.Context, db database.Querier, scenarioID uuid.UUID) ([]domain.Step, error) {
 	return m.stepsResp, m.stepsErr
 }
 
-func (m *mockInfra) GetStepByID(ctx context.Context, stepID uuid.UUID) (*domain.Step, error) {
+func (m *mockInfra) GetStepByID(ctx context.Context, db database.Querier, stepID uuid.UUID) (*domain.Step, error) {
 	return m.stepByIDResp, m.stepByIDErr
 }
 
-func (m *mockInfra) GetMaxOrderByScenario(ctx context.Context, scenarioID uuid.UUID) (int, error) {
+func (m *mockInfra) GetMaxOrderByScenario(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (int, error) {
 	return m.maxOrder, m.maxOrderErr
+}
+
+func (m *mockInfra) ExistsEventByKey(ctx context.Context, db database.Querier, eventKey string) (bool, error) {
+	return false, nil
+}
+
+func (m *mockInfra) ExistsScenarioCompleted(ctx context.Context, db database.Querier, sessionID string, scenarioID *uuid.UUID) (bool, error) {
+	return false, nil
 }
 
 func newSvc(infra IWidgetInfrastructure, db database.Database) *WidgetService {
@@ -180,7 +188,7 @@ func TestProcessEvent_StepViewed(t *testing.T) {
 		stepByIDResp:     &domain.Step{ID: stepID, ScenarioID: testScenarioID},
 		scenarioByIDResp: &domain.Scenario{ID: testScenarioID, ProjectID: testProjectID},
 	}
-	svc := newSvc(infra, &mockDB{})
+	svc := newSvc(infra, &mockDB{tx: &mockTx{}})
 
 	err := svc.ProcessEvent(context.Background(), "session-1", domain.StepViewed, &stepID, nil, nil)
 
@@ -211,7 +219,7 @@ func TestProcessEvent_ScenarioDismissed(t *testing.T) {
 	infra := &mockInfra{
 		scenarioByIDResp: &domain.Scenario{ID: testScenarioID, ProjectID: testProjectID},
 	}
-	svc := newSvc(infra, &mockDB{})
+	svc := newSvc(infra, &mockDB{tx: &mockTx{}})
 
 	err := svc.ProcessEvent(context.Background(), "session-1", domain.ScenarioDismissed, nil, &scenarioID, nil)
 
@@ -241,7 +249,7 @@ func TestProcessEvent_StepCompleted_LastStep(t *testing.T) {
 		scenarioByIDResp: &domain.Scenario{ID: testScenarioID, ProjectID: testProjectID},
 		maxOrder:         2,
 	}
-	svc := newSvc(infra, &mockDB{})
+	svc := newSvc(infra, &mockDB{tx: &mockTx{}})
 
 	err := svc.ProcessEvent(context.Background(), "session-1", domain.StepCompleted, &stepID, nil, nil)
 

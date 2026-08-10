@@ -20,8 +20,8 @@ func NewStepRepository(db database.Querier, q *queries.Query) *StepRepository {
 	return &StepRepository{q: q, db: db}
 }
 
-func (r *StepRepository) GetStepsByScenario(ctx context.Context, scenarioID uuid.UUID) ([]domain.Step, error) {
-	rows, err := r.q.GetStepsByScenario(ctx, r.db, scenarioID)
+func (r *StepRepository) GetStepsByScenario(ctx context.Context, db database.Querier, scenarioID uuid.UUID) ([]domain.Step, error) {
+	rows, err := r.q.GetStepsByScenario(ctx, r.querier(db), scenarioID)
 	if err != nil {
 		return nil, err
 	}
@@ -32,8 +32,8 @@ func (r *StepRepository) GetStepsByScenario(ctx context.Context, scenarioID uuid
 	return steps, nil
 }
 
-func (r *StepRepository) GetStepByID(ctx context.Context, stepID uuid.UUID) (*domain.Step, error) {
-	row, err := r.q.GetStepByID(ctx, r.db, stepID)
+func (r *StepRepository) GetStepByID(ctx context.Context, db database.Querier, stepID uuid.UUID) (*domain.Step, error) {
+	row, err := r.q.GetStepByID(ctx, r.querier(db), stepID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrStepNotFound
@@ -44,10 +44,17 @@ func (r *StepRepository) GetStepByID(ctx context.Context, stepID uuid.UUID) (*do
 }
 
 // в step_repo.go
-func (r *StepRepository) GetMaxOrderByScenario(ctx context.Context, scenarioID uuid.UUID) (int, error) {
-	val, err := r.q.GetMaxOrderByScenario(ctx, r.db, scenarioID)
+func (r *StepRepository) GetMaxOrderByScenario(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (int, error) {
+	val, err := r.q.GetMaxOrderByScenario(ctx, r.querier(db), scenarioID)
 	if err != nil {
 		return 0, err
 	}
 	return int(val), nil
+}
+
+func (s *StepRepository) querier(db database.Querier) database.Querier {
+	if db != nil {
+		return db
+	}
+	return s.db
 }

@@ -11,6 +11,8 @@ import (
 )
 
 type Querier interface {
+	ExistsEventByKey(ctx context.Context, db DBTX, eventKey string) (bool, error)
+	ExistsScenarioCompleted(ctx context.Context, db DBTX, arg ExistsScenarioCompletedParams) (bool, error)
 	GetMaxOrderByScenario(ctx context.Context, db DBTX, scenarioID uuid.UUID) (int32, error)
 	GetProjectByKey(ctx context.Context, db DBTX, projectKey string) (Project, error)
 	GetPublishedScenarioByURL(ctx context.Context, db DBTX, arg GetPublishedScenarioByURLParams) (Scenario, error)
