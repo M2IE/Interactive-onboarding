@@ -32,3 +32,6 @@ SELECT COALESCE(MAX(order_num), 0)::int FROM step WHERE scenario_id = $1;
 
 -- name: UpdateStepOrder :exec
 UPDATE step SET order_num = $1 WHERE id = $2;
+
+-- name: GetFirstStepID :one
+SELECT id FROM step WHERE scenario_id = $1 AND order_num = 1;
