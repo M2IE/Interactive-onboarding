@@ -5,6 +5,7 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/domain"
+	chq "github.com/M2IE/Interactive-onboarding/services/widget/queries/clickhouse"
 	"github.com/google/uuid"
 )
 
@@ -22,8 +23,7 @@ func (r *EventClickHouseRepository) InsertEvent(ctx context.Context, event *doma
 		scenarioID = *event.ScenarioID
 	}
 
-	batch, err := r.conn.PrepareBatch(ctx,
-		"INSERT INTO analytics.events (id, project_id, scenario_id, step_id, session_id, type, event_key)")
+	batch, err := r.conn.PrepareBatch(ctx, chq.InsertEvent)
 	if err != nil {
 		return err
 	}

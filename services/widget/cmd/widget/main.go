@@ -36,7 +36,7 @@ func main() {
 	}()
 
 	chConn, err := clickhouse.New(context.Background(), clickhouse.Options{
-		Addr:     cfg.ClickHouseConfig.Addr(),
+		Addr:     cfg.Addr(),
 		Database: cfg.ClickHouseConfig.DBName,
 		Username: cfg.ClickHouseConfig.User,
 		Password: cfg.ClickHouseConfig.Password,

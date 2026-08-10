@@ -10,6 +10,7 @@ import (
 	clickhouse "github.com/M2IE/Interactive-onboarding/pkg/clickhouse"
 	"github.com/M2IE/Interactive-onboarding/pkg/database"
 	config "github.com/M2IE/Interactive-onboarding/services/admin/internal/config"
+	chq "github.com/M2IE/Interactive-onboarding/services/admin/queries/clickhouse"
 	"github.com/google/uuid"
 )
 
@@ -176,8 +177,7 @@ func createScenario(ctx context.Context, db database.Database, projectID uuid.UU
 }
 
 func seedEvents(ctx context.Context, ch driver.Conn, projectID, scenarioID uuid.UUID, stepIDs []uuid.UUID) error {
-	batch, err := ch.PrepareBatch(ctx,
-		"INSERT INTO analytics.events (id, project_id, scenario_id, step_id, session_id, type, event_key)")
+	batch, err := ch.PrepareBatch(ctx, chq.InsertEvent)
 	if err != nil {
 		return err
 	}

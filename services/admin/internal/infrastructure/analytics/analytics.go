@@ -3,6 +3,7 @@ package analytics
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"io"
@@ -15,6 +16,7 @@ import (
 	"github.com/M2IE/Interactive-onboarding/pkg/s3"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/M2IE/Interactive-onboarding/services/admin/queries"
+	chq "github.com/M2IE/Interactive-onboarding/services/admin/queries/clickhouse"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/google/uuid"
 )
@@ -40,29 +42,15 @@ func NewAnalyticsInfrastructure(db database.Querier, q *queries.Query, ch driver
 }
 
 func (a *AnalyticsInfrastructure) GetScenarioAnalytics(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (*domain.Analytics, error) {
-	steps, err := a.q.GetStepsByScenario(ctx, a.querier(db), scenarioID)
-	if err != nil {
+	firstStepID, err := a.q.GetFirstStepID(ctx, a.querier(db), scenarioID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 
-	var firstStepID uuid.UUID
-	for _, s := range steps {
-		if s.OrderNum == 1 {
-			firstStepID = s.ID
-			break
-		}
-	}
-
 	var totalViews, completed, dismissed uint64
-	err = a.ch.QueryRow(ctx,
-		`SELECT
-			countIf(type = 'step_viewed' AND step_id = ?),
-			countIf(type = 'scenario_completed'),
-			countIf(type = 'scenario_dismissed')
-		FROM analytics.events
-		WHERE scenario_id = ?`,
-		firstStepID, scenarioID,
-	).Scan(&totalViews, &completed, &dismissed)
+	err = a.ch.QueryRow(ctx, chq.GetScenarioAnalytics, firstStepID, scenarioID).
+		Scan(&totalViews, &completed, &dismissed)
+
 	if err != nil {
 		return nil, err
 	}
@@ -87,13 +75,7 @@ func (a *AnalyticsInfrastructure) GetStepAnalytics(ctx context.Context, db datab
 	type counts struct{ views, completed uint64 }
 	byStep := make(map[uuid.UUID]counts)
 
-	rows, err := a.ch.Query(ctx,
-		`SELECT step_id, countIf(type = 'step_viewed'), countIf(type = 'step_completed')
-		FROM analytics.events
-		WHERE scenario_id = ? AND step_id IS NOT NULL
-		GROUP BY step_id`,
-		scenarioID,
-	)
+	rows, err := a.ch.Query(ctx, chq.GetStepAnalytics, scenarioID)
 	if err != nil {
 		return nil, err
 	}
@@ -109,6 +91,7 @@ func (a *AnalyticsInfrastructure) GetStepAnalytics(ctx context.Context, db datab
 			byStep[*stepID] = counts{views: views, completed: completed}
 		}
 	}
+
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -124,6 +107,7 @@ func (a *AnalyticsInfrastructure) GetStepAnalytics(ctx context.Context, db datab
 			Completed: int(c.completed),
 		})
 	}
+
 	return result, nil
 }
 
@@ -157,5 +141,6 @@ func (a *AnalyticsInfrastructure) DownloadAnalytics(ctx context.Context, filenam
 		}
 		return nil, err
 	}
+
 	return r, nil
 }
