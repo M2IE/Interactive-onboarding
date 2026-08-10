@@ -7,9 +7,6 @@ services:
       CLICKHOUSE_USER: ${CLICKHOUSE_USER}
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
       CLICKHOUSE_DB: ${CLICKHOUSE_DB}
-    ports:
-      - "8123:8123" # delete in prod
-      - "9100:9000" # delete in prod
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - ../../migrations/clickhouse:/docker-entrypoint-initdb.d:ro
