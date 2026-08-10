@@ -5,10 +5,11 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/M2IE/Interactive-onboarding/pkg/clickhouse"
 	"github.com/M2IE/Interactive-onboarding/pkg/database"
 	"github.com/M2IE/Interactive-onboarding/pkg/pdfengine"
 	"github.com/M2IE/Interactive-onboarding/pkg/s3"
-	config "github.com/M2IE/Interactive-onboarding/services/admin/internal/config"
+	"github.com/M2IE/Interactive-onboarding/services/admin/internal/config"
 	delivery "github.com/M2IE/Interactive-onboarding/services/admin/internal/delivery/http"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/infrastructure"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/server"
@@ -48,8 +49,24 @@ func main() {
 		return
 	}
 
+	chConn, err := clickhouse.New(context.Background(), clickhouse.Options{
+		Addr:     cfg.Addr(),
+		Database: cfg.ClickHouseConfig.DBName,
+		Username: cfg.ClickHouseConfig.User,
+		Password: cfg.ClickHouseConfig.Password,
+	})
+	if err != nil {
+		slog.Error("ClickHouse connection error", "error", err)
+		return
+	}
+	defer func() {
+		if err = chConn.Close(); err != nil {
+			slog.Error("error while closing clickhouse", "error", err)
+		}
+	}()
+
 	q := queries.New()
-	infra := infrastructure.NewInfrastructure(db, q, s3Client, pdfEngine, cfg.S3Bucket)
+	infra := infrastructure.NewInfrastructure(db, q, chConn, s3Client, pdfEngine, cfg.S3Bucket)
 	service := service.NewService(infra, db)
 	handler := delivery.NewHandler(service)
 

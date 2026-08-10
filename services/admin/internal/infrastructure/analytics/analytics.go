@@ -3,17 +3,20 @@ package analytics
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/M2IE/Interactive-onboarding/pkg/database"
 	"github.com/M2IE/Interactive-onboarding/pkg/pdfengine"
 	"github.com/M2IE/Interactive-onboarding/pkg/s3"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/M2IE/Interactive-onboarding/services/admin/queries"
+	chq "github.com/M2IE/Interactive-onboarding/services/admin/queries/clickhouse"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/google/uuid"
 )
@@ -21,15 +24,17 @@ import (
 type AnalyticsInfrastructure struct {
 	q              *queries.Query
 	db             database.Querier
+	ch             driver.Conn
 	s3             s3.Client
 	pdf            pdfengine.Engine
 	s3ReportBucket string
 }
 
-func NewAnalyticsInfrastructure(db database.Querier, q *queries.Query, s3 s3.Client, pdf pdfengine.Engine, s3ReportBucket string) *AnalyticsInfrastructure {
+func NewAnalyticsInfrastructure(db database.Querier, q *queries.Query, ch driver.Conn, s3 s3.Client, pdf pdfengine.Engine, s3ReportBucket string) *AnalyticsInfrastructure {
 	return &AnalyticsInfrastructure{
 		q:              q,
 		db:             db,
+		ch:             ch,
 		s3:             s3,
 		pdf:            pdf,
 		s3ReportBucket: s3ReportBucket,
@@ -37,11 +42,24 @@ func NewAnalyticsInfrastructure(db database.Querier, q *queries.Query, s3 s3.Cli
 }
 
 func (a *AnalyticsInfrastructure) GetScenarioAnalytics(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (*domain.Analytics, error) {
-	row, err := a.q.GetAnalytics(ctx, a.querier(db), toNullUUID(scenarioID))
+	firstStepID, err := a.q.GetFirstStepID(ctx, a.querier(db), scenarioID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
+	var totalViews, completed, dismissed uint64
+	err = a.ch.QueryRow(ctx, chq.GetScenarioAnalytics, firstStepID, scenarioID).
+		Scan(&totalViews, &completed, &dismissed)
+
 	if err != nil {
 		return nil, err
 	}
-	return toScenarioAnalytics(&row), nil
+
+	return &domain.Analytics{
+		TotalViews: int(totalViews),
+		Completed:  int(completed),
+		Dismissed:  int(dismissed),
+	}, nil
 }
 
 func (a *AnalyticsInfrastructure) ScenarioExists(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (bool, error) {
@@ -49,11 +67,48 @@ func (a *AnalyticsInfrastructure) ScenarioExists(ctx context.Context, db databas
 }
 
 func (a *AnalyticsInfrastructure) GetStepAnalytics(ctx context.Context, db database.Querier, scenarioID uuid.UUID) ([]domain.StepAnalytics, error) {
-	rows, err := a.q.GetStepAnalytics(ctx, a.querier(db), toNullUUID(scenarioID))
+	steps, err := a.q.GetStepsByScenario(ctx, a.querier(db), scenarioID)
 	if err != nil {
 		return nil, err
 	}
-	return toStepAnalyticsList(rows), nil
+
+	type counts struct{ views, completed uint64 }
+	byStep := make(map[uuid.UUID]counts)
+
+	rows, err := a.ch.Query(ctx, chq.GetStepAnalytics, scenarioID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	for rows.Next() {
+		var stepID *uuid.UUID
+		var views, completed uint64
+		if err := rows.Scan(&stepID, &views, &completed); err != nil {
+			return nil, err
+		}
+		if stepID != nil {
+			byStep[*stepID] = counts{views: views, completed: completed}
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	result := make([]domain.StepAnalytics, 0, len(steps))
+	for _, s := range steps {
+		c := byStep[s.ID]
+		result = append(result, domain.StepAnalytics{
+			StepID:    s.ID,
+			Title:     s.Title,
+			OrderNum:  int(s.OrderNum),
+			Views:     int(c.views),
+			Completed: int(c.completed),
+		})
+	}
+
+	return result, nil
 }
 
 func (a *AnalyticsInfrastructure) querier(db database.Querier) database.Querier {
@@ -86,5 +141,6 @@ func (a *AnalyticsInfrastructure) DownloadAnalytics(ctx context.Context, filenam
 		}
 		return nil, err
 	}
+
 	return r, nil
 }

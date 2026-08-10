@@ -1,5 +1,6 @@
 include:
   - path: deploy/database/postgres.yaml
+  - path: deploy/database/clickhouse.yaml
   - path: deploy/migrations/go-migrate.yaml
   - path: deploy/report_storage/rustfs/rustfs.yaml
   - path: deploy/gateway/nginx/nginx.yaml
@@ -34,6 +35,8 @@ services:
       - interactive_onboarding
     depends_on:
       db_scenarios:
+        condition: service_healthy
+      clickhouse:
         condition: service_healthy
 
   frontend:

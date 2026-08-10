@@ -92,6 +92,17 @@ func (q *Queries) DeleteStep(ctx context.Context, db DBTX, id uuid.UUID) error {
 	return err
 }
 
+const getFirstStepID = `-- name: GetFirstStepID :one
+SELECT id FROM step WHERE scenario_id = $1 AND order_num = 1
+`
+
+func (q *Queries) GetFirstStepID(ctx context.Context, db DBTX, scenarioID uuid.UUID) (uuid.UUID, error) {
+	row := db.QueryRowContext(ctx, getFirstStepID, scenarioID)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getMaxOrderByScenario = `-- name: GetMaxOrderByScenario :one
 SELECT COALESCE(MAX(order_num), 0)::int FROM step WHERE scenario_id = $1
 `

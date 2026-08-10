@@ -8,6 +8,7 @@ import (
 type Config struct {
 	ServicePort string `env:"WIDGET_SERVICE_PORT"`
 	pkgconfig.PostgresConfig
+	pkgconfig.ClickHouseConfig
 }
 
 func Load() (Config, error) {
