@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals'
-import type { OnboardingScenario } from '@interactive-onboarding/shared'
+import type { OnboardingScenario } from '@m2ie/onboarding-sdk'
 import { createRealScenarioRepository } from './createRealScenarioRepository'
 
 describe('real scenario repository', () => {

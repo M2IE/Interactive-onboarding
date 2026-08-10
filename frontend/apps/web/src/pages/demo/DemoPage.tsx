@@ -1,5 +1,5 @@
-import { OnboardingProvider } from "@interactive-onboarding/onboarding-sdk/react";
-import type { OnboardingApiClient } from '@interactive-onboarding/shared'
+import { OnboardingProvider } from "@m2ie/onboarding-sdk/react";
+import type { OnboardingApiClient } from '@m2ie/onboarding-sdk'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { ClassifiedShell } from "@/widgets/classified-shell/ClassifiedShell";
 import { appRoutes } from '@/shared/config/routes'

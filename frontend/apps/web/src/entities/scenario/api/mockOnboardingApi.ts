@@ -4,7 +4,7 @@ import type {
   OnboardingScenario,
   WidgetConfig,
   WidgetConfigRequest,
-} from '@interactive-onboarding/shared'
+} from '@m2ie/onboarding-sdk'
 import { defaultScenarios } from '@/entities/scenario/defaultScenario'
 import { readJson, writeJson } from '@/shared/lib/storage'
 

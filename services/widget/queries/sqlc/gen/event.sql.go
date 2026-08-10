@@ -11,6 +11,33 @@ import (
 	"github.com/google/uuid"
 )
 
+const existsEventByKey = `-- name: ExistsEventByKey :one
+SELECT EXISTS(SELECT 1 FROM event WHERE event_key = $1)
+`
+
+func (q *Queries) ExistsEventByKey(ctx context.Context, db DBTX, eventKey string) (bool, error) {
+	row := db.QueryRowContext(ctx, existsEventByKey, eventKey)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const existsScenarioCompleted = `-- name: ExistsScenarioCompleted :one
+SELECT EXISTS(SELECT 1 FROM event WHERE session_id = $1 AND scenario_id = $2 AND type = 'scenario_completed')
+`
+
+type ExistsScenarioCompletedParams struct {
+	SessionID  string        `db:"session_id"`
+	ScenarioID uuid.NullUUID `db:"scenario_id"`
+}
+
+func (q *Queries) ExistsScenarioCompleted(ctx context.Context, db DBTX, arg ExistsScenarioCompletedParams) (bool, error) {
+	row := db.QueryRowContext(ctx, existsScenarioCompleted, arg.SessionID, arg.ScenarioID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const insertEvent = `-- name: InsertEvent :exec
 INSERT INTO event (id, project_id, scenario_id, step_id, session_id, type, event_key, created_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())

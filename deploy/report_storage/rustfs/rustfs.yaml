@@ -4,7 +4,7 @@ services:
     container_name: report_storage
     restart: unless-stopped
     ports:
-      - "9001:9001" # UI
+      - "${RUSTFS_CONSOLE_PORT}:9001" # UI
     environment:
       RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY}
       RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY}

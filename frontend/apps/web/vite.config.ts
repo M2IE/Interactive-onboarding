@@ -10,12 +10,12 @@ export default defineConfig({
   resolve: {
     alias: [
       {
-        find: '@interactive-onboarding/onboarding-sdk/react',
+        find: '@m2ie/onboarding-sdk/react',
         replacement: resolveFromRoot('packages/onboarding-sdk/src/react/index.ts'),
       },
       {
-        find: '@interactive-onboarding/onboarding-sdk',
-        replacement: resolveFromRoot('packages/onboarding-sdk/src/index.tsx'),
+        find: '@m2ie/onboarding-sdk',
+        replacement: resolveFromRoot('packages/onboarding-sdk/src/index.ts'),
       },
       {
         find: '@interactive-onboarding/api-client',

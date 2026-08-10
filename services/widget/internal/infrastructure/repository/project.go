@@ -19,8 +19,8 @@ func NewProjectRepository(db database.Querier, q *queries.Query) *ProjectReposit
 	return &ProjectRepository{q: q, db: db}
 }
 
-func (r *ProjectRepository) GetProjectByKey(ctx context.Context, key string) (*domain.Project, error) {
-	row, err := r.q.GetProjectByKey(ctx, r.db, key)
+func (r *ProjectRepository) GetProjectByKey(ctx context.Context, db database.Querier, key string) (*domain.Project, error) {
+	row, err := r.q.GetProjectByKey(ctx, r.querier(db), key)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrProjectNotFound
@@ -28,4 +28,11 @@ func (r *ProjectRepository) GetProjectByKey(ctx context.Context, key string) (*d
 		return nil, err
 	}
 	return toDomainProject(&row), nil
+}
+
+func (s *ProjectRepository) querier(db database.Querier) database.Querier {
+	if db != nil {
+		return db
+	}
+	return s.db
 }

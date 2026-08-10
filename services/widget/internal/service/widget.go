@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/M2IE/Interactive-onboarding/pkg/database"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/domain"
@@ -11,13 +12,15 @@ import (
 )
 
 type IWidgetInfrastructure interface {
-	InsertEvent(ctx context.Context, event *domain.Event) error
-	GetProjectByKey(ctx context.Context, key string) (*domain.Project, error)
-	GetPublishedScenarioByURL(ctx context.Context, projectID uuid.UUID, url string) (*domain.Scenario, error)
-	GetScenarioByID(ctx context.Context, id uuid.UUID) (*domain.Scenario, error)
-	GetStepsByScenario(ctx context.Context, scenarioID uuid.UUID) ([]domain.Step, error)
-	GetStepByID(ctx context.Context, stepID uuid.UUID) (*domain.Step, error)
-	GetMaxOrderByScenario(ctx context.Context, scenarioID uuid.UUID) (int, error)
+	InsertEvent(ctx context.Context, db database.Querier, event *domain.Event) error
+	GetProjectByKey(ctx context.Context, db database.Querier, key string) (*domain.Project, error)
+	GetPublishedScenarioByURL(ctx context.Context, db database.Querier, projectID uuid.UUID, url string) (*domain.Scenario, error)
+	GetScenarioByID(ctx context.Context, db database.Querier, id uuid.UUID) (*domain.Scenario, error)
+	GetStepsByScenario(ctx context.Context, db database.Querier, scenarioID uuid.UUID) ([]domain.Step, error)
+	GetStepByID(ctx context.Context, db database.Querier, stepID uuid.UUID) (*domain.Step, error)
+	GetMaxOrderByScenario(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (int, error)
+	ExistsScenarioCompleted(ctx context.Context, db database.Querier, sessionID string, scenarioID *uuid.UUID) (bool, error)
+	ExistsEventByKey(ctx context.Context, db database.Querier, eventKey string) (bool, error)
 }
 
 type WidgetService struct {
@@ -34,7 +37,7 @@ func NewWidgetService(infra IWidgetInfrastructure, txManager database.Database) 
 
 // GetScenario возвращает опубликованный сценарий и его шаги для заданного проекта и URL.
 func (s *WidgetService) GetScenario(ctx context.Context, projectKey, pageUrl string) (*domain.Scenario, []domain.Step, error) {
-	project, err := s.infra.GetProjectByKey(ctx, projectKey)
+	project, err := s.infra.GetProjectByKey(ctx, nil, projectKey)
 	if err != nil {
 		if errors.Is(err, domain.ErrProjectNotFound) {
 			return nil, nil, domain.ErrProjectNotFound
@@ -42,7 +45,7 @@ func (s *WidgetService) GetScenario(ctx context.Context, projectKey, pageUrl str
 		return nil, nil, fmt.Errorf("get project by key: %w", err)
 	}
 
-	scenario, err := s.infra.GetPublishedScenarioByURL(ctx, project.ID, pageUrl)
+	scenario, err := s.infra.GetPublishedScenarioByURL(ctx, nil, project.ID, pageUrl)
 	if err != nil {
 		if errors.Is(err, domain.ErrNoPublishedScenario) {
 			return nil, nil, domain.ErrNoPublishedScenario
@@ -50,8 +53,8 @@ func (s *WidgetService) GetScenario(ctx context.Context, projectKey, pageUrl str
 		return nil, nil, fmt.Errorf("get published scenario: %w", err)
 	}
 
-	// 3. Получаем шаги сценария
-	steps, err := s.infra.GetStepsByScenario(ctx, scenario.ID)
+	// Получаем шаги сценария
+	steps, err := s.infra.GetStepsByScenario(ctx, nil, scenario.ID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("get steps: %w", err)
 	}
@@ -60,6 +63,18 @@ func (s *WidgetService) GetScenario(ctx context.Context, projectKey, pageUrl str
 }
 
 func (s *WidgetService) ProcessEvent(ctx context.Context, sessionID string, eventType domain.EventType, stepID, scenarioID *uuid.UUID, eventKey *string) error {
+	tx, err := s.txManager.Begin()
+	if err != nil {
+		return fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				slog.Error("failed to rollback publish transaction", "error", rbErr)
+			}
+		}
+	}()
+
 	// Валидация обязательных полей
 	switch eventType {
 	case domain.StepViewed, domain.StepCompleted:
@@ -79,11 +94,19 @@ func (s *WidgetService) ProcessEvent(ctx context.Context, sessionID string, even
 	if eventKey != nil && *eventKey != "" {
 		key = *eventKey
 	} else {
-		id, err := uuid.NewV7()
-		if err != nil {
-			return fmt.Errorf("generate event key: %w", err)
+		key = buildEventKey(sessionID, scenarioID, stepID, eventType)
+	}
+
+	exists, err := s.infra.ExistsEventByKey(ctx, tx, key)
+	if err != nil {
+		return fmt.Errorf("check event exists: %w", err)
+	}
+	if exists {
+		// Событие уже обработано, завершаем транзакцию с успехом
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("commit transaction: %w", err)
 		}
-		key = id.String()
+		return nil
 	}
 
 	// Получение project_id и scenario_id
@@ -91,18 +114,18 @@ func (s *WidgetService) ProcessEvent(ctx context.Context, sessionID string, even
 	var scID uuid.UUID
 	if scenarioID != nil {
 		scID = *scenarioID
-		scenario, err := s.infra.GetScenarioByID(ctx, scID)
+		scenario, err := s.infra.GetScenarioByID(ctx, tx, scID)
 		if err != nil {
 			return fmt.Errorf("get scenario by id: %w", err)
 		}
 		projectID = scenario.ProjectID
 	} else if stepID != nil {
-		step, err := s.infra.GetStepByID(ctx, *stepID)
+		step, err := s.infra.GetStepByID(ctx, tx, *stepID)
 		if err != nil {
 			return fmt.Errorf("get step by id: %w", err)
 		}
 		scID = step.ScenarioID
-		scenario, err := s.infra.GetScenarioByID(ctx, scID)
+		scenario, err := s.infra.GetScenarioByID(ctx, tx, scID)
 		if err != nil {
 			return fmt.Errorf("get scenario by id: %w", err)
 		}
@@ -125,45 +148,66 @@ func (s *WidgetService) ProcessEvent(ctx context.Context, sessionID string, even
 		Type:       eventType,
 		EventKey:   key,
 	}
-	if err := s.infra.InsertEvent(ctx, ev); err != nil {
+	if err := s.infra.InsertEvent(ctx, tx, ev); err != nil {
 		return fmt.Errorf("insert event: %w", err)
 	}
 
 	// Если это step_completed, проверяем, является ли шаг последним(чтобы создать событие о завершении сценария)
 	if eventType == domain.StepCompleted && stepID != nil {
-		step, err := s.infra.GetStepByID(ctx, *stepID)
+		step, err := s.infra.GetStepByID(ctx, tx, *stepID)
 		if err != nil {
 			return fmt.Errorf("get step by id: %w", err)
 		}
 
-		maxOrder, err := s.infra.GetMaxOrderByScenario(ctx, scID)
+		maxOrder, err := s.infra.GetMaxOrderByScenario(ctx, tx, scID)
 		if err != nil {
 			return fmt.Errorf("get max order: %w", err)
 		}
 
 		if step.OrderNum == maxOrder {
-			scenarioCompletedKey, err := uuid.NewV7()
+			exists, err := s.infra.ExistsScenarioCompleted(ctx, tx, sessionID, &scID)
 			if err != nil {
-				return fmt.Errorf("generate scenario completed key: %w", err)
+				return fmt.Errorf("check scenario_completed exists: %w", err)
 			}
-			id, err := uuid.NewV7()
-			if err != nil {
-				return fmt.Errorf("generate scenario completed id: %w", err)
+
+			if !exists {
+				scenarioCompletedKey := buildEventKey(sessionID, &scID, nil, domain.ScenarioCompleted)
+
+				id, err := uuid.NewV7()
+				if err != nil {
+					return fmt.Errorf("generate scenario completed id: %w", err)
+				}
+				scEvent := &domain.Event{
+					ID:         id,
+					ProjectID:  projectID,
+					ScenarioID: &scID,
+					StepID:     nil,
+					SessionID:  sessionID,
+					Type:       domain.ScenarioCompleted,
+					EventKey:   scenarioCompletedKey,
+				}
+				if err := s.infra.InsertEvent(ctx, tx, scEvent); err != nil {
+					return fmt.Errorf("insert scenario_completed event: %w", err)
+				}
 			}
-			scEvent := &domain.Event{
-				ID:         id,
-				ProjectID:  projectID,
-				ScenarioID: &scID,
-				StepID:     nil,
-				SessionID:  sessionID,
-				Type:       domain.ScenarioCompleted,
-				EventKey:   scenarioCompletedKey.String(),
-			}
-			if err := s.infra.InsertEvent(ctx, scEvent); err != nil {
-				return fmt.Errorf("insert scenario_completed event: %w", err)
-			}
+
 		}
 	}
 
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit transaction: %w", err)
+	}
 	return nil
+}
+
+func buildEventKey(sessionID string, scenarioID, stepID *uuid.UUID, eventType domain.EventType) string {
+	scenarioPart := "scenario"
+	if scenarioID != nil {
+		scenarioPart = scenarioID.String()
+	}
+	stepPart := "step"
+	if stepID != nil {
+		stepPart = stepID.String()
+	}
+	return fmt.Sprintf("%s:%s:%s:%s", sessionID, scenarioPart, stepPart, eventType)
 }
