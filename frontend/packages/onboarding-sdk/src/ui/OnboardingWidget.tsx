@@ -7,21 +7,26 @@ import {
 } from "react";
 import type {
   OnboardingApiClient,
+  OnboardingEligibility,
+  OnboardingEligibilityContext,
   OnboardingEventType,
   OnboardingStep,
   WidgetConfig,
 } from "../types/contracts";
 import {
+  consumeScenarioResume,
   getOrCreateSessionId,
   hasScenarioOutcome,
+  hasPreviousOnboardingPage,
+  preparePreviousOnboardingPage,
+  rememberPageNavigation,
   rememberScenarioOutcome,
 } from "../core/session";
 import {
   calculateTooltipPosition,
-  getTargetSnapshot,
-  type TargetSnapshot,
 } from "../dom/target";
 import { ensureOnboardingStyles } from "./styles";
+import { useOnboardingTarget } from "./useOnboardingTarget";
 
 export type OnboardingWidgetProps = {
   projectKey: string;
@@ -30,7 +35,10 @@ export type OnboardingWidgetProps = {
   pageUrl?: string;
   userId?: string;
   enabled?: boolean;
+  eligibility?: OnboardingEligibility;
   refreshKey?: number;
+  showDelayMs?: number;
+  targetWaitMs?: number;
 };
 
 type ConfigState =
@@ -50,7 +58,10 @@ export function OnboardingWidget({
   pageUrl,
   userId,
   enabled = true,
+  eligibility = true,
   refreshKey = 0,
+  showDelayMs = 0,
+  targetWaitMs = 5_000,
 }: OnboardingWidgetProps) {
   const resolvedPageUrl = pageUrl ?? window.location.pathname;
   const [configState, setConfigState] = useState<ConfigState>({
@@ -61,7 +72,6 @@ export function OnboardingWidget({
   const [stepActionState, setStepActionState] = useState<StepActionState>({
     status: "idle",
   });
-  const [target, setTarget] = useState<TargetSnapshot | null>(null);
   const [tooltipHeight, setTooltipHeight] = useState(0);
   const tooltipRef = useRef<HTMLElement | null>(null);
   const viewedEvents = useRef(new Set<string>());
@@ -75,14 +85,6 @@ export function OnboardingWidget({
   useEffect(() => {
     ensureOnboardingStyles();
   }, []);
-
-  useLayoutEffect(() => {
-    const nextHeight = tooltipRef.current?.getBoundingClientRect().height ?? 0;
-
-    if (nextHeight > 0 && nextHeight !== tooltipHeight) {
-      setTooltipHeight(nextHeight);
-    }
-  }, [activeStep, target, tooltipHeight]);
 
   const track = useCallback(
     async (type: OnboardingEventType, step?: OnboardingStep) => {
@@ -113,112 +115,144 @@ export function OnboardingWidget({
     [apiClient, config, projectKey, resolvedPageUrl, sessionId, userId],
   );
 
+  const handleMissingTarget = useCallback(
+    (step: OnboardingStep) => {
+      void track("target_not_found", step);
+    },
+    [track],
+  );
+  const targetState = useOnboardingTarget({
+    onMissing: handleMissingTarget,
+    step: activeStep,
+    waitMs: targetWaitMs,
+  });
+  const target =
+    targetState.status === "ready" &&
+    targetState.selector === activeStep?.selector
+      ? targetState.target
+      : null;
+
+  useLayoutEffect(() => {
+    const nextHeight = tooltipRef.current?.getBoundingClientRect().height ?? 0;
+
+    if (nextHeight > 0 && nextHeight !== tooltipHeight) {
+      setTooltipHeight(nextHeight);
+    }
+  }, [activeStep, target, tooltipHeight]);
+
   useEffect(() => {
     if (!enabled) {
       return;
     }
 
     let ignore = false;
+    let delayId: number | undefined;
+    const eligibilityContext: OnboardingEligibilityContext = {
+      projectKey,
+      pageUrl: resolvedPageUrl,
+      sessionId,
+      userId,
+    };
 
-    apiClient
-      .getConfig({
+    async function loadConfig() {
+      const isEligible =
+        typeof eligibility === "function"
+          ? await eligibility(eligibilityContext)
+          : eligibility;
+
+      if (ignore) {
+        return;
+      }
+
+      if (!isEligible) {
+        setConfigState({ status: "empty", pageUrl: resolvedPageUrl });
+        return;
+      }
+
+      if (showDelayMs > 0) {
+        await new Promise<void>((resolve) => {
+          delayId = window.setTimeout(resolve, showDelayMs);
+        });
+      }
+
+      if (ignore) {
+        return;
+      }
+
+      setConfigState({ status: "loading", pageUrl: resolvedPageUrl });
+      const nextConfig = await apiClient.getConfig({
         projectKey,
         pageUrl: resolvedPageUrl,
         sessionId,
         userId,
-      })
-      .then((nextConfig) => {
-        if (ignore) {
-          return;
-        }
-
-        setTarget(null);
-        setActiveIndex(0);
-        setStepActionState({ status: "idle" });
-
-        if (!nextConfig || hasScenarioOutcome(nextConfig.scenarioId)) {
-          setConfigState({ status: "empty", pageUrl: resolvedPageUrl });
-          return;
-        }
-
-        setConfigState({
-          status: "ready",
-          pageUrl: resolvedPageUrl,
-          config: nextConfig,
-        });
-      })
-      .catch((error: unknown) => {
-        if (ignore) {
-          return;
-        }
-
-        setTarget(null);
-        setConfigState({
-          status: "error",
-          pageUrl: resolvedPageUrl,
-          error: toError(error),
-        });
       });
+
+      if (ignore) {
+        return;
+      }
+
+      setActiveIndex(0);
+      setStepActionState({ status: "idle" });
+
+      if (!nextConfig) {
+        setConfigState({ status: "empty", pageUrl: resolvedPageUrl });
+        return;
+      }
+
+      const resumeIndex = consumeScenarioResume(
+        resolvedPageUrl,
+        nextConfig.scenarioId,
+      );
+
+      if (resumeIndex === null && hasScenarioOutcome(nextConfig.scenarioId)) {
+        setConfigState({ status: "empty", pageUrl: resolvedPageUrl });
+        return;
+      }
+
+      setActiveIndex(
+        resumeIndex === null
+          ? 0
+          : Math.min(Math.max(resumeIndex, 0), nextConfig.steps.length - 1),
+      );
+      setConfigState({
+        status: "ready",
+        pageUrl: resolvedPageUrl,
+        config: nextConfig,
+      });
+    }
+
+    void loadConfig().catch((error: unknown) => {
+      if (ignore) {
+        return;
+      }
+
+      setConfigState({
+        status: "error",
+        pageUrl: resolvedPageUrl,
+        error: toError(error),
+      });
+    });
 
     return () => {
       ignore = true;
+      if (delayId !== undefined) {
+        window.clearTimeout(delayId);
+      }
     };
   }, [
     apiClient,
+    eligibility,
     enabled,
     projectKey,
     refreshKey,
     resolvedPageUrl,
     sessionId,
+    showDelayMs,
     userId,
   ]);
 
   useEffect(() => {
-    if (!activeStep) {
-      return;
-    }
-
-    const initialTarget = document.querySelector(activeStep.selector);
-
-    if (!initialTarget) {
-      void track("target_not_found", activeStep);
-      return;
-    }
-
-    const initialRect = initialTarget.getBoundingClientRect();
-    const shouldScroll =
-      initialRect.top < 120 || initialRect.bottom > window.innerHeight - 120;
-
-    if (shouldScroll) {
-      initialTarget.scrollIntoView({
-        block: "center",
-        inline: "nearest",
-        behavior: "smooth",
-      });
-    }
-
-    const updateTarget = () => {
-      const nextTarget = getTargetSnapshot(activeStep.selector);
-      setTarget(nextTarget);
-
-      if (!nextTarget) {
-        void track("target_not_found", activeStep);
-      }
-    };
-
-    updateTarget();
-    window.setTimeout(updateTarget, shouldScroll ? 320 : 50);
-    window.addEventListener("resize", updateTarget);
-    window.addEventListener("scroll", updateTarget, true);
-
-    return () => {
-      window.removeEventListener("resize", updateTarget);
-      window.removeEventListener("scroll", updateTarget, true);
-    };
-  }, [activeStep, track]);
-
-  useEffect(() => {
-    if (!config || !activeStep) {
+    if (!config || !activeStep || !target) {
       return;
     }
 
@@ -235,7 +269,7 @@ export function OnboardingWidget({
       viewedEvents.current.add(viewedEventKey);
       void track("step_viewed", activeStep);
     }
-  }, [activeStep, config, sessionId, track]);
+  }, [activeStep, config, sessionId, target, track]);
 
   if (!enabled || !config || !activeStep || !target) {
     return null;
@@ -245,6 +279,8 @@ export function OnboardingWidget({
   const renderedStep = activeStep;
   const isLastPageStep = activeIndex === config.steps.length - 1;
   const isCompleting = stepActionState.status === "completing";
+  const canGoBackToPreviousPage =
+    activeIndex === 0 && hasPreviousOnboardingPage(resolvedPageUrl);
   const highlightStyle = getHighlightStyle(target.rect);
   const tooltipStyle = getTooltipStyle(
     renderedStep,
@@ -262,6 +298,13 @@ export function OnboardingWidget({
     if (renderedStep.nextUrl) {
       setStepActionState({ status: "completing", stepId: renderedStep.id });
       await completionEvent;
+
+      rememberPageNavigation({
+        fromPageUrl: resolvedPageUrl,
+        fromScenarioId: renderedConfig.scenarioId,
+        fromStepIndex: activeIndex,
+        toPageUrl: renderedStep.nextUrl,
+      });
 
       if (isLastPageStep) {
         await track("scenario_completed");
@@ -299,6 +342,25 @@ export function OnboardingWidget({
     setConfigState({ status: "empty", pageUrl: resolvedPageUrl });
   }
 
+  function goBack() {
+    if (activeIndex > 0) {
+      setActiveIndex((index) => index - 1);
+      return;
+    }
+
+    const previousPageUrl = preparePreviousOnboardingPage(resolvedPageUrl);
+
+    if (!previousPageUrl) {
+      return;
+    }
+
+    if (navigate) {
+      navigate(previousPageUrl);
+    } else {
+      window.location.assign(previousPageUrl);
+    }
+  }
+
   return (
     <div aria-live="polite" className="onboarding-sdk">
       <div className="onboarding-sdk__spotlight" style={highlightStyle} />
@@ -323,8 +385,10 @@ export function OnboardingWidget({
           </button>
           <button
             type="button"
-            onClick={() => setActiveIndex((index) => Math.max(index - 1, 0))}
-            disabled={activeIndex === 0 || isCompleting}
+            onClick={goBack}
+            disabled={
+              (activeIndex === 0 && !canGoBackToPreviousPage) || isCompleting
+            }
           >
             Назад
           </button>

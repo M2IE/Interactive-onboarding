@@ -1,7 +1,10 @@
 import { createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { createHttpOnboardingClient } from './api/httpClient'
-import type { OnboardingApiClient } from './types/contracts'
+import type {
+  OnboardingApiClient,
+  OnboardingEligibility,
+} from './types/contracts'
 import { OnboardingWidget } from './ui/OnboardingWidget'
 
 export type OnboardingInitOptions = {
@@ -12,6 +15,9 @@ export type OnboardingInitOptions = {
   pageUrl?: string
   userId?: string
   enabled?: boolean
+  eligibility?: OnboardingEligibility
+  showDelayMs?: number
+  targetWaitMs?: number
 }
 
 export type OnboardingInstance = {
@@ -38,11 +44,14 @@ export function initOnboarding(options: OnboardingInitOptions): OnboardingInstan
     root.render(
       createElement(OnboardingWidget, {
         apiClient,
+        eligibility: options.eligibility,
         enabled: options.enabled,
         navigate: options.navigate,
         pageUrl: options.pageUrl,
         projectKey: options.projectKey,
         refreshKey,
+        showDelayMs: options.showDelayMs,
+        targetWaitMs: options.targetWaitMs,
         userId: options.userId,
       }),
     )
@@ -71,6 +80,8 @@ export type {
 } from './api/httpClient'
 export type {
   OnboardingApiClient,
+  OnboardingEligibility,
+  OnboardingEligibilityContext,
   OnboardingEventPayload,
   OnboardingEventType,
   OnboardingScenario,

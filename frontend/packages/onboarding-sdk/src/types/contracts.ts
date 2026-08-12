@@ -81,3 +81,14 @@ export type OnboardingApiClient = {
   getConfig: (request: WidgetConfigRequest) => Promise<WidgetConfig | null>
   trackEvent: (event: OnboardingEventPayload) => Promise<void>
 }
+
+export type OnboardingEligibilityContext = {
+  projectKey: string
+  pageUrl: string
+  sessionId: string
+  userId?: string
+}
+
+export type OnboardingEligibility =
+  | boolean
+  | ((context: OnboardingEligibilityContext) => boolean | Promise<boolean>)

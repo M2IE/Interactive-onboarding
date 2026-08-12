@@ -186,6 +186,109 @@ describe('OnboardingWidget', () => {
     )
   })
 
+  it('waits for a dynamic target before showing and tracking the step', async () => {
+    const apiClient = createApiClient(createStep())
+
+    render(
+      <OnboardingWidget
+        apiClient={apiClient}
+        pageUrl="/demo/profile"
+        projectKey="avito-demo"
+        targetWaitMs={1_000}
+      />,
+    )
+
+    await waitFor(() => expect(apiClient.getConfig).toHaveBeenCalledTimes(1))
+    expect(screen.queryByText('Начните сценарий')).toBeNull()
+
+    createTarget('create-button')
+
+    expect(await screen.findByText('Начните сценарий')).toBeTruthy()
+    expect(
+      jest
+        .mocked(apiClient.trackEvent)
+        .mock.calls.some(([event]) => event.type === 'target_not_found'),
+    ).toBe(false)
+  })
+
+  it('does not request config when the host marks the user ineligible', async () => {
+    const apiClient = createApiClient(createStep())
+    const eligibility = jest.fn(async () => false)
+
+    render(
+      <OnboardingWidget
+        apiClient={apiClient}
+        eligibility={eligibility}
+        pageUrl="/demo/profile"
+        projectKey="avito-demo"
+      />,
+    )
+
+    await waitFor(() => expect(eligibility).toHaveBeenCalledTimes(1))
+    expect(apiClient.getConfig).not.toHaveBeenCalled()
+  })
+
+  it('returns to the last step of the previous page', async () => {
+    createTarget('profile-button')
+    createTarget('category-button')
+    const navigate = jest.fn<(url: string) => void>()
+    const profileStep = createStep({
+      id: 'profile-step',
+      selector: '[data-onboarding-id="profile-button"]',
+      title: 'Profile step',
+      nextUrl: '/demo/new',
+    })
+    const categoryStep = createStep({
+      id: 'category-step',
+      selector: '[data-onboarding-id="category-button"]',
+      title: 'Category step',
+    })
+    const getConfig = jest
+      .fn<OnboardingApiClient['getConfig']>()
+      .mockImplementation(async ({ pageUrl }) =>
+        createConfig(
+          pageUrl === '/demo/profile' ? profileStep : categoryStep,
+          pageUrl,
+        ),
+      )
+    const apiClient = createApiClient(profileStep, getConfig)
+    const view = render(
+      <OnboardingWidget
+        apiClient={apiClient}
+        navigate={navigate}
+        pageUrl="/demo/profile"
+        projectKey="avito-demo"
+      />,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Далее' }))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/demo/new'))
+
+    view.rerender(
+      <OnboardingWidget
+        apiClient={apiClient}
+        navigate={navigate}
+        pageUrl="/demo/new"
+        projectKey="avito-demo"
+      />,
+    )
+
+    expect(await screen.findByText('Category step')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Назад' }))
+    expect(navigate).toHaveBeenLastCalledWith('/demo/profile')
+
+    view.rerender(
+      <OnboardingWidget
+        apiClient={apiClient}
+        navigate={navigate}
+        pageUrl="/demo/profile"
+        projectKey="avito-demo"
+      />,
+    )
+
+    expect(await screen.findByText('Profile step')).toBeTruthy()
+  })
+
   it('does not show a completed scenario again in the same session', async () => {
     createTarget('create-button')
     const apiClient = createApiClient(createStep())
