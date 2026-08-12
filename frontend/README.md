@@ -75,6 +75,16 @@ for the configured platform origin. Its local SDK preview does not call Widget
 API, emit analytics or follow `nextUrl`. The Docker image continues to contain
 only the web SPA.
 
+Create a versioned ZIP and SHA-256 checksum for internal distribution:
+
+```bash
+npm run extension:release
+```
+
+Release and privacy checklists live in
+[`apps/extension/RELEASE.md`](./apps/extension/RELEASE.md) and
+[`apps/extension/PRIVACY.md`](./apps/extension/PRIVACY.md).
+
 ## Validate
 
 Run the same checks as the frontend GitHub Actions job:

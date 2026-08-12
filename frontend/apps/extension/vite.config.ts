@@ -1,4 +1,4 @@
-import { copyFileSync } from 'node:fs'
+import { copyFileSync, cpSync } from 'node:fs'
 import { fileURLToPath, URL } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
@@ -12,6 +12,11 @@ export default defineConfig({
         copyFileSync(
           fileURLToPath(new URL('./manifest.json', import.meta.url)),
           fileURLToPath(new URL('./dist/manifest.json', import.meta.url)),
+        )
+        cpSync(
+          fileURLToPath(new URL('./public/icons', import.meta.url)),
+          fileURLToPath(new URL('./dist/icons', import.meta.url)),
+          { recursive: true },
         )
       },
     },

@@ -277,6 +277,11 @@ Useful examples:
 - Widget emits `target_not_found` when selector does not match any element.
 - Analytics funnel counts views and completions per step.
 
+Playwright lives in `frontend/e2e` as an additional browser-level quality gate.
+Keep Jest + RTL as the required unit/integration test stack. Run web E2E with
+`npm run e2e` and the unpacked Manifest V3 smoke test with
+`npm run e2e:extension`.
+
 ## Routing
 
 Current routes:

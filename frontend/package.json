@@ -18,6 +18,7 @@
     "e2e:all": "npm run build:extension && playwright test",
     "build": "npm run build --workspace @interactive-onboarding/shared && npm run build --workspace @interactive-onboarding/api-client && npm run build --workspace @interactive-onboarding/element-selector && npm run build --workspace @interactive-onboarding/ui && npm run build --workspace @m2ie/onboarding-sdk && npm run build --workspace @interactive-onboarding/web && npm run build --workspace @interactive-onboarding/extension",
     "build:extension": "npm run build --workspace @interactive-onboarding/element-selector && npm run build --workspace @interactive-onboarding/api-client && npm run build --workspace @interactive-onboarding/ui && npm run build --workspace @m2ie/onboarding-sdk && npm run build --workspace @interactive-onboarding/extension",
+    "extension:release": "npm run package --workspace @interactive-onboarding/extension",
     "ci": "npm run typecheck && npm run lint && npm test && npm run build",
     "lint": "eslint .",
     "preview": "npm run preview --workspace @interactive-onboarding/web",
