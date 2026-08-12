@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Onboarding Studio",
+  "version": "0.1.0",
+  "description": "Create and preview onboarding scenarios directly on a website.",
+  "minimum_chrome_version": "116",
+  "action": {
+    "default_title": "Open Onboarding Studio"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "sidePanel",
+    "storage",
+    "webNavigation"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ]
+}
