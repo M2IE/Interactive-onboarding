@@ -24,6 +24,8 @@ import {
   selectWorkflow,
 } from '../model/selectors'
 import { resolveScenarioDeepLink } from '../model/deepLink'
+import { validateScenario } from '../model/scenarioValidation'
+import { useUnsavedChanges } from '@/shared/hooks/useUnsavedChanges'
 
 type ScenarioEditorRootState = {
   scenarioEditor: ScenarioEditorState
@@ -53,6 +55,9 @@ export function useScenarioEditor(requestedScenarioId?: string | null) {
   const workflow = useScenarioEditorSelector((state) =>
     selectWorkflow(state.scenarioEditor),
   )
+  const dirtyScenarioIds = useScenarioEditorSelector(
+    (state) => state.scenarioEditor.dirtyScenarioIds,
+  )
 
   useEffect(() => {
     if (workflow.status === 'idle') {
@@ -77,16 +82,25 @@ export function useScenarioEditor(requestedScenarioId?: string | null) {
   const isPublished = activeScenario?.status === 'published'
   const isArchived = activeScenario?.status === 'archived'
   const isReadOnly = isPublished || isArchived
+  const isDirty = activeScenario
+    ? dirtyScenarioIds.includes(activeScenario.id)
+    : false
+  const validation = activeScenario
+    ? validateScenario(activeScenario)
+    : undefined
+  const confirmDiscard = useUnsavedChanges(isDirty)
 
   return {
     activeScenario,
     activeStep,
     isBusy: workflow.status === 'loading',
+    isDirty,
     isArchived,
     isPublished,
     isReadOnly,
     scenarios,
     workflow,
+    validation,
     deepLinkNotice:
       (workflow.status === 'ready' || workflow.status === 'published') &&
       deepLinkResolution.status === 'missing'
@@ -98,10 +112,16 @@ export function useScenarioEditor(requestedScenarioId?: string | null) {
       }
     },
     createDraft: () => {
-      void dispatch(createScenario())
+      if (confirmDiscard()) {
+        void dispatch(createScenario())
+      }
     },
     publishActiveScenario: () => {
-      if (activeScenario && !isReadOnly) {
+      if (
+        activeScenario &&
+        !isReadOnly &&
+        validation?.status === 'valid'
+      ) {
         void dispatch(publishScenario(activeScenario))
       }
     },
@@ -111,14 +131,20 @@ export function useScenarioEditor(requestedScenarioId?: string | null) {
       }
     },
     reloadScenarios: () => {
-      void dispatch(resetScenarios())
+      if (confirmDiscard()) {
+        void dispatch(resetScenarios())
+      }
     },
     saveActiveScenario: () => {
       if (activeScenario && !isReadOnly) {
         void dispatch(saveScenario(activeScenario))
       }
     },
-    selectScenario: (scenarioId: string) => dispatch(selectScenario(scenarioId)),
+    selectScenario: (scenarioId: string) => {
+      if (scenarioId !== activeScenario?.id && confirmDiscard()) {
+        dispatch(selectScenario(scenarioId))
+      }
+    },
     selectStep: (stepId: string) => dispatch(selectStep(stepId)),
     updateScenarioMeta: (patch: {
       name?: string

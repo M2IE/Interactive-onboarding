@@ -109,6 +109,18 @@ const styles = `
   color: #ffffff;
 }
 
+.onboarding-sdk__tooltip:focus-visible,
+.onboarding-sdk__actions button:focus-visible {
+  outline: 3px solid #005fcc;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-sdk__spotlight {
+    transition: none;
+  }
+}
+
 @media (max-width: 620px) {
   .onboarding-sdk__tooltip {
     padding: 18px;

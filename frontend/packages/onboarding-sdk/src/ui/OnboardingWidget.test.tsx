@@ -37,6 +37,35 @@ describe('OnboardingWidget', () => {
     expect(
       document.getElementById('interactive-onboarding-sdk-styles'),
     ).not.toBeNull()
+    const dialog = screen.getByRole('dialog', { name: 'Начните сценарий' })
+    expect(dialog).toHaveAttribute('aria-modal', 'true')
+    expect(dialog).toHaveFocus()
+  })
+
+  it('dismisses with Escape and restores focus to the host page', async () => {
+    const hostButton = createTarget('host-focus')
+    hostButton.focus()
+    createTarget('create-button')
+    const apiClient = createApiClient(createStep())
+
+    render(
+      <OnboardingWidget
+        apiClient={apiClient}
+        pageUrl="/demo/profile"
+        projectKey="avito-demo"
+      />,
+    )
+
+    expect(await screen.findByRole('dialog')).toHaveFocus()
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(hostButton).toHaveFocus()
+    expect(
+      jest
+        .mocked(apiClient.trackEvent)
+        .mock.calls.some(([event]) => event.type === 'scenario_dismissed'),
+    ).toBe(true)
   })
 
   it('uses host navigation without reloading for a cross-page step', async () => {
@@ -378,4 +407,5 @@ function createTarget(id: string) {
       toJSON: () => ({}),
     }) as DOMRect
   document.body.append(target)
+  return target
 }

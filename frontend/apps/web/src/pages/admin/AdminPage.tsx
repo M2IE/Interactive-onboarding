@@ -113,7 +113,9 @@ export function AdminPage({ apiMode }: AdminPageProps) {
             )}
             {!isAnalytics && (
               <Button
-                disabled={editor.isBusy || editor.isReadOnly}
+                disabled={
+                  editor.isBusy || editor.isReadOnly || !editor.isDirty
+                }
                 icon={<Save aria-hidden="true" size={17} />}
                 onClick={editor.saveActiveScenario}
                 variant="secondary"
@@ -124,7 +126,9 @@ export function AdminPage({ apiMode }: AdminPageProps) {
             {!isAnalytics &&
               (editor.isPublished ? (
                 <Button
-                  disabled={editor.isBusy}
+                  disabled={
+                    editor.isBusy || editor.validation?.status === 'invalid'
+                  }
                   icon={<EyeOff aria-hidden="true" size={17} />}
                   onClick={editor.unpublishActiveScenario}
                   variant="danger"
@@ -183,6 +187,7 @@ export function AdminPage({ apiMode }: AdminPageProps) {
             scenarios={editor.scenarios}
             readOnly={editor.isReadOnly}
             showExtendedFields={apiMode === 'mock'}
+            validation={editor.validation}
             onAddStep={editor.addStep}
             onOpenDemo={() =>
               navigate(editor.activeScenario?.url ?? appRoutes.demo.profile)

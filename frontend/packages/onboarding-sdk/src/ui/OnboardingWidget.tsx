@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -74,6 +75,9 @@ export function OnboardingWidget({
   });
   const [tooltipHeight, setTooltipHeight] = useState(0);
   const tooltipRef = useRef<HTMLElement | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const titleId = useId();
+  const bodyId = useId();
   const viewedEvents = useRef(new Set<string>());
   const [sessionId] = useState(() => getOrCreateSessionId());
   const config =
@@ -271,6 +275,67 @@ export function OnboardingWidget({
     }
   }, [activeStep, config, sessionId, target, track]);
 
+  useEffect(() => {
+    const tooltip = tooltipRef.current;
+
+    if (
+      !config ||
+      !activeStep ||
+      targetState.status !== "ready" ||
+      !tooltip
+    ) {
+      return;
+    }
+
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    tooltip.focus({ preventScroll: true });
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        void track("scenario_dismissed", activeStep);
+        rememberScenarioOutcome(config.scenarioId, "dismissed");
+        setConfigState({ status: "empty", pageUrl: resolvedPageUrl });
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const focusable = Array.from(
+        tooltip.querySelectorAll<HTMLElement>("button:not(:disabled)"),
+      );
+
+      if (focusable.length === 0) {
+        event.preventDefault();
+        tooltip.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable.at(-1);
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previousFocusRef.current?.focus({ preventScroll: true });
+    };
+  }, [activeStep, config, resolvedPageUrl, targetState.status, track]);
+
   if (!enabled || !config || !activeStep || !target) {
     return null;
   }
@@ -363,11 +428,20 @@ export function OnboardingWidget({
 
   return (
     <div aria-live="polite" className="onboarding-sdk">
-      <div className="onboarding-sdk__spotlight" style={highlightStyle} />
+      <div
+        aria-hidden="true"
+        className="onboarding-sdk__spotlight"
+        style={highlightStyle}
+      />
       <article
+        aria-describedby={bodyId}
+        aria-labelledby={titleId}
+        aria-modal="true"
         className="onboarding-sdk__tooltip"
         ref={tooltipRef}
+        role="dialog"
         style={tooltipStyle}
+        tabIndex={-1}
       >
         <div className="onboarding-sdk__meta">
           <span className="onboarding-sdk__pin" aria-hidden="true">
@@ -377,8 +451,8 @@ export function OnboardingWidget({
             Шаг {config.stepOffset + renderedStep.order} из {config.totalSteps}
           </span>
         </div>
-        <h2>{renderedStep.title}</h2>
-        <p>{renderedStep.body}</p>
+        <h2 id={titleId}>{renderedStep.title}</h2>
+        <p id={bodyId}>{renderedStep.body}</p>
         <div className="onboarding-sdk__actions">
           <button type="button" onClick={skipScenario} disabled={isCompleting}>
             Пропустить

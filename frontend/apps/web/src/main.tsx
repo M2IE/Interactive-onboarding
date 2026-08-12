@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import './index.css'
 import './admin.css'
 import { App } from './app/App'
@@ -16,11 +16,15 @@ const config = createAppConfig({
 })
 const services = createAppServices(config)
 const store = createAppStore(services)
+const router = createBrowserRouter([
+  {
+    path: '*',
+    element: <App services={services} />,
+  },
+])
 
 createRoot(document.getElementById('root')!).render(
   <AppProviders store={store}>
-    <BrowserRouter>
-      <App services={services} />
-    </BrowserRouter>
+    <RouterProvider router={router} />
   </AppProviders>,
 )
