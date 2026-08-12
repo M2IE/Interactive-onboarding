@@ -11,9 +11,9 @@ import (
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/config"
 	delivery "github.com/M2IE/Interactive-onboarding/services/widget/internal/delivery/http"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/infrastructure"
+	"github.com/M2IE/Interactive-onboarding/services/widget/internal/server"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/service"
 	"github.com/M2IE/Interactive-onboarding/services/widget/queries"
-	"github.com/M2IE/Interactive-onboarding/services/widget/server"
 )
 
 func main() {
