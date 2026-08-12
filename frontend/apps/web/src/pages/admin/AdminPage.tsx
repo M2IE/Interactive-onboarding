@@ -17,6 +17,7 @@ import {
   useScenarioAnalytics,
 } from '@/features/scenario-analytics'
 import { ScenarioEditor, useScenarioEditor } from '@/features/scenario-editor'
+import { ScenarioGuideDialog } from '@/features/scenario-guide'
 import { appRoutes } from '@/shared/config/routes'
 import { AvitoLogo } from '@/shared/ui/AvitoLogo'
 import type { ApiMode } from '@/shared/config/appConfig'
@@ -78,6 +79,7 @@ export function AdminPage({ apiMode }: AdminPageProps) {
           <div
             className={`admin-topbar__actions${isAnalytics ? ' is-compact' : ''}`}
           >
+            {!isAnalytics && <ScenarioGuideDialog />}
             {isAnalytics ? (
               <Button
                 icon={<RefreshCw aria-hidden="true" size={17} />}

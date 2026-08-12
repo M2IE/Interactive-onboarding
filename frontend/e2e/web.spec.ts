@@ -6,7 +6,9 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('administrator edits, validates and saves a scenario', async ({ page }) => {
-  await page.getByRole('button', { name: 'Создать сценарий' }).click()
+  await page
+    .getByRole('button', { name: 'Создать сценарий', exact: true })
+    .click()
 
   const nameInput = page.getByRole('textbox', { name: 'Название сценария' })
   await nameInput.fill('')
@@ -48,4 +50,31 @@ test('admin layout remains usable on a mobile viewport', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Фабрика сценариев' })).toBeVisible()
   await expect(page.getByRole('tab', { name: 'Сценарии' })).toBeVisible()
   await expect(page.getByRole('tab', { name: 'Шаги' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Как создать сценарий' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Как создать сценарий' })
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('button', { name: 'Далее' })).toBeVisible()
+
+  const box = await dialog.boundingBox()
+  expect(box).not.toBeNull()
+  expect(box!.x).toBeGreaterThanOrEqual(0)
+  expect(box!.x + box!.width).toBeLessThanOrEqual(390)
+})
+
+test('creation guide explains the full administrator workflow', async ({
+  page,
+}) => {
+  await page.getByRole('button', { name: 'Как создать сценарий' }).click()
+
+  const dialog = page.getByRole('dialog', { name: 'Как создать сценарий' })
+  await expect(dialog).toBeVisible()
+  await expect(dialog).toContainText('Один сценарий относится к одной странице')
+
+  await dialog.getByRole('button', {
+    name: 'Шаг 6: Опубликуйте и следите за результатом',
+  }).click()
+  await expect(dialog).toContainText(
+    'После публикации SDK начнёт отдавать сценарий пользователям',
+  )
 })

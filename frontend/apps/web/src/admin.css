@@ -623,6 +623,241 @@
   color: #c92c3a;
 }
 
+.ui-dialog-overlay {
+  animation: admin-dialog-fade 160ms ease-out;
+  background: rgba(12, 15, 18, 0.58);
+  inset: 0;
+  position: fixed;
+  z-index: 1000;
+}
+
+.ui-dialog-content {
+  animation: admin-dialog-enter 180ms ease-out;
+  background: #ffffff;
+  border: 1px solid #dfe2e5;
+  border-radius: 8px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.24);
+  left: 50%;
+  max-height: calc(100svh - 40px);
+  overflow: auto;
+  position: fixed;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(720px, calc(100vw - 40px));
+  z-index: 1001;
+}
+
+.ui-dialog-header {
+  align-items: flex-start;
+  border-bottom: 1px solid #e6e8ea;
+  display: flex;
+  justify-content: space-between;
+  padding: 22px 24px 18px;
+}
+
+.ui-dialog-header h2 {
+  font-size: 22px;
+  margin: 0;
+}
+
+.ui-dialog-header p {
+  color: #6a6f75;
+  font-size: 14px;
+  margin: 5px 0 0;
+}
+
+.ui-dialog-close {
+  align-items: center;
+  background: #f1f2f3;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  font-size: 24px;
+  height: 34px;
+  justify-content: center;
+  line-height: 1;
+  width: 34px;
+}
+
+.scenario-guide {
+  padding: 22px 24px 24px;
+}
+
+.scenario-guide__progress {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(6, 1fr);
+  margin-bottom: 22px;
+}
+
+.scenario-guide__progress button {
+  align-items: center;
+  background: #edf0f2;
+  border: 0;
+  border-radius: 6px;
+  color: #6b7178;
+  cursor: pointer;
+  display: flex;
+  font-size: 12px;
+  font-weight: 800;
+  height: 32px;
+  justify-content: center;
+}
+
+.scenario-guide__progress button.is-active {
+  background: #0a84ff;
+  color: #ffffff;
+}
+
+.scenario-guide__step {
+  min-height: 255px;
+}
+
+.scenario-guide__step > small {
+  color: #158a55;
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 18px;
+}
+
+.scenario-guide__step h3 {
+  font-size: 24px;
+  margin: 8px 0 10px;
+}
+
+.scenario-guide__step p {
+  color: #34383d;
+  line-height: 1.55;
+  margin: 0;
+  max-width: 610px;
+}
+
+.scenario-guide__step aside {
+  background: #eff7ff;
+  border-left: 3px solid #0a84ff;
+  color: #324b64;
+  font-size: 13px;
+  margin-top: 16px;
+  padding: 11px 13px;
+}
+
+.scenario-guide__visual {
+  align-items: center;
+  background: #f6f7f8;
+  border: 1px solid #e5e7e9;
+  display: flex;
+  gap: 14px;
+  min-height: 82px;
+  padding: 18px;
+}
+
+.scenario-guide__visual span {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #dfe2e5;
+  border-radius: 7px;
+  color: #0a84ff;
+  display: flex;
+  height: 48px;
+  justify-content: center;
+  width: 58px;
+}
+
+.scenario-guide__visual i {
+  background: #cdd2d7;
+  height: 2px;
+  position: relative;
+  width: 94px;
+}
+
+.scenario-guide__visual i::after {
+  border-bottom: 4px solid transparent;
+  border-left: 7px solid #cdd2d7;
+  border-top: 4px solid transparent;
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: -3px;
+}
+
+.scenario-guide__terms {
+  border-top: 1px solid #e6e8ea;
+  padding-top: 16px;
+}
+
+.scenario-guide__terms summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.scenario-guide__terms dl {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 14px 0 0;
+}
+
+.scenario-guide__terms dl > div {
+  background: #f7f8f9;
+  padding: 10px 12px;
+}
+
+.scenario-guide__terms dt {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.scenario-guide__terms dd {
+  color: #62676e;
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 4px 0 0;
+}
+
+.scenario-guide__actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+@keyframes admin-dialog-fade {
+  from { opacity: 0; }
+}
+
+@keyframes admin-dialog-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 8px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-dialog-content,
+  .ui-dialog-overlay {
+    animation: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .ui-dialog-content {
+    max-height: calc(100svh - 20px);
+    width: calc(100vw - 20px);
+  }
+
+  .ui-dialog-header,
+  .scenario-guide {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .scenario-guide__terms dl {
+    grid-template-columns: 1fr;
+  }
+}
+
 .scenario-meta-section > .workspace-section-header {
   padding-bottom: 10px;
 }

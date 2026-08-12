@@ -3,8 +3,13 @@ import type {
   ComponentPropsWithoutRef,
   ReactNode,
 } from 'react'
-import { Check, ChevronDown } from 'lucide-react'
-import { Select as RadixSelect, Tabs as RadixTabs, Tooltip } from 'radix-ui'
+import { Check, ChevronDown, X } from 'lucide-react'
+import {
+  Dialog as RadixDialog,
+  Select as RadixSelect,
+  Tabs as RadixTabs,
+  Tooltip,
+} from 'radix-ui'
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type ButtonSize = 'small' | 'medium' | 'large'
@@ -169,6 +174,51 @@ export function TabsContent(
   props: ComponentPropsWithoutRef<typeof RadixTabs.Content>,
 ) {
   return <RadixTabs.Content {...props} />
+}
+
+type DialogProps = ComponentPropsWithoutRef<typeof RadixDialog.Root> & {
+  title: string
+  description?: string
+  children: ReactNode
+  closeLabel?: string
+  className?: string
+}
+
+export function Dialog({
+  title,
+  description,
+  children,
+  closeLabel = 'Закрыть',
+  className,
+  ...props
+}: DialogProps) {
+  return (
+    <RadixDialog.Root {...props}>
+      <RadixDialog.Portal>
+        <RadixDialog.Overlay className="ui-dialog-overlay" />
+        <RadixDialog.Content
+          className={['ui-dialog-content', className].filter(Boolean).join(' ')}
+        >
+          <header className="ui-dialog-header">
+            <div>
+              <RadixDialog.Title>{title}</RadixDialog.Title>
+              {description && (
+                <RadixDialog.Description>
+                  {description}
+                </RadixDialog.Description>
+              )}
+            </div>
+            <RadixDialog.Close asChild>
+              <button aria-label={closeLabel} className="ui-dialog-close">
+                <X aria-hidden="true" size={19} />
+              </button>
+            </RadixDialog.Close>
+          </header>
+          {children}
+        </RadixDialog.Content>
+      </RadixDialog.Portal>
+    </RadixDialog.Root>
+  )
 }
 
 export type SelectOption<TValue extends string = string> = {
