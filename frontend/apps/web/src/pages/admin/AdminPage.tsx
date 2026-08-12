@@ -29,7 +29,10 @@ export function AdminPage({ apiMode }: AdminPageProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const isAnalytics = location.pathname === appRoutes.adminAnalytics
-  const editor = useScenarioEditor()
+  const requestedScenarioId = new URLSearchParams(location.search).get(
+    'scenarioId',
+  )
+  const editor = useScenarioEditor(requestedScenarioId)
   const analytics = useScenarioAnalytics()
 
   return (
@@ -140,6 +143,12 @@ export function AdminPage({ apiMode }: AdminPageProps) {
               ) : null)}
           </div>
         </header>
+
+        {!isAnalytics && editor.deepLinkNotice && (
+          <div className="admin-inline-notice" role="status">
+            {editor.deepLinkNotice}
+          </div>
+        )}
 
         {isAnalytics ? (
           <ScenarioAnalytics

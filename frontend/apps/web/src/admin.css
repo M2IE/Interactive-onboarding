@@ -6,6 +6,14 @@
   --admin-border-strong: #d7dadd;
 }
 
+.admin-inline-notice {
+  background: var(--color-blue-soft);
+  border-bottom: 1px solid #cfe7ff;
+  color: #005eb8;
+  font-size: 13px;
+  padding: 10px 24px;
+}
+
 .visually-hidden {
   clip: rect(0 0 0 0);
   clip-path: inset(50%);

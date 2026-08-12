@@ -23,6 +23,7 @@ import {
   selectScenarios,
   selectWorkflow,
 } from '../model/selectors'
+import { resolveScenarioDeepLink } from '../model/deepLink'
 
 type ScenarioEditorRootState = {
   scenarioEditor: ScenarioEditorState
@@ -38,7 +39,7 @@ const useScenarioEditorDispatch = useDispatch.withTypes<ScenarioEditorDispatch>(
 const useScenarioEditorSelector =
   useSelector.withTypes<ScenarioEditorRootState>()
 
-export function useScenarioEditor() {
+export function useScenarioEditor(requestedScenarioId?: string | null) {
   const dispatch = useScenarioEditorDispatch()
   const scenarios = useScenarioEditorSelector((state) =>
     selectScenarios(state.scenarioEditor),
@@ -59,6 +60,20 @@ export function useScenarioEditor() {
     }
   }, [dispatch, workflow.status])
 
+  const deepLinkResolution = resolveScenarioDeepLink(
+    scenarios,
+    requestedScenarioId,
+  )
+
+  useEffect(() => {
+    if (
+      deepLinkResolution.status === 'found' &&
+      activeScenario?.id !== deepLinkResolution.scenarioId
+    ) {
+      dispatch(selectScenario(deepLinkResolution.scenarioId))
+    }
+  }, [activeScenario?.id, deepLinkResolution, dispatch])
+
   const isPublished = activeScenario?.status === 'published'
   const isArchived = activeScenario?.status === 'archived'
   const isReadOnly = isPublished || isArchived
@@ -72,6 +87,11 @@ export function useScenarioEditor() {
     isReadOnly,
     scenarios,
     workflow,
+    deepLinkNotice:
+      (workflow.status === 'ready' || workflow.status === 'published') &&
+      deepLinkResolution.status === 'missing'
+        ? 'Сценарий из ссылки не найден или недоступен в текущем проекте.'
+        : undefined,
     addStep: () => {
       if (activeScenario && !isReadOnly) {
         void dispatch(addScenarioStep(activeScenario))
