@@ -1,4 +1,4 @@
-module github.com/M2IE/Interactive-onboarding/pkg/database
+module github.com/M2IE/Interactive-onboarding/pkg/database/rdb
 
 go 1.26.5
 

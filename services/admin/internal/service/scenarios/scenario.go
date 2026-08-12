@@ -2,17 +2,18 @@ package scenarios
 
 import (
 	"context"
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/google/uuid"
 )
 
 type IScenarioInfrastructure interface {
-	Get(ctx context.Context, db database.Querier, id uuid.UUID) (*domain.Scenario, error)
-	GetSteps(ctx context.Context, db database.Querier, scenarioID uuid.UUID) ([]domain.Step, error)
-	Create(ctx context.Context, db database.Querier, projectID uuid.UUID, name, url string, status domain.ScenarioStatus) (*domain.Scenario, error)
-	Update(ctx context.Context, db database.Querier, id uuid.UUID, name, url *string) (*domain.Scenario, error)
-	List(ctx context.Context, db database.Querier, size, page int, projectID *uuid.UUID) ([]domain.Scenario, int64, error)
+	Get(ctx context.Context, db rdb.Querier, id uuid.UUID) (*domain.Scenario, error)
+	GetSteps(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) ([]domain.Step, error)
+	Create(ctx context.Context, db rdb.Querier, projectID uuid.UUID, name, url string, status domain.ScenarioStatus) (*domain.Scenario, error)
+	Update(ctx context.Context, db rdb.Querier, id uuid.UUID, name, url *string) (*domain.Scenario, error)
+	List(ctx context.Context, db rdb.Querier, size, page int, projectID *uuid.UUID) ([]domain.Scenario, int64, error)
 }
 
 type ScenarioService struct {

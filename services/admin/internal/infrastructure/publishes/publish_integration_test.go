@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/M2IE/Interactive-onboarding/services/admin/queries"
 	"github.com/M2IE/Interactive-onboarding/services/admin/queries/sqlc/gen"
@@ -17,7 +17,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var testDB database.Database
+var testDB rdb.Database
 
 func TestMain(m *testing.M) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)

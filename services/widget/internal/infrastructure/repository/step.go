@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/domain"
 	"github.com/M2IE/Interactive-onboarding/services/widget/queries"
 	"github.com/google/uuid"
@@ -13,14 +13,14 @@ import (
 
 type StepRepository struct {
 	q  *queries.Query
-	db database.Querier
+	db rdb.Querier
 }
 
-func NewStepRepository(db database.Querier, q *queries.Query) *StepRepository {
+func NewStepRepository(db rdb.Querier, q *queries.Query) *StepRepository {
 	return &StepRepository{q: q, db: db}
 }
 
-func (r *StepRepository) GetStepsByScenario(ctx context.Context, db database.Querier, scenarioID uuid.UUID) ([]domain.Step, error) {
+func (r *StepRepository) GetStepsByScenario(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) ([]domain.Step, error) {
 	rows, err := r.q.GetStepsByScenario(ctx, r.querier(db), scenarioID)
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func (r *StepRepository) GetStepsByScenario(ctx context.Context, db database.Que
 	return steps, nil
 }
 
-func (r *StepRepository) GetStepByID(ctx context.Context, db database.Querier, stepID uuid.UUID) (*domain.Step, error) {
+func (r *StepRepository) GetStepByID(ctx context.Context, db rdb.Querier, stepID uuid.UUID) (*domain.Step, error) {
 	row, err := r.q.GetStepByID(ctx, r.querier(db), stepID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -44,7 +44,7 @@ func (r *StepRepository) GetStepByID(ctx context.Context, db database.Querier, s
 }
 
 // в step_repo.go
-func (r *StepRepository) GetMaxOrderByScenario(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (int, error) {
+func (r *StepRepository) GetMaxOrderByScenario(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (int, error) {
 	val, err := r.q.GetMaxOrderByScenario(ctx, r.querier(db), scenarioID)
 	if err != nil {
 		return 0, err
@@ -52,7 +52,7 @@ func (r *StepRepository) GetMaxOrderByScenario(ctx context.Context, db database.
 	return int(val), nil
 }
 
-func (s *StepRepository) querier(db database.Querier) database.Querier {
+func (s *StepRepository) querier(db rdb.Querier) rdb.Querier {
 	if db != nil {
 		return db
 	}

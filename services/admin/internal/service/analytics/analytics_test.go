@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/google/uuid"
 )
@@ -43,8 +43,8 @@ func (m *mockTx) QueryContext(context.Context, string, ...any) (*sql.Rows, error
 	return nil, nil
 }
 func (m *mockTx) QueryRowContext(context.Context, string, ...any) *sql.Row { return nil }
-func (m *mockTx) Commit() error   { m.committed = true; return m.commitErr }
-func (m *mockTx) Rollback() error { m.rolledBack = true; return m.rollbackErr }
+func (m *mockTx) Commit() error                                            { m.committed = true; return m.commitErr }
+func (m *mockTx) Rollback() error                                          { m.rolledBack = true; return m.rollbackErr }
 
 type mockDB struct {
 	beginErr error
@@ -59,9 +59,9 @@ func (m *mockDB) QueryContext(context.Context, string, ...any) (*sql.Rows, error
 	return nil, nil
 }
 func (m *mockDB) QueryRowContext(context.Context, string, ...any) *sql.Row { return nil }
-func (m *mockDB) Ping() error  { return nil }
-func (m *mockDB) Close() error { return nil }
-func (m *mockDB) Begin() (database.Tx, error) {
+func (m *mockDB) Ping() error                                              { return nil }
+func (m *mockDB) Close() error                                             { return nil }
+func (m *mockDB) Begin() (rdb.Tx, error) {
 	if m.beginErr != nil {
 		return nil, m.beginErr
 	}
@@ -81,15 +81,15 @@ type mockInfra struct {
 	downloadAnalyticsErr  error
 }
 
-func (m *mockInfra) GetScenarioAnalytics(ctx context.Context, db database.Querier, id uuid.UUID) (*domain.Analytics, error) {
+func (m *mockInfra) GetScenarioAnalytics(ctx context.Context, db rdb.Querier, id uuid.UUID) (*domain.Analytics, error) {
 	return m.scenarioAnalyticsResp, m.scenarioAnalyticsErr
 }
 
-func (m *mockInfra) GetStepAnalytics(ctx context.Context, db database.Querier, id uuid.UUID) ([]domain.StepAnalytics, error) {
+func (m *mockInfra) GetStepAnalytics(ctx context.Context, db rdb.Querier, id uuid.UUID) ([]domain.StepAnalytics, error) {
 	return m.stepAnalyticsResp, m.stepAnalyticsErr
 }
 
-func (m *mockInfra) ScenarioExists(ctx context.Context, db database.Querier, id uuid.UUID) (bool, error) {
+func (m *mockInfra) ScenarioExists(ctx context.Context, db rdb.Querier, id uuid.UUID) (bool, error) {
 	return m.scenarioExists, m.scenarioExistsErr
 }
 
@@ -101,7 +101,7 @@ func (m *mockInfra) DownloadAnalytics(ctx context.Context, filename string) (io.
 	return m.downloadAnalyticsResp, m.downloadAnalyticsErr
 }
 
-func newSvc(infra IAnalyticsInfrastructure, db database.Database) *AnalyticsService {
+func newSvc(infra IAnalyticsInfrastructure, db rdb.Database) *AnalyticsService {
 	return NewAnalyticsService(infra, db)
 }
 

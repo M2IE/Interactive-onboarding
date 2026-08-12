@@ -3,22 +3,22 @@ package repositories
 import (
 	"context"
 
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/olap"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/domain"
 	chq "github.com/M2IE/Interactive-onboarding/services/widget/queries/clickhouse"
 	"github.com/google/uuid"
 )
 
 type EventClickHouseRepository struct {
-	conn driver.Conn
+	conn olap.Database
 }
 
-func NewEventClickHouseRepository(conn driver.Conn) *EventClickHouseRepository {
+func NewEventClickHouseRepository(conn olap.Database) *EventClickHouseRepository {
 	return &EventClickHouseRepository{conn: conn}
 }
 
-func (r *EventClickHouseRepository) InsertEvent(ctx context.Context, _ database.Querier, event *domain.Event) error {
+func (r *EventClickHouseRepository) InsertEvent(ctx context.Context, _ rdb.Querier, event *domain.Event) error {
 	var scenarioID uuid.UUID
 	if event.ScenarioID != nil {
 		scenarioID = *event.ScenarioID
@@ -44,7 +44,7 @@ func (r *EventClickHouseRepository) InsertEvent(ctx context.Context, _ database.
 	return batch.Send()
 }
 
-func (r *EventClickHouseRepository) ExistsEventByKey(ctx context.Context, _ database.Querier, eventKey string) (bool, error) {
+func (r *EventClickHouseRepository) ExistsEventByKey(ctx context.Context, _ rdb.Querier, eventKey string) (bool, error) {
 	var count uint64
 	if err := r.conn.QueryRow(ctx, chq.ExistsEventByKey, eventKey).Scan(&count); err != nil {
 		return false, err
@@ -53,7 +53,7 @@ func (r *EventClickHouseRepository) ExistsEventByKey(ctx context.Context, _ data
 	return count > 0, nil
 }
 
-func (r *EventClickHouseRepository) ExistsScenarioCompleted(ctx context.Context, _ database.Querier, sessionID string, scenarioID *uuid.UUID) (bool, error) {
+func (r *EventClickHouseRepository) ExistsScenarioCompleted(ctx context.Context, _ rdb.Querier, sessionID string, scenarioID *uuid.UUID) (bool, error) {
 	var scID uuid.UUID
 	if scenarioID != nil {
 		scID = *scenarioID

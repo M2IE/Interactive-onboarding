@@ -1,4 +1,4 @@
-module github.com/M2IE/Interactive-onboarding/pkg/clickhouse
+module github.com/M2IE/Interactive-onboarding/pkg/database/olap
 
 go 1.26.5
 

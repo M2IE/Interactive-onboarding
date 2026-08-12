@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/pkg/pdfengine"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/M2IE/Interactive-onboarding/services/admin/queries"
@@ -23,7 +23,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var testDB database.Database
+var testDB rdb.Database
 
 type mockS3 struct {
 	storage     map[string][]byte

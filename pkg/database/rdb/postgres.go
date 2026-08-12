@@ -1,4 +1,4 @@
-package database
+package rdb
 
 import (
 	"context"
@@ -14,7 +14,7 @@ type PostgresDB struct {
 	pool *pgxpool.Pool
 }
 
-func (p *PostgresDB) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (p *PostgresDB) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	return p.db.ExecContext(ctx, query, args...)
 }
 
@@ -22,11 +22,11 @@ func (p *PostgresDB) PrepareContext(ctx context.Context, query string) (*sql.Stm
 	return p.db.PrepareContext(ctx, query)
 }
 
-func (p *PostgresDB) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+func (p *PostgresDB) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
 	return p.db.QueryContext(ctx, query, args...)
 }
 
-func (p *PostgresDB) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+func (p *PostgresDB) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
 	return p.db.QueryRowContext(ctx, query, args...)
 }
 

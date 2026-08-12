@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/service/analytics"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/service/projects"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/service/publishes"
@@ -25,7 +25,7 @@ type Service struct {
 	*projects.ProjectService
 }
 
-func NewService(infra IInfrastructure, txManager database.Database) *Service {
+func NewService(infra IInfrastructure, txManager rdb.Database) *Service {
 	return &Service{
 		AnalyticsService: analytics.NewAnalyticsService(infra, txManager),
 		PublishService:   publishes.NewPublishService(infra, txManager),

@@ -5,16 +5,16 @@ import (
 	"io"
 	"log/slog"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/google/uuid"
 )
 
 type IAnalyticsInfrastructure interface {
 	// DB
-	GetScenarioAnalytics(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (*domain.Analytics, error)
-	GetStepAnalytics(ctx context.Context, db database.Querier, scenarioID uuid.UUID) ([]domain.StepAnalytics, error)
-	ScenarioExists(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (bool, error)
+	GetScenarioAnalytics(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (*domain.Analytics, error)
+	GetStepAnalytics(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) ([]domain.StepAnalytics, error)
+	ScenarioExists(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (bool, error)
 
 	// S3
 	UploadAnalytics(ctx context.Context, scenarioID uuid.UUID, analytics *domain.Analytics) (string, error)
@@ -23,10 +23,10 @@ type IAnalyticsInfrastructure interface {
 
 type AnalyticsService struct {
 	infra     IAnalyticsInfrastructure
-	txManager database.Database
+	txManager rdb.Database
 }
 
-func NewAnalyticsService(infra IAnalyticsInfrastructure, txManager database.Database) *AnalyticsService {
+func NewAnalyticsService(infra IAnalyticsInfrastructure, txManager rdb.Database) *AnalyticsService {
 	return &AnalyticsService{
 		infra:     infra,
 		txManager: txManager,
