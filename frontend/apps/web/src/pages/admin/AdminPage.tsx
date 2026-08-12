@@ -126,9 +126,7 @@ export function AdminPage({ apiMode }: AdminPageProps) {
             {!isAnalytics &&
               (editor.isPublished ? (
                 <Button
-                  disabled={
-                    editor.isBusy || editor.validation?.status === 'invalid'
-                  }
+                  disabled={editor.isBusy}
                   icon={<EyeOff aria-hidden="true" size={17} />}
                   onClick={editor.unpublishActiveScenario}
                   variant="danger"
@@ -137,7 +135,9 @@ export function AdminPage({ apiMode }: AdminPageProps) {
                 </Button>
               ) : !editor.isArchived ? (
                 <Button
-                  disabled={editor.isBusy}
+                  disabled={
+                    editor.isBusy || editor.validation?.status === 'invalid'
+                  }
                   icon={<Send aria-hidden="true" size={17} />}
                   onClick={editor.publishActiveScenario}
                   variant="primary"
