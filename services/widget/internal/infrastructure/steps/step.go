@@ -1,4 +1,4 @@
-package repositories
+package steps
 
 import (
 	"context"
@@ -8,15 +8,16 @@ import (
 	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/domain"
 	"github.com/M2IE/Interactive-onboarding/services/widget/queries"
+	"github.com/M2IE/Interactive-onboarding/services/widget/queries/sqlc/gen"
 	"github.com/google/uuid"
 )
 
 type StepRepository struct {
 	q  *queries.Query
-	db rdb.Querier
+	db rdb.Database
 }
 
-func NewStepRepository(db rdb.Querier, q *queries.Query) *StepRepository {
+func NewStepRepository(db rdb.Database, q *queries.Query) *StepRepository {
 	return &StepRepository{q: q, db: db}
 }
 
@@ -57,4 +58,20 @@ func (s *StepRepository) querier(db rdb.Querier) rdb.Querier {
 		return db
 	}
 	return s.db
+}
+
+func toDomainStep(row *gen.Step) *domain.Step {
+	var nextURL *string
+	if row.NextUrl.Valid {
+		nextURL = &row.NextUrl.String
+	}
+	return &domain.Step{
+		ID:         row.ID,
+		ScenarioID: row.ScenarioID,
+		OrderNum:   int(row.OrderNum),
+		Selector:   row.Selector,
+		Title:      row.Title,
+		Body:       row.Body,
+		NextURL:    nextURL,
+	}
 }

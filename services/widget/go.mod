@@ -27,6 +27,7 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/ClickHouse/ch-go v0.74.0 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.48.0 // indirect
+	github.com/M2IE/Interactive-onboarding/pkg/database v0.0.0-20260810104633-53e7a297fbde // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/andybalholm/brotli v1.2.2 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect

@@ -1,4 +1,4 @@
-package repositories
+package clickhouse
 
 import (
 	"context"
