@@ -25,13 +25,13 @@ chrome.runtime.onMessage.addListener(
 
 chrome.webNavigation.onCompleted.addListener((details) => {
   if (details.frameId === 0) {
-    void ensureContentScript(details.tabId)
+    void synchronizeTab(details.tabId)
   }
 })
 
 chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
   if (details.frameId === 0) {
-    void ensureContentScript(details.tabId)
+    void synchronizeTab(details.tabId)
   }
 })
 
@@ -85,6 +85,33 @@ async function ensureContentScript(tabId: number) {
       target: { tabId },
       files: ['content.global.js'],
     })
+  }
+}
+
+async function synchronizeTab(tabId: number) {
+  try {
+    await ensureContentScript(tabId)
+    const tab = await chrome.tabs.get(tabId)
+
+    if (!tab.url) {
+      return
+    }
+
+    const context = parseTabContext(tabId, tab.url, tab.title ?? '')
+
+    if (!context) {
+      return
+    }
+
+    await chrome.runtime.sendMessage({
+      type: 'PAGE_CHANGED',
+      pathname: context.pathname,
+      title: context.title,
+      url: context.url,
+      tabId,
+    } satisfies ExtensionMessage)
+  } catch {
+    // A closed Side Panel or a restricted destination does not need recovery.
   }
 }
 

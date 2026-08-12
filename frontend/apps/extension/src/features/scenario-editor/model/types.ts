@@ -55,6 +55,16 @@ export type WorkspaceState =
       settings?: ExtensionSettings
       context?: TabContext
     }
+  | {
+      status: 'conflict'
+      settings: ExtensionSettings
+      context: TabContext
+      localDraft: ScenarioDraft
+      remoteDraft?: ScenarioDraft
+      projectId: string
+      hasPublishedScenario: boolean
+      message: string
+    }
   | ReadyWorkspace
 
 export type TabWorkspaceSnapshot = {

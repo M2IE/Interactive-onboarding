@@ -58,6 +58,7 @@ function startContentRuntime() {
     type: 'PAGE_CHANGED',
     pathname,
     title: document.title,
+    url: window.location.href,
   })
 
   function reportPageChange() {
@@ -72,6 +73,7 @@ function startContentRuntime() {
       type: 'PAGE_CHANGED',
       pathname,
       title: document.title,
+      url: window.location.href,
     })
   }
 }

@@ -29,6 +29,11 @@ import {
   moveDraftStep,
   updateDraftStep,
 } from '../model/draftMutations'
+import {
+  isScenarioEditConflict,
+  rebaseLocalDraft,
+  resolveSnapshot,
+} from '../model/workspaceRecovery'
 import type {
   ReadyWorkspace,
   TabWorkspaceSnapshot,
@@ -48,6 +53,7 @@ export function useExtensionScenarioEditor({
   const storage = useMemo(() => createExtensionStorage(), [])
   const [state, setState] = useState<WorkspaceState>({ status: 'booting' })
   const stateRef = useRef(state)
+  const pendingNavigationRef = useRef<string | undefined>(undefined)
   const repositoryRef = useRef<ExtensionScenarioRepository | undefined>(
     undefined,
   )
@@ -190,24 +196,79 @@ export function useExtensionScenarioEditor({
       if (
         snapshot &&
         snapshot.settings.platformUrl === settings.platformUrl &&
-        snapshot.settings.projectKey === settings.projectKey &&
-        snapshot.draft.url === context.pathname
+        snapshot.settings.projectKey === settings.projectKey
       ) {
-        setState({
-          status: 'ready',
-          settings,
-          context,
-          draft: snapshot.draft,
-          selectedStepId: snapshot.selectedStepId,
-          hasPublishedScenario: snapshot.hasPublishedScenario,
-          save: snapshot.save,
-          interaction: snapshot.interaction,
-        })
+        const repository = repositoryRef.current ?? createRepository(settings)
 
-        if (snapshot.interaction.status === 'picking') {
-          void sendMessageToTab(context.tabId, { type: 'PICKER_START' })
+        if (
+          snapshot.interaction.status === 'waiting_navigation' &&
+          snapshot.draft.url !== context.pathname
+        ) {
+          const draftWithNavigation = updateDraftStep(
+            snapshot.draft,
+            snapshot.interaction.stepId,
+            { nextUrl: context.pathname },
+          )
+
+          try {
+            await repository.saveDraft(draftWithNavigation)
+            await loadPage(settings, context, { createWhenEmpty: true })
+          } catch (error) {
+            const result = await repository.findPageDraft(
+              snapshot.draft.url,
+            )
+            setState({
+              status: 'conflict',
+              settings,
+              context,
+              localDraft: draftWithNavigation,
+              remoteDraft: result.draft,
+              projectId: result.projectId,
+              hasPublishedScenario: result.hasPublishedScenario,
+              message: getConflictMessage(error),
+            })
+          }
+          return
         }
-        return
+
+        if (snapshot.draft.url === context.pathname) {
+          const result = await repository.findPageDraft(context.pathname)
+          const resolution = resolveSnapshot(snapshot, result)
+
+          if (resolution.status === 'restore') {
+            setState({
+              status: 'ready',
+              settings,
+              context,
+              draft: snapshot.draft,
+              selectedStepId: snapshot.selectedStepId,
+              hasPublishedScenario: result.hasPublishedScenario,
+              save: snapshot.save,
+              interaction: snapshot.interaction,
+            })
+
+            if (snapshot.interaction.status === 'picking') {
+              void sendMessageToTab(context.tabId, { type: 'PICKER_START' })
+            }
+            return
+          }
+
+          if (resolution.status === 'conflict') {
+            setState({
+              status: 'conflict',
+              settings,
+              context,
+              localDraft: resolution.localDraft,
+              remoteDraft: resolution.result.draft,
+              projectId: resolution.result.projectId,
+              hasPublishedScenario:
+                resolution.result.hasPublishedScenario,
+              message:
+                'Сценарий изменился после последней работы в расширении.',
+            })
+            return
+          }
+        }
       }
 
       await loadPage(settings, context)
@@ -273,18 +334,30 @@ export function useExtensionScenarioEditor({
   )
 
   const handlePageChanged = useCallback(
-    async (pathname: string, title: string, senderTabId?: number) => {
+    async (
+      pathname: string,
+      title: string,
+      url: string,
+      senderTabId?: number,
+    ) => {
       const current = stateRef.current
 
       if (
         current.status !== 'ready' ||
         (senderTabId !== undefined && senderTabId !== current.context.tabId) ||
-        pathname === current.context.pathname
+        pathname === current.context.pathname ||
+        pendingNavigationRef.current === url
       ) {
         return
       }
 
-      const nextContext = createNextContext(current.context, pathname, title)
+      pendingNavigationRef.current = url
+      const nextContext = createNextContext(
+        current.context,
+        pathname,
+        title,
+        url,
+      )
 
       if (current.interaction.status !== 'waiting_navigation') {
         setState({
@@ -293,6 +366,7 @@ export function useExtensionScenarioEditor({
           interaction: { status: 'idle' },
           routeChange: nextContext,
         })
+        pendingNavigationRef.current = undefined
         return
       }
 
@@ -316,12 +390,31 @@ export function useExtensionScenarioEditor({
         await repository.saveDraft(draftWithNavigation)
         await loadPage(current.settings, nextContext, { createWhenEmpty: true })
       } catch (error) {
+        if (isScenarioEditConflict(error)) {
+          const repository =
+            repositoryRef.current ?? createRepository(current.settings)
+          const result = await repository.findPageDraft(current.draft.url)
+          setState({
+            status: 'conflict',
+            settings: current.settings,
+            context: nextContext,
+            localDraft: draftWithNavigation,
+            remoteDraft: result.draft,
+            projectId: result.projectId,
+            hasPublishedScenario: result.hasPublishedScenario,
+            message: getConflictMessage(error),
+          })
+          return
+        }
+
         setState({
           ...savingState,
           save: { status: 'error', message: getErrorMessage(error) },
           runtimeNotice:
             'Переход найден, но предыдущий сценарий не удалось сохранить',
         })
+      } finally {
+        pendingNavigationRef.current = undefined
       }
     },
     [createRepository, loadPage],
@@ -343,7 +436,8 @@ export function useExtensionScenarioEditor({
         void handlePageChanged(
           message.pathname,
           message.title,
-          sender.tab?.id,
+          message.url,
+          message.tabId ?? sender.tab?.id,
         )
       } else if (message.type === 'TARGET_NOT_FOUND') {
         updateReady((current) => ({
@@ -376,6 +470,23 @@ export function useExtensionScenarioEditor({
     try {
       await sendMessageToTab(current.context.tabId, { type: 'PICKER_START' })
     } catch (error) {
+      if (isScenarioEditConflict(error)) {
+        const repository =
+          repositoryRef.current ?? createRepository(current.settings)
+        const result = await repository.findPageDraft(current.draft.url)
+        setState({
+          status: 'conflict',
+          settings: current.settings,
+          context: current.context,
+          localDraft: current.draft,
+          remoteDraft: result.draft,
+          projectId: result.projectId,
+          hasPublishedScenario: result.hasPublishedScenario,
+          message: getConflictMessage(error),
+        })
+        return
+      }
+
       updateReady((workspace) => ({
         ...workspace,
         interaction: { status: 'idle' },
@@ -666,6 +777,60 @@ export function useExtensionScenarioEditor({
         void loadPage(current.settings, current.context)
       }
     },
+    useServerDraft: () => {
+      const current = stateRef.current
+
+      if (current.status !== 'conflict') {
+        return
+      }
+
+      if (current.remoteDraft) {
+        setState({
+          status: 'ready',
+          settings: current.settings,
+          context: current.context,
+          draft: current.remoteDraft,
+          selectedStepId: current.remoteDraft.steps[0]?.id,
+          hasPublishedScenario: current.hasPublishedScenario,
+          save: { status: 'clean' },
+          interaction: { status: 'idle' },
+          runtimeNotice: 'Загружен актуальный черновик из админки.',
+        })
+        return
+      }
+
+      setState({
+        status: 'empty',
+        settings: current.settings,
+        context: current.context,
+        projectId: current.projectId,
+        hasPublishedScenario: current.hasPublishedScenario,
+      })
+    },
+    keepLocalChanges: () => {
+      const current = stateRef.current
+
+      if (current.status !== 'conflict') {
+        return
+      }
+
+      const rebasedDraft = rebaseLocalDraft(
+        current.localDraft,
+        current.remoteDraft,
+      )
+      setState({
+        status: 'ready',
+        settings: current.settings,
+        context: current.context,
+        draft: rebasedDraft,
+        selectedStepId: rebasedDraft.steps[0]?.id,
+        hasPublishedScenario: current.hasPublishedScenario,
+        save: { status: 'dirty' },
+        interaction: { status: 'idle' },
+        runtimeNotice:
+          'Локальные изменения перенесены в актуальный черновик. Проверьте их перед сохранением.',
+      })
+    },
   }
 }
 
@@ -673,15 +838,25 @@ function createNextContext(
   context: TabContext,
   pathname: string,
   title: string,
+  url: string,
 ): TabContext {
+  const parsedUrl = new URL(url, context.url)
+
   return {
     ...context,
+    origin: parsedUrl.origin,
     pathname,
     title,
-    url: new URL(pathname, context.origin).toString(),
+    url: parsedUrl.toString(),
   }
 }
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Неизвестная ошибка'
+}
+
+function getConflictMessage(error: unknown) {
+  return isScenarioEditConflict(error)
+    ? 'Этот черновик уже опубликован, архивирован или заменён другим.'
+    : getErrorMessage(error)
 }

@@ -66,6 +66,60 @@ describe('ExtensionScenarioEditor', () => {
     expect(screen.getByText('API unavailable')).toBeInTheDocument()
   })
 
+  it('lets the author resolve an editable draft conflict without losing work', () => {
+    const keepLocalChanges = jest.fn()
+    const useServerDraft = jest.fn()
+    const controller = {
+      state: {
+        status: 'conflict',
+        settings: {
+          platformUrl: 'https://platform.example.com',
+          projectKey: 'demo',
+        },
+        context: {
+          tabId: 42,
+          origin: 'https://classified.example.com',
+          pathname: '/products',
+          title: 'Products',
+          url: 'https://classified.example.com/products',
+        },
+        localDraft: {
+          projectId: 'project-1',
+          name: 'Local changes',
+          url: '/products',
+          steps: [],
+        },
+        remoteDraft: {
+          id: 'draft-current',
+          projectId: 'project-1',
+          name: 'Server draft',
+          url: '/products',
+          steps: [],
+        },
+        projectId: 'project-1',
+        hasPublishedScenario: true,
+        message: 'Этот черновик уже заменён другим.',
+      },
+      keepLocalChanges,
+      useServerDraft,
+    } as unknown as ExtensionScenarioEditorController
+
+    render(<ExtensionScenarioEditor controller={controller} />)
+
+    expect(screen.getByText('Ваши несохранённые изменения сохранены в расширении. Выберите, с какой версией продолжить.')).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Продолжить с моими изменениями',
+      }),
+    )
+    expect(keepLocalChanges).toHaveBeenCalledTimes(1)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Открыть версию из админки' }),
+    )
+    expect(useServerDraft).toHaveBeenCalledTimes(1)
+  })
+
   it('opens the page requirements guide from the setup screen', () => {
     const controller = {
       state: {

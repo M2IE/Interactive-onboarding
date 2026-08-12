@@ -23,7 +23,13 @@ export type ExtensionMessage =
   | { type: 'ELEMENT_SELECTED'; element: ElementDescriptor }
   | { type: 'PREVIEW_START'; config: PreviewConfig }
   | { type: 'PREVIEW_STOP' }
-  | { type: 'PAGE_CHANGED'; pathname: string; title: string }
+  | {
+      type: 'PAGE_CHANGED'
+      pathname: string
+      title: string
+      url: string
+      tabId?: number
+    }
   | { type: 'TARGET_NOT_FOUND'; selector: string }
   | { type: 'GET_ACTIVE_TAB_CONTEXT' }
   | { type: 'CONTENT_READY' }

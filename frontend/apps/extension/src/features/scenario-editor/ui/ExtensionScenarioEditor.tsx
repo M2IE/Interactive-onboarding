@@ -64,6 +64,15 @@ export function ExtensionScenarioEditor({
           )}
         </CenteredState>
       )
+    case 'conflict':
+      return (
+        <ConflictState
+          hasRemoteDraft={Boolean(state.remoteDraft)}
+          message={state.message}
+          onKeepLocal={controller.keepLocalChanges}
+          onUseServer={controller.useServerDraft}
+        />
+      )
     case 'setup':
       return (
         <SettingsForm
@@ -87,6 +96,39 @@ export function ExtensionScenarioEditor({
     case 'ready':
       return <ReadyEditor controller={controller} />
   }
+}
+
+function ConflictState({
+  hasRemoteDraft,
+  message,
+  onKeepLocal,
+  onUseServer,
+}: {
+  hasRemoteDraft: boolean
+  message: string
+  onKeepLocal: () => void
+  onUseServer: () => void
+}) {
+  return (
+    <CenteredState
+      icon={<CircleAlert size={24} />}
+      title="Черновик изменился"
+    >
+      <p>{message}</p>
+      <p>
+        Ваши несохранённые изменения сохранены в расширении. Выберите, с какой
+        версией продолжить.
+      </p>
+      <div className="centered-state__actions">
+        <Button onClick={onUseServer}>
+          {hasRemoteDraft ? 'Открыть версию из админки' : 'Начать заново'}
+        </Button>
+        <Button onClick={onKeepLocal} variant="primary">
+          Продолжить с моими изменениями
+        </Button>
+      </div>
+    </CenteredState>
+  )
 }
 
 function ReadyEditor({ controller }: ExtensionScenarioEditorProps) {
