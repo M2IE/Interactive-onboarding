@@ -5,11 +5,7 @@
     "noEmit": true
   },
   "include": [
-    "src",
-    "../../packages/api-client/src",
-    "../../packages/shared/src",
-    "../../packages/ui/src",
-    "../../packages/onboarding-sdk/src"
+    "src"
   ],
   "exclude": [
     "**/*.test.ts",
@@ -20,7 +16,6 @@
   "references": [
     { "path": "../../packages/api-client" },
     { "path": "../../packages/shared" },
-    { "path": "../../packages/ui" },
-    { "path": "../../packages/onboarding-sdk" }
+    { "path": "../../packages/ui" }
   ]
 }
