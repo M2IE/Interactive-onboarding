@@ -28,6 +28,14 @@ test('home presents the product and branded entry points', async ({ page }) => {
   await expect(
     page.getByLabel('Сценарий ведёт пользователя от элемента к результату'),
   ).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Создавайте подсказки прямо на сайте' }),
+  ).toBeVisible()
+
+  await page.getByRole('button', { name: 'Как установить' }).click()
+  await expect(
+    page.getByRole('dialog', { name: 'Установка Onboarding Studio' }),
+  ).toContainText('chrome://extensions')
 })
 
 test('administrator edits, validates and saves a scenario', async ({ page }) => {

@@ -1,35 +1,36 @@
-import { Button } from '@interactive-onboarding/ui'
+import { Button } from "@interactive-onboarding/ui";
 import {
   BarChart3,
   Code2,
   ExternalLink,
   MousePointer2,
   PackageOpen,
-} from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
-import { appRoutes } from '@/shared/config/routes'
-import { ProductLogo } from '@/shared/ui/ProductLogo'
+} from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ExtensionInstallGuideDialog } from "@/features/extension-install-guide";
+import { appRoutes } from "@/shared/config/routes";
+import { ProductLogo } from "@/shared/ui/ProductLogo";
 
 const productStages = [
   {
     icon: MousePointer2,
-    title: 'Создайте сценарий',
-    text: 'Выберите нужные элементы, добавьте подсказки и свяжите страницы пользовательского пути.',
+    title: "Создайте сценарий",
+    text: "Выберите нужные элементы, добавьте подсказки и свяжите страницы пользовательского пути.",
   },
   {
     icon: Code2,
-    title: 'Подключите SDK',
-    text: 'Опубликованные сценарии появляются в продукте без выпуска новой версии интерфейса.',
+    title: "Подключите SDK",
+    text: "Опубликованные сценарии появляются в продукте без выпуска новой версии интерфейса.",
   },
   {
     icon: BarChart3,
-    title: 'Оцените результат',
-    text: 'Просмотры, завершения и воронка шагов показывают, где пользователю всё ещё нужна помощь.',
+    title: "Оцените результат",
+    text: "Просмотры, завершения и воронка шагов показывают, где пользователю всё ещё нужна помощь.",
   },
-]
+];
 
 export function AppShell() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   return (
     <main className="home-shell">
@@ -46,8 +47,8 @@ export function AppShell() {
           <h1>Помогайте пользователям двигаться дальше</h1>
           <p>
             Interactive Onboarding превращает сложные интерфейсы в понятные
-            пошаговые маршруты. Команда управляет подсказками из админ-панели,
-            а лёгкий SDK показывает их прямо внутри продукта.
+            пошаговые маршруты. Команда управляет подсказками из админ-панели, а
+            лёгкий SDK показывает их прямо внутри продукта.
           </p>
           <div className="home-shell__actions">
             <Button onClick={() => navigate(appRoutes.admin)} variant="primary">
@@ -88,7 +89,10 @@ export function AppShell() {
           </ol>
         </div>
 
-        <div className="home-motion" aria-label="Сценарий ведёт пользователя от элемента к результату">
+        <div
+          className="home-motion"
+          aria-label="Сценарий ведёт пользователя от элемента к результату"
+        >
           <div className="home-motion__orbit" aria-hidden="true">
             <i />
             <i />
@@ -103,7 +107,9 @@ export function AppShell() {
             <small>Шаг 1 из 4</small>
             <strong>Начните с первого объявления</strong>
             <span>Мы подскажем, что заполнить на каждом этапе.</span>
-            <button type="button" tabIndex={-1}>Далее</button>
+            <button type="button" tabIndex={-1}>
+              Далее
+            </button>
           </div>
           <div className="home-motion__status">
             <span aria-hidden="true" />
@@ -111,6 +117,35 @@ export function AppShell() {
           </div>
         </div>
       </section>
+
+      <section className="home-extension" aria-labelledby="extension-title">
+        <div>
+          <small>Chrome Side Panel</small>
+          <h2 id="extension-title">Создавайте подсказки прямо на сайте</h2>
+          <p>
+            Onboarding Studio превращает открытую страницу в рабочий холст:
+            выберите подготовленный элемент, настройте текст, проверьте
+            подсказку и сохраните черновик в админ-панель.
+          </p>
+        </div>
+        <ul>
+          <li>Интерактивный выбор элементов</li>
+          <li>Предпросмотр прямо на сайте</li>
+          <li>Сохранение черновиков в проект</li>
+          <li>Синхронизация с админ-панелью</li>
+        </ul>
+        <div className="home-extension__actions">
+          <ExtensionInstallGuideDialog />
+          <a
+            href="https://github.com/M2IE/Interactive-onboarding/tree/main/frontend/apps/extension"
+            rel="noreferrer"
+            target="_blank"
+          >
+            Исходный код
+            <ExternalLink aria-hidden="true" size={16} />
+          </a>
+        </div>
+      </section>
     </main>
-  )
+  );
 }
