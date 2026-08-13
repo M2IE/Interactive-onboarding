@@ -20,6 +20,6 @@ func NewWidgetInfrastructure(db database.Querier, q *queries.Query, chConn drive
 		ProjectRepository:         repositories.NewProjectRepository(db, q),
 		ScenarioRepository:        repositories.NewScenarioRepository(db, q),
 		StepRepository:            repositories.NewStepRepository(db, q),
-		EventClickHouseRepository: repositories.NewEventClickHouseRepository(chConn),
+		EventClickHouseRepository: repositories.NewEventClickHouseRepository(chConn, q),
 	}
 }
