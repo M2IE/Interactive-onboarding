@@ -11,13 +11,22 @@ import (
 )
 
 type Querier interface {
+	AddScenarioToFlow(ctx context.Context, db DBTX, arg AddScenarioToFlowParams) error
 	ArchiveByProjectAndStatus(ctx context.Context, db DBTX, arg ArchiveByProjectAndStatusParams) (int64, error)
+	ClearFlowScenarios(ctx context.Context, db DBTX, flowID uuid.UUID) error
 	CopyStepsToScenario(ctx context.Context, db DBTX, arg CopyStepsToScenarioParams) error
+	CreateFlow(ctx context.Context, db DBTX, arg CreateFlowParams) (Flow, error)
 	CreateScenario(ctx context.Context, db DBTX, arg CreateScenarioParams) (Scenario, error)
 	CreateStep(ctx context.Context, db DBTX, arg CreateStepParams) (Step, error)
 	DecrementOrdersAfter(ctx context.Context, db DBTX, arg DecrementOrdersAfterParams) error
+	DeleteFlow(ctx context.Context, db DBTX, id uuid.UUID) error
 	DeleteStep(ctx context.Context, db DBTX, id uuid.UUID) error
 	GetFirstStepID(ctx context.Context, db DBTX, scenarioID uuid.UUID) (uuid.UUID, error)
+	GetFlowByID(ctx context.Context, db DBTX, id uuid.UUID) (Flow, error)
+	GetFlowByKey(ctx context.Context, db DBTX, arg GetFlowByKeyParams) (Flow, error)
+	GetFlowScenarios(ctx context.Context, db DBTX, flowID uuid.UUID) ([]GetFlowScenariosRow, error)
+	GetFlowScenariosWithDetails(ctx context.Context, db DBTX, flowID uuid.UUID) ([]GetFlowScenariosWithDetailsRow, error)
+	GetFlowsByProject(ctx context.Context, db DBTX, projectID uuid.UUID) ([]Flow, error)
 	GetMaxOrderByScenario(ctx context.Context, db DBTX, scenarioID uuid.UUID) (int32, error)
 	GetProjectByKey(ctx context.Context, db DBTX, projectKey string) (Project, error)
 	GetScenario(ctx context.Context, db DBTX, id uuid.UUID) (Scenario, error)
@@ -25,9 +34,12 @@ type Querier interface {
 	GetStepByID(ctx context.Context, db DBTX, id uuid.UUID) (Step, error)
 	GetStepsByScenario(ctx context.Context, db DBTX, scenarioID uuid.UUID) ([]Step, error)
 	ListScenarios(ctx context.Context, db DBTX, arg ListScenariosParams) ([]ListScenariosRow, error)
+	RemoveScenarioFromFlow(ctx context.Context, db DBTX, arg RemoveScenarioFromFlowParams) error
 	ScenarioExists(ctx context.Context, db DBTX, id uuid.UUID) (bool, error)
+	UpdateFlow(ctx context.Context, db DBTX, arg UpdateFlowParams) error
 	UpdateScenario(ctx context.Context, db DBTX, arg UpdateScenarioParams) (Scenario, error)
 	UpdateScenarioStatusById(ctx context.Context, db DBTX, arg UpdateScenarioStatusByIdParams) error
+	UpdateScenariosOrderInFlow(ctx context.Context, db DBTX, arg UpdateScenariosOrderInFlowParams) error
 	UpdateStep(ctx context.Context, db DBTX, arg UpdateStepParams) error
 	UpdateStepOrder(ctx context.Context, db DBTX, arg UpdateStepOrderParams) error
 }
