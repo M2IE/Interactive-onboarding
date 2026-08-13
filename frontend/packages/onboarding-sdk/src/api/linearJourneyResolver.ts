@@ -1,6 +1,6 @@
 import type { WidgetConfig, WidgetConfigRequest } from '../types/contracts'
+import { LINEAR_JOURNEY_STORAGE_KEY } from '../core/session'
 
-const STORAGE_KEY = 'interactive-onboarding:linear-journeys:v1'
 const MAX_JOURNEY_DEPTH = 20
 const MAX_STORED_JOURNEYS = 10
 
@@ -50,10 +50,6 @@ export function createLinearJourneyResolver({
   }
 }
 
-export function clearLinearJourneyProgress(storage = getSessionStorage()) {
-  storage?.removeItem(STORAGE_KEY)
-}
-
 async function buildLinearJourney(
   request: WidgetConfigRequest,
   currentConfig: WidgetConfig,
@@ -91,7 +87,7 @@ async function buildLinearJourney(
       const nextConfig = await loadConfig({ ...request, pageUrl: nextPageUrl })
 
       if (!nextConfig) {
-        return nodes
+        return null
       }
 
       nodes.push(toJourneyNode(nextConfig))
@@ -165,13 +161,13 @@ function rememberJourney(storage: Storage | undefined, journey: StoredJourney) {
       ),
   )
   storage.setItem(
-    STORAGE_KEY,
+    LINEAR_JOURNEY_STORAGE_KEY,
     JSON.stringify([...journeys, journey].slice(-MAX_STORED_JOURNEYS)),
   )
 }
 
 function readJourneys(storage: Storage | undefined): StoredJourney[] {
-  const value = storage?.getItem(STORAGE_KEY)
+  const value = storage?.getItem(LINEAR_JOURNEY_STORAGE_KEY)
 
   if (!value) return []
 

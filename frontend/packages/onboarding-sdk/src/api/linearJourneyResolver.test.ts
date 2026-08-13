@@ -1,8 +1,6 @@
 import type { WidgetConfig, WidgetConfigRequest } from '../types/contracts'
-import {
-  clearLinearJourneyProgress,
-  createLinearJourneyResolver,
-} from './linearJourneyResolver'
+import { clearLinearJourneyProgress } from '../core/session'
+import { createLinearJourneyResolver } from './linearJourneyResolver'
 
 const request: WidgetConfigRequest = {
   projectKey: 'avito-demo',
@@ -48,6 +46,16 @@ describe('linear journey resolver', () => {
     })
 
     await expect(resolve(request, current)).resolves.toBe(current)
+  })
+
+  it('keeps page-local progress when a linked page has no published scenario', async () => {
+    const current = createConfig('profile', '/profile', 1, '/missing')
+    const resolve = createLinearJourneyResolver({
+      loadConfig: jest.fn().mockResolvedValue(null),
+    })
+
+    await expect(resolve(request, current)).resolves.toBe(current)
+    expect(sessionStorage.length).toBe(0)
   })
 
   it('stops cyclic paths and clears cached progress', async () => {

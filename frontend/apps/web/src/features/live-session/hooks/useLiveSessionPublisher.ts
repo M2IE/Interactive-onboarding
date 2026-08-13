@@ -40,14 +40,14 @@ export function useLiveSessionPublisher(
   const handleEvent = useCallback<OnboardingEventHandler>(
     (event) => {
       if (!runId) return
-        sequenceRef.current += 1
-        transportRef.current?.publish({
-          version: 1,
-          runId,
-          sequence: sequenceRef.current,
-          emittedAt: new Date().toISOString(),
-          event,
-        })
+      sequenceRef.current += 1
+      transportRef.current?.publish({
+        version: 1,
+        runId,
+        sequence: sequenceRef.current,
+        emittedAt: new Date().toISOString(),
+        event,
+      })
     },
     [runId],
   )

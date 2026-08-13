@@ -42,6 +42,7 @@ export type JourneyMetrics = {
 
 export type JourneyMapState = {
   graph: AsyncState<JourneyGraph>
+  graphRequestId?: string
   metrics: Record<string, AsyncState<JourneyMetrics>>
   selectedNodeId?: string
   search: string

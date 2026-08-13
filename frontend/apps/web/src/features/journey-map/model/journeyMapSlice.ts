@@ -34,7 +34,7 @@ export const loadJourneyMap = createAsyncThunk<
 export const loadJourneyMetrics = createAsyncThunk<void, void, JourneyThunkConfig>(
   'journeyMap/loadMetrics',
   async (_, { dispatch, extra, getState }) => {
-    const graphState = getState().journeyMap.graph
+    const { graph: graphState, graphRequestId } = getState().journeyMap
     if (graphState.status !== 'success') return
 
     const scenarios = graphState.data.nodes.flatMap((node) =>
@@ -42,13 +42,14 @@ export const loadJourneyMetrics = createAsyncThunk<void, void, JourneyThunkConfi
     )
 
     await runWithConcurrency(scenarios, 4, async (scenario) => {
-      dispatch(metricRequested(scenario.id))
+      dispatch(metricRequested({ graphRequestId, scenarioId: scenario.id }))
       try {
         const metrics = await extra.journeyRepository.getMetrics(scenario)
-        dispatch(metricReceived({ scenarioId: scenario.id, metrics }))
+        dispatch(metricReceived({ graphRequestId, scenarioId: scenario.id, metrics }))
       } catch (error) {
         dispatch(
           metricFailed({
+            graphRequestId,
             scenarioId: scenario.id,
             message: getErrorMessage(error, 'Метрики недоступны'),
           }),
@@ -68,26 +69,45 @@ const journeyMapSlice = createSlice({
     setJourneySearch(state, action: PayloadAction<string>) {
       state.search = action.payload
     },
-    metricRequested(state, action: PayloadAction<string>) {
-      state.metrics[action.payload] = loadingState()
+    metricRequested(
+      state,
+      action: PayloadAction<{ graphRequestId?: string; scenarioId: string }>,
+    ) {
+      if (state.graphRequestId !== action.payload.graphRequestId) return
+      state.metrics[action.payload.scenarioId] = loadingState()
     },
     metricReceived(
       state,
-      action: PayloadAction<{ scenarioId: string; metrics: JourneyMetrics }>,
+      action: PayloadAction<{
+        graphRequestId?: string
+        scenarioId: string
+        metrics: JourneyMetrics
+      }>,
     ) {
+      if (state.graphRequestId !== action.payload.graphRequestId) return
       state.metrics[action.payload.scenarioId] = successState(action.payload.metrics)
     },
-    metricFailed(state, action: PayloadAction<{ scenarioId: string; message: string }>) {
+    metricFailed(
+      state,
+      action: PayloadAction<{
+        graphRequestId?: string
+        scenarioId: string
+        message: string
+      }>,
+    ) {
+      if (state.graphRequestId !== action.payload.graphRequestId) return
       state.metrics[action.payload.scenarioId] = errorState(action.payload.message)
     },
   },
   extraReducers(builder) {
     builder
-      .addCase(loadJourneyMap.pending, (state) => {
+      .addCase(loadJourneyMap.pending, (state, action) => {
+        state.graphRequestId = action.meta.requestId
         state.graph = loadingState()
         state.metrics = {}
       })
       .addCase(loadJourneyMap.fulfilled, (state, action) => {
+        if (state.graphRequestId !== action.meta.requestId) return
         state.graph = successState(action.payload)
         if (!action.payload.nodes.some((node) => node.id === state.selectedNodeId)) {
           state.selectedNodeId = action.payload.rootIds.length === 1
@@ -96,6 +116,7 @@ const journeyMapSlice = createSlice({
         }
       })
       .addCase(loadJourneyMap.rejected, (state, action) => {
+        if (state.graphRequestId !== action.meta.requestId) return
         state.graph = errorState(action.payload?.message ?? 'Не удалось загрузить карту пути')
       })
   },

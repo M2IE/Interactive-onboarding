@@ -1,9 +1,9 @@
-import { clearLinearJourneyProgress } from '../api/linearJourneyResolver'
-
 const STORAGE_KEY = 'interactive-onboarding:session-id'
 const OUTCOMES_STORAGE_KEY = 'interactive-onboarding:scenario-outcomes:v1'
 const NAVIGATION_STORAGE_KEY = 'interactive-onboarding:navigation:v1'
 const RESUME_STORAGE_KEY = 'interactive-onboarding:resume:v1'
+export const LINEAR_JOURNEY_STORAGE_KEY =
+  'interactive-onboarding:linear-journeys:v1'
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -25,6 +25,12 @@ export function resetOnboardingSession() {
   window.sessionStorage.removeItem(NAVIGATION_STORAGE_KEY)
   window.sessionStorage.removeItem(RESUME_STORAGE_KEY)
   clearLinearJourneyProgress(window.sessionStorage)
+}
+
+export function clearLinearJourneyProgress(
+  storage: Pick<Storage, 'removeItem'> = window.sessionStorage,
+) {
+  storage.removeItem(LINEAR_JOURNEY_STORAGE_KEY)
 }
 
 export function getOrCreateSessionId() {

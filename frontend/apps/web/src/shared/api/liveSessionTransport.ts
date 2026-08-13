@@ -1,6 +1,15 @@
 import type { LiveSessionEnvelope } from '@interactive-onboarding/shared'
 import type { OnboardingEventPayload } from '@m2ie/onboarding-sdk'
 
+const onboardingEventTypes = new Set<OnboardingEventPayload['type']>([
+  'scenario_started',
+  'step_viewed',
+  'step_completed',
+  'scenario_completed',
+  'scenario_dismissed',
+  'target_not_found',
+])
+
 export type OnboardingLiveEnvelope = LiveSessionEnvelope<OnboardingEventPayload>
 
 export type LiveSessionTransport = {
@@ -55,12 +64,23 @@ export function isLiveSessionEnvelope(
   return (
     candidate.version === 1 &&
     candidate.runId === runId &&
-    typeof candidate.sequence === 'number' &&
-    typeof candidate.emittedAt === 'string' &&
+    Number.isInteger(candidate.sequence) &&
+    Number(candidate.sequence) > 0 &&
+    isIsoDate(candidate.emittedAt) &&
     Boolean(event) &&
+    typeof event?.projectKey === 'string' &&
     typeof event?.eventKey === 'string' &&
     typeof event?.scenarioId === 'string' &&
+    typeof event?.versionId === 'string' &&
+    typeof event?.sessionId === 'string' &&
+    (event?.stepId === undefined || typeof event.stepId === 'string') &&
     typeof event?.type === 'string' &&
-    typeof event?.pageUrl === 'string'
+    onboardingEventTypes.has(event.type as OnboardingEventPayload['type']) &&
+    typeof event?.pageUrl === 'string' &&
+    isIsoDate(event?.createdAt)
   )
+}
+
+function isIsoDate(value: unknown) {
+  return typeof value === 'string' && !Number.isNaN(Date.parse(value))
 }

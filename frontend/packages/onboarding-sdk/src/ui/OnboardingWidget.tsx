@@ -18,6 +18,7 @@ import type {
 } from "../types/contracts";
 import {
   consumeScenarioResume,
+  clearLinearJourneyProgress,
   getOrCreateSessionId,
   hasScenarioOutcome,
   hasPreviousOnboardingPage,
@@ -25,7 +26,6 @@ import {
   rememberPageNavigation,
   rememberScenarioOutcome,
 } from "../core/session";
-import { clearLinearJourneyProgress } from "../api/linearJourneyResolver";
 import {
   calculateTooltipPosition,
 } from "../dom/target";

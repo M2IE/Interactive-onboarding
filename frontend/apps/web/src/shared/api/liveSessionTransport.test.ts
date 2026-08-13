@@ -26,5 +26,18 @@ describe('live session protocol', () => {
     expect(isLiveSessionEnvelope(envelope, 'run-2')).toBe(false)
     expect(isLiveSessionEnvelope({ ...envelope, version: 2 }, 'run-1')).toBe(false)
     expect(isLiveSessionEnvelope({ type: 'random' }, 'run-1')).toBe(false)
+    expect(isLiveSessionEnvelope({ ...envelope, sequence: 0 }, 'run-1')).toBe(false)
+    expect(
+      isLiveSessionEnvelope(
+        { ...envelope, event: { ...envelope.event, type: 'unknown' } },
+        'run-1',
+      ),
+    ).toBe(false)
+    expect(
+      isLiveSessionEnvelope(
+        { ...envelope, event: { ...envelope.event, sessionId: undefined } },
+        'run-1',
+      ),
+    ).toBe(false)
   })
 })
