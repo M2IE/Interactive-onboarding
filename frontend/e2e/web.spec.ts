@@ -65,15 +65,29 @@ test('published onboarding advances through SPA pages and returns back', async (
   await expect(
     page.getByRole('dialog', { name: 'Начните с первого объявления' }),
   ).toBeVisible()
+  await expect(page.getByText('Шаг 1 из 6')).toBeVisible()
   await page.getByRole('button', { name: 'Далее' }).click()
   await expect(page).toHaveURL(/\/demo\/new$/)
 
   await expect(page.getByRole('dialog', { name: 'Выберите транспорт' })).toBeVisible()
+  await expect(page.getByText('Шаг 2 из 6')).toBeVisible()
   await page.getByRole('button', { name: 'Назад' }).click()
   await expect(page).toHaveURL(/\/demo\/profile$/)
   await expect(
     page.getByRole('dialog', { name: 'Начните с первого объявления' }),
   ).toBeVisible()
+})
+
+test('demo uses fictional profile data and an empty phone field', async ({
+  page,
+}) => {
+  await page.goto('/demo/profile')
+  await expect(
+    page.getByRole('heading', { name: 'Марина Волкова' }),
+  ).toBeVisible()
+
+  await page.goto('/demo/new/auto')
+  await expect(page.getByPlaceholder('Номер телефона')).toHaveValue('')
 })
 
 test('completed demo can be restarted from the final dialog', async ({ page }) => {
@@ -100,6 +114,24 @@ test('completed demo can be restarted from the final dialog', async ({ page }) =
     page.getByRole('heading', {
       name: 'Помогайте пользователям двигаться дальше',
     }),
+  ).toBeVisible()
+})
+
+test('dismissed onboarding opens the demo outcome dialog', async ({ page }) => {
+  await page.goto('/demo/profile')
+
+  await page.getByRole('button', { name: 'Пропустить' }).click()
+
+  const dismissedDialog = page.getByRole('dialog', {
+    name: 'Онбординг остановлен',
+  })
+  await expect(dismissedDialog).toBeVisible()
+  await expect(dismissedDialog).toContainText('Хотите начать путь заново')
+
+  await dismissedDialog.getByRole('button', { name: 'Повторить демо' }).click()
+  await expect(page).toHaveURL(/\/demo\/profile$/)
+  await expect(
+    page.getByRole('dialog', { name: 'Начните с первого объявления' }),
   ).toBeVisible()
 })
 
@@ -135,6 +167,103 @@ test('creation guide explains the full administrator workflow', async ({
     'После публикации SDK начнёт отдавать сценарий пользователям',
   )
   await expect(dialog.getByRole('button', { name: 'Далее' })).toHaveCount(0)
+})
+
+test('journey map follows a live onboarding session without storing analytics', async ({
+  page,
+}) => {
+  await page.goto('/admin/journey')
+
+  await expect(
+    page.getByRole('heading', { name: 'Journey Map', exact: true }),
+  ).toBeVisible()
+  await expect(page.getByTestId('journey-canvas')).toBeVisible()
+  await expect(
+    page
+      .getByTestId('rf__node-scenario-first-listing-profile')
+      .getByText('Первое объявление: профиль', { exact: true }),
+  ).toBeVisible()
+
+  await page.getByRole('button', { name: 'Начать отсюда' }).click()
+  const demo = page.frameLocator('iframe[title="Интерактивное демо пользовательского пути"]')
+  await expect(demo.getByRole('dialog', { name: 'Начните с первого объявления' })).toBeVisible()
+  await demo.getByRole('button', { name: 'Далее' }).click()
+
+  await expect(demo.getByRole('dialog', { name: 'Выберите транспорт' })).toBeVisible()
+  await expect(page.getByText('Подсказка показана').first()).toBeVisible()
+  await expect(
+    page
+      .getByTestId('rf__node-scenario-first-listing-category')
+      .getByText('Первое объявление: категория', { exact: true }),
+  ).toBeVisible()
+
+  const storedEvents = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('interactive-onboarding:events:v2') ?? '[]'),
+  )
+  expect(storedEvents).toEqual([])
+})
+
+test('journey map remains coherent on a mobile viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/admin/journey')
+
+  await expect(page.getByRole('tab', { name: 'Карта' })).toBeVisible()
+  await expect(page.getByRole('tab', { name: 'Демо' })).toBeVisible()
+  await expect(page.getByTestId('journey-canvas')).toBeVisible()
+
+  await page.getByRole('tab', { name: 'Демо' }).click()
+  await expect(page.getByText('Пройдите путь глазами пользователя')).toBeVisible()
+})
+
+test('journey map opens the selected scenario in the existing editor', async ({
+  page,
+}) => {
+  await page.goto('/admin/journey')
+
+  await page.getByRole('button', { name: 'Открыть сценарий' }).click()
+
+  await expect(page).toHaveURL(
+    /\/admin\?scenarioId=scenario-first-listing-profile$/,
+  )
+  await expect(
+    page.getByRole('heading', { name: 'Фабрика сценариев' }),
+  ).toBeVisible()
+  await expect(page.getByRole('textbox', { name: 'Название сценария' })).toHaveValue(
+    'Первое объявление: профиль',
+  )
+})
+
+test('journey nodes can be rearranged and restored to the automatic layout', async ({
+  page,
+}) => {
+  await page.goto('/admin/journey')
+
+  const node = page.getByTestId('rf__node-scenario-first-listing-profile')
+  await expect(node).toBeVisible()
+  const initialPosition = await node.boundingBox()
+  expect(initialPosition).not.toBeNull()
+
+  await page.mouse.move(
+    initialPosition!.x + initialPosition!.width / 2,
+    initialPosition!.y + initialPosition!.height / 2,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    initialPosition!.x + initialPosition!.width / 2 + 110,
+    initialPosition!.y + initialPosition!.height / 2 + 90,
+    { steps: 10 },
+  )
+  await page.mouse.up()
+
+  await expect.poll(async () => (await node.boundingBox())?.x).toBeGreaterThan(
+    initialPosition!.x + 60,
+  )
+
+  await page.getByRole('button', { name: 'Выровнять' }).click()
+  await expect.poll(async () => (await node.boundingBox())?.x).toBeCloseTo(
+    initialPosition!.x,
+    0,
+  )
 })
 
 async function completeDemo(page: import('@playwright/test').Page) {

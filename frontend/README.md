@@ -50,6 +50,22 @@ services.
 
 - [React integration guide](./packages/onboarding-sdk/README.md)
 
+## Journey Map and Live Session
+
+Open `/admin/journey` to inspect the published onboarding journey. The map
+connects page-local scenarios through the `nextUrl` of their steps, highlights
+missing destinations and loads per-scenario analytics without blocking the
+topology.
+
+Live Session opens the demo in an embedded desktop or mobile viewport. Start
+from the detected entry point or a selected scenario and follow SDK events on
+the map as they happen. Preview events are transferred through a scoped
+`BroadcastChannel` and are not sent to the analytics API.
+
+Only published scenarios appear on the map. Editing remains in the scenario
+factory: select a node and choose **Open scenario** to use the existing
+`/admin?scenarioId=<id>` deep link.
+
 ## Chrome extension
 
 `apps/extension` is a Manifest V3 visual editor for onboarding drafts. It uses
@@ -95,4 +111,10 @@ Run the same checks as the frontend GitHub Actions job:
 
 ```bash
 npm run ci
+```
+
+Run browser verification, including Journey Map and Live Session:
+
+```bash
+npm run e2e
 ```

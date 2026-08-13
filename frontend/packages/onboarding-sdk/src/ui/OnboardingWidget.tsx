@@ -10,12 +10,15 @@ import type {
   OnboardingApiClient,
   OnboardingEligibility,
   OnboardingEligibilityContext,
+  OnboardingEventHandler,
+  OnboardingEventPayload,
   OnboardingEventType,
   OnboardingStep,
   WidgetConfig,
 } from "../types/contracts";
 import {
   consumeScenarioResume,
+  clearLinearJourneyProgress,
   getOrCreateSessionId,
   hasScenarioOutcome,
   hasPreviousOnboardingPage,
@@ -41,6 +44,7 @@ export type OnboardingWidgetProps = {
   showDelayMs?: number;
   targetWaitMs?: number;
   onComplete?: () => void;
+  onEvent?: OnboardingEventHandler;
 };
 
 type ConfigState =
@@ -69,6 +73,7 @@ export function OnboardingWidget({
   showDelayMs = 0,
   targetWaitMs = 5_000,
   onComplete,
+  onEvent,
 }: OnboardingWidgetProps) {
   const resolvedPageUrl = pageUrl ?? window.location.pathname;
   const [configState, setConfigState] = useState<ConfigState>({
@@ -104,8 +109,7 @@ export function OnboardingWidget({
         return;
       }
 
-      try {
-        await apiClient.trackEvent({
+      const event: OnboardingEventPayload = {
           projectKey,
           scenarioId: config.scenarioId,
           versionId: config.versionId,
@@ -119,12 +123,22 @@ export function OnboardingWidget({
               : `${sessionId}:${config.versionId}:${step?.id ?? "scenario"}:${type}`,
           pageUrl: resolvedPageUrl,
           createdAt: new Date().toISOString(),
-        });
+        };
+
+      try {
+        const callbackResult = onEvent?.(event);
+        void Promise.resolve(callbackResult).catch(() => undefined);
+      } catch {
+        // Observers are isolated from both onboarding and analytics delivery.
+      }
+
+      try {
+        await apiClient.trackEvent(event);
       } catch {
         // Analytics must not prevent the user from continuing the host flow.
       }
     },
-    [apiClient, config, projectKey, resolvedPageUrl, sessionId, userId],
+    [apiClient, config, onEvent, projectKey, resolvedPageUrl, sessionId, userId],
   );
 
   const handleMissingTarget = useCallback(
@@ -437,6 +451,7 @@ export function OnboardingWidget({
     if (isLastPageStep) {
       await track("scenario_completed");
       rememberScenarioOutcome(renderedConfig.scenarioId, "completed");
+      clearLinearJourneyProgress();
     }
 
     if (!isLastPageStep) {
@@ -451,6 +466,7 @@ export function OnboardingWidget({
   function skipScenario() {
     void track("scenario_dismissed", renderedStep);
     rememberScenarioOutcome(renderedConfig.scenarioId, "dismissed");
+    clearLinearJourneyProgress();
     setConfigState({ status: "empty", pageUrl: resolvedPageUrl });
   }
 

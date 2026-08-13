@@ -6,10 +6,10 @@ import {
 import type { ElementDescriptor } from '@interactive-onboarding/element-selector'
 import { createLocalScenarioDraft } from '../../../entities/draft/model/createLocalDraft'
 import type { StepDraft } from '../../../entities/draft/model/types'
+import { normalizeSettings } from '../../../entities/settings/model/normalizeSettings'
 import type { ExtensionSettings } from '../../../entities/settings/model/types'
 import {
   getApiBaseUrl,
-  normalizeSettings,
   requestPlatformPermission,
 } from '../../../shared/chrome/platformPermission'
 import {
@@ -50,7 +50,10 @@ const defaultCreateApiClient = (apiBaseUrl: string) =>
 export function useExtensionScenarioEditor({
   createApiClient = defaultCreateApiClient,
 }: UseExtensionScenarioEditorOptions = {}) {
-  const storage = useMemo(() => createExtensionStorage(), [])
+  const storage = useMemo(
+    () => createExtensionStorage<ExtensionSettings>(),
+    [],
+  )
   const [state, setState] = useState<WorkspaceState>({ status: 'booting' })
   const stateRef = useRef(state)
   const pendingNavigationRef = useRef<string | undefined>(undefined)

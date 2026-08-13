@@ -4,6 +4,7 @@ import type {
   WidgetConfig,
   WidgetConfigRequest,
 } from '../types/contracts'
+import { createLinearJourneyResolver } from './linearJourneyResolver'
 
 export type FetchClient = typeof fetch
 
@@ -36,26 +37,38 @@ export function createHttpOnboardingClient({
   fetchClient = fetch,
 }: HttpOnboardingClientOptions): OnboardingApiClient {
   const normalizedBaseUrl = apiBaseUrl.replace(/\/$/, '')
+  const loadConfig = async (
+    request: WidgetConfigRequest,
+  ): Promise<WidgetConfig | null> => {
+    const params = new URLSearchParams({
+      projectKey: request.projectKey,
+      pageUrl: request.pageUrl,
+    })
+    const response = await requestJson<WidgetScenarioResponse>(
+      fetchClient,
+      `${normalizedBaseUrl}/widget/scenario?${params}`,
+      undefined,
+      [204, 404],
+    )
+    const scenario = response?.scenario
+
+    if (!scenario || scenario.steps.length === 0) {
+      return null
+    }
+
+    return mapWidgetConfig(request, scenario)
+  }
+  const resolveLinearJourney = createLinearJourneyResolver({ loadConfig })
 
   return {
     async getConfig(request: WidgetConfigRequest): Promise<WidgetConfig | null> {
-      const params = new URLSearchParams({
-        projectKey: request.projectKey,
-        pageUrl: request.pageUrl,
-      })
-      const response = await requestJson<WidgetScenarioResponse>(
-        fetchClient,
-        `${normalizedBaseUrl}/widget/scenario?${params}`,
-        undefined,
-        [204, 404],
-      )
-      const scenario = response?.scenario
+      const config = await loadConfig(request)
 
-      if (!scenario || scenario.steps.length === 0) {
+      if (!config) {
         return null
       }
 
-      return mapWidgetConfig(request, scenario)
+      return resolveLinearJourney(request, config)
     },
 
     async trackEvent(event: OnboardingEventPayload): Promise<void> {

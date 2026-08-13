@@ -29,7 +29,9 @@ export function createMockAnalyticsRepository(): AnalyticsRepository {
 
     async getAnalytics(scenario) {
       const storedScenario = findScenario(scenario.id)
-      const events = readEvents()
+      const events = readEvents().filter(
+        (event) => event.scenarioId === scenario.id,
+      )
       const summary = buildAnalyticsSummaryFromEvents(events)
       const funnel = buildStepFunnelFromEvents(storedScenario, events)
 

@@ -1,0 +1,33 @@
+(app_proxy) {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8080
+}
+
+(demo_root) {
+	@root path /
+	redir @root /demo/profile 302
+}
+
+(block_analytics) {
+	@analytics {
+		method POST
+		path /api/v1/widget/event
+	}
+	respond @analytics "" 204
+}
+
+m2ie.ru, www.m2ie.ru {
+	import block_analytics
+	import app_proxy
+}
+
+demo.m2ie.ru {
+	import demo_root
+	import app_proxy
+}
+
+demo-test.m2ie.ru {
+	import demo_root
+	import block_analytics
+	import app_proxy
+}

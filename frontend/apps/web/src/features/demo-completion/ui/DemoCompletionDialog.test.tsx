@@ -8,7 +8,7 @@ describe('DemoCompletionDialog', () => {
 
     render(
       <DemoCompletionDialog
-        open
+        outcome="completed"
         onRepeat={onRepeat}
         onReturnHome={onReturnHome}
       />,
@@ -24,5 +24,19 @@ describe('DemoCompletionDialog', () => {
 
     expect(onRepeat).toHaveBeenCalledTimes(1)
     expect(onReturnHome).toHaveBeenCalledTimes(1)
+  })
+
+  it('explains that the demo was stopped after onboarding dismissal', () => {
+    render(
+      <DemoCompletionDialog
+        outcome="dismissed"
+        onRepeat={jest.fn()}
+        onReturnHome={jest.fn()}
+      />,
+    )
+
+    expect(
+      screen.getByRole('dialog', { name: 'Онбординг остановлен' }),
+    ).toHaveTextContent('Хотите начать путь заново')
   })
 })

@@ -4,6 +4,7 @@ import { createHttpOnboardingClient } from './api/httpClient'
 import type {
   OnboardingApiClient,
   OnboardingEligibility,
+  OnboardingEventHandler,
 } from './types/contracts'
 import { OnboardingWidget } from './ui/OnboardingWidget'
 import { resetOnboardingSession } from './core/session'
@@ -20,6 +21,7 @@ export type OnboardingInitOptions = {
   showDelayMs?: number
   targetWaitMs?: number
   onComplete?: () => void
+  onEvent?: OnboardingEventHandler
 }
 
 export type OnboardingInstance = {
@@ -55,6 +57,7 @@ export function initOnboarding(options: OnboardingInitOptions): OnboardingInstan
         showDelayMs: options.showDelayMs,
         targetWaitMs: options.targetWaitMs,
         onComplete: options.onComplete,
+        onEvent: options.onEvent,
         userId: options.userId,
       }),
     )
@@ -86,6 +89,7 @@ export type {
   OnboardingApiClient,
   OnboardingEligibility,
   OnboardingEligibilityContext,
+  OnboardingEventHandler,
   OnboardingEventPayload,
   OnboardingEventType,
   OnboardingScenario,

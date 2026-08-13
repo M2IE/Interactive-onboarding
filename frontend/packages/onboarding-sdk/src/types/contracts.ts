@@ -77,6 +77,8 @@ export type OnboardingEventPayload = {
   createdAt: string
 }
 
+export type OnboardingEventHandler = (event: OnboardingEventPayload) => void
+
 export type OnboardingApiClient = {
   getConfig: (request: WidgetConfigRequest) => Promise<WidgetConfig | null>
   trackEvent: (event: OnboardingEventPayload) => Promise<void>

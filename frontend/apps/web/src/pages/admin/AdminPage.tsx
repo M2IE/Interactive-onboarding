@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Button } from '@interactive-onboarding/ui'
 import {
   BarChart3,
@@ -5,6 +6,7 @@ import {
   EyeOff,
   MonitorPlay,
   Plus,
+  Route as RouteIcon,
   RefreshCw,
   RotateCcw,
   Save,
@@ -26,15 +28,19 @@ type AdminPageProps = {
   apiMode: ApiMode
 }
 
+const JourneyPage = lazy(() => import('./JourneyPage'))
+
 export function AdminPage({ apiMode }: AdminPageProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const isAnalytics = location.pathname === appRoutes.adminAnalytics
+  const isJourney = location.pathname === appRoutes.adminJourney
+  const isScenarios = !isAnalytics && !isJourney
   const requestedScenarioId = new URLSearchParams(location.search).get(
     'scenarioId',
   )
-  const editor = useScenarioEditor(requestedScenarioId)
-  const analytics = useScenarioAnalytics()
+  const editor = useScenarioEditor(requestedScenarioId, isScenarios)
+  const analytics = useScenarioAnalytics(isAnalytics)
 
   return (
     <div className="admin-shell">
@@ -44,9 +50,16 @@ export function AdminPage({ apiMode }: AdminPageProps) {
         </div>
 
         <nav aria-label="Разделы админки">
-          <Link className={!isAnalytics ? 'is-active' : undefined} to={appRoutes.admin}>
+          <Link className={isScenarios ? 'is-active' : undefined} to={appRoutes.admin}>
             <BookOpenCheck aria-hidden="true" size={19} />
             <span>Сценарии</span>
+          </Link>
+          <Link
+            className={isJourney ? 'is-active' : undefined}
+            to={appRoutes.adminJourney}
+          >
+            <RouteIcon aria-hidden="true" size={19} />
+            <span>Journey Map</span>
           </Link>
           <Link
             className={isAnalytics ? 'is-active' : undefined}
@@ -74,11 +87,17 @@ export function AdminPage({ apiMode }: AdminPageProps) {
 
       <main className="admin-content">
         <header className="admin-topbar">
-          <h1>{isAnalytics ? 'Аналитика прохождения' : 'Фабрика сценариев'}</h1>
-          <div
-            className={`admin-topbar__actions${isAnalytics ? ' is-compact' : ''}`}
+          <h1>
+            {isAnalytics
+              ? 'Аналитика прохождения'
+              : isJourney
+                ? 'Journey Map'
+                : 'Фабрика сценариев'}
+          </h1>
+          {!isJourney && <div
+            className={`admin-topbar__actions${!isScenarios ? ' is-compact' : ''}`}
           >
-            {!isAnalytics && <ScenarioGuideDialog />}
+            {isScenarios && <ScenarioGuideDialog />}
             {isAnalytics ? (
               <Button
                 icon={<RefreshCw aria-hidden="true" size={17} />}
@@ -87,7 +106,7 @@ export function AdminPage({ apiMode }: AdminPageProps) {
               >
                 Обновить
               </Button>
-            ) : (
+            ) : isScenarios ? (
               <Button
                 disabled={editor.isBusy}
                 icon={
@@ -102,8 +121,8 @@ export function AdminPage({ apiMode }: AdminPageProps) {
               >
                 {apiMode === 'mock' ? 'Сбросить' : 'Обновить'}
               </Button>
-            )}
-            {!isAnalytics && (
+            ) : null}
+            {isScenarios && (
               <Button
                 disabled={editor.isBusy}
                 icon={<Plus aria-hidden="true" size={18} />}
@@ -112,7 +131,7 @@ export function AdminPage({ apiMode }: AdminPageProps) {
                 Создать сценарий
               </Button>
             )}
-            {!isAnalytics && (
+            {isScenarios && (
               <Button
                 disabled={
                   editor.isBusy || editor.isReadOnly || !editor.isDirty
@@ -124,7 +143,7 @@ export function AdminPage({ apiMode }: AdminPageProps) {
                 Сохранить
               </Button>
             )}
-            {!isAnalytics &&
+            {isScenarios &&
               (editor.isPublished ? (
                 <Button
                   disabled={editor.isBusy}
@@ -146,16 +165,20 @@ export function AdminPage({ apiMode }: AdminPageProps) {
                   Опубликовать
                 </Button>
               ) : null)}
-          </div>
+          </div>}
         </header>
 
-        {!isAnalytics && editor.deepLinkNotice && (
+        {isScenarios && editor.deepLinkNotice && (
           <div className="admin-inline-notice" role="status">
             {editor.deepLinkNotice}
           </div>
         )}
 
-        {isAnalytics ? (
+        {isJourney ? (
+          <Suspense fallback={<section className="editor-state" aria-live="polite"><h2>Открываем Journey Map</h2><p>Загружаем интерактивное полотно.</p></section>}>
+            <JourneyPage />
+          </Suspense>
+        ) : isAnalytics ? (
           <ScenarioAnalytics
             reportState={analytics.reportState}
             source={analytics.source}

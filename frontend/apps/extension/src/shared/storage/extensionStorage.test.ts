@@ -5,14 +5,14 @@ describe('extension storage', () => {
   it('persists settings locally and restores a per-tab draft snapshot', async () => {
     const local = createMemoryStorage()
     const session = createMemoryStorage()
-    const storage = createExtensionStorage({
-      local: local.area,
-      session: session.area,
-    })
     const settings = {
       platformUrl: 'https://platform.example.com',
       projectKey: 'demo',
     }
+    const storage = createExtensionStorage<typeof settings>({
+      local: local.area,
+      session: session.area,
+    })
     const snapshot = { draftId: 'local-1', picker: 'active' }
 
     await storage.setSettings(settings)

@@ -92,6 +92,27 @@ export function OnboardingIntegration() {
 | `userId` | No | `string` | Stable pseudonymous identifier from the host application's authentication system. Omit it for anonymous users. |
 | `enabled` | No | `boolean` | Enables configuration loading and widget rendering. Defaults to `true`; it can be connected to a feature flag or audience rule. |
 | `refreshKey` | No | `number` | Changing the value forces the provider to request its configuration again. Most integrations do not need it. |
+| `onEvent` | No | `(event: OnboardingEventPayload) => void` | Observes every event created by the SDK, including internal lifecycle and target diagnostics. Observer failures never interrupt the widget or backend delivery. |
+
+### Observing SDK events
+
+Use `onEvent` for local previews, diagnostics, or an application-owned event
+bridge. It receives both backend-supported events and internal SDK events such
+as `scenario_started`, `scenario_completed`, and `target_not_found`.
+
+```tsx
+<OnboardingProvider
+  apiClient={onboardingClient}
+  onEvent={(event) => {
+    previewChannel.publish(event)
+  }}
+  projectKey="classified-production"
+/>
+```
+
+The callback observes an event; it does not replace `apiClient.trackEvent`.
+Throwing from the callback does not prevent the SDK from continuing the tour or
+attempting its normal analytics delivery.
 
 ### Providing `userId`
 
@@ -140,6 +161,19 @@ fields `session_id`, `type`, `step_id`/`scenario_id`, and `event_key`.
 A `204` or `404` response while loading configuration means that no onboarding
 scenario is available for the page, so the widget remains hidden. Other errors
 are surfaced and never replaced with mock data.
+
+### Cross-page progress
+
+When the API returns page-local scenarios, the HTTP client follows the
+`nextUrl` of each page's final step through the same Widget endpoint. For a
+linear journey, the SDK can therefore display global progress such as
+`Step 2 of 6` without requiring a separate flow response from the backend.
+
+The resolved page sequence is cached in `sessionStorage` for the current SDK
+session and cleared when the journey is completed, dismissed, or reset. Cycles,
+multiple transitions from one page, excessive depth, and failed look-ahead
+requests safely fall back to page-local progress. Branch-aware totals still
+require an explicit flow contract from the backend.
 
 If the host application uses a different API contract, provide an adapter:
 
@@ -191,6 +225,9 @@ import { initOnboarding } from '@m2ie/onboarding-sdk'
 
 const onboarding = initOnboarding({
   apiBaseUrl: 'https://onboarding-api.example.com',
+  onEvent(event) {
+    console.debug('Onboarding event', event.type)
+  },
   projectKey: 'classified-production',
 })
 
