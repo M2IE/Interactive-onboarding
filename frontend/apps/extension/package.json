@@ -1,0 +1,27 @@
+{
+  "name": "@interactive-onboarding/extension",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "vite build && tsup && npm run verify-build",
+    "dev": "node scripts/dev.mjs",
+    "package": "npm run build && node scripts/package-release.mjs",
+    "verify-build": "node scripts/verify-build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@interactive-onboarding/api-client": "*",
+    "@interactive-onboarding/element-selector": "*",
+    "@interactive-onboarding/ui": "*",
+    "@m2ie/onboarding-sdk": "*",
+    "lucide-react": "^1.30.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.38",
+    "tsup": "^8.5.1",
+    "vite": "^8.2.0"
+  }
+}

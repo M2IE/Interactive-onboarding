@@ -1,0 +1,28 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["chrome", "vite/client"],
+    "noEmit": true
+  },
+  "include": [
+    "src",
+    "vite.config.ts",
+    "tsup.config.ts",
+    "../../packages/api-client/src",
+    "../../packages/element-selector/src",
+    "../../packages/onboarding-sdk/src",
+    "../../packages/ui/src"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "../../packages/**/src/**/*.test.ts",
+    "../../packages/**/src/**/*.test.tsx"
+  ],
+  "references": [
+    { "path": "../../packages/api-client" },
+    { "path": "../../packages/element-selector" },
+    { "path": "../../packages/onboarding-sdk" },
+    { "path": "../../packages/ui" }
+  ]
+}

@@ -17,7 +17,13 @@ const VIEWPORT_PADDING = 18
 const MOBILE_BREAKPOINT = 620
 
 export function getTargetSnapshot(selector: string): TargetSnapshot | null {
-  const element = document.querySelector(selector)
+  let element: Element | null
+
+  try {
+    element = document.querySelector(selector)
+  } catch {
+    return null
+  }
 
   if (!element) {
     return null

@@ -17,8 +17,9 @@ import {
   useScenarioAnalytics,
 } from '@/features/scenario-analytics'
 import { ScenarioEditor, useScenarioEditor } from '@/features/scenario-editor'
+import { ScenarioGuideDialog } from '@/features/scenario-guide'
 import { appRoutes } from '@/shared/config/routes'
-import { AvitoLogo } from '@/shared/ui/AvitoLogo'
+import { ProductLogo } from '@/shared/ui/ProductLogo'
 import type { ApiMode } from '@/shared/config/appConfig'
 
 type AdminPageProps = {
@@ -29,15 +30,17 @@ export function AdminPage({ apiMode }: AdminPageProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const isAnalytics = location.pathname === appRoutes.adminAnalytics
-  const editor = useScenarioEditor()
+  const requestedScenarioId = new URLSearchParams(location.search).get(
+    'scenarioId',
+  )
+  const editor = useScenarioEditor(requestedScenarioId)
   const analytics = useScenarioAnalytics()
 
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar">
         <div className="admin-sidebar__brand">
-          <AvitoLogo />
-          <span>Onboarding</span>
+          <ProductLogo subtitle="Admin Panel" />
         </div>
 
         <nav aria-label="Разделы админки">
@@ -75,6 +78,7 @@ export function AdminPage({ apiMode }: AdminPageProps) {
           <div
             className={`admin-topbar__actions${isAnalytics ? ' is-compact' : ''}`}
           >
+            {!isAnalytics && <ScenarioGuideDialog />}
             {isAnalytics ? (
               <Button
                 icon={<RefreshCw aria-hidden="true" size={17} />}
@@ -110,7 +114,9 @@ export function AdminPage({ apiMode }: AdminPageProps) {
             )}
             {!isAnalytics && (
               <Button
-                disabled={editor.isBusy || editor.isReadOnly}
+                disabled={
+                  editor.isBusy || editor.isReadOnly || !editor.isDirty
+                }
                 icon={<Save aria-hidden="true" size={17} />}
                 onClick={editor.saveActiveScenario}
                 variant="secondary"
@@ -130,7 +136,9 @@ export function AdminPage({ apiMode }: AdminPageProps) {
                 </Button>
               ) : !editor.isArchived ? (
                 <Button
-                  disabled={editor.isBusy}
+                  disabled={
+                    editor.isBusy || editor.validation?.status === 'invalid'
+                  }
                   icon={<Send aria-hidden="true" size={17} />}
                   onClick={editor.publishActiveScenario}
                   variant="primary"
@@ -140,6 +148,12 @@ export function AdminPage({ apiMode }: AdminPageProps) {
               ) : null)}
           </div>
         </header>
+
+        {!isAnalytics && editor.deepLinkNotice && (
+          <div className="admin-inline-notice" role="status">
+            {editor.deepLinkNotice}
+          </div>
+        )}
 
         {isAnalytics ? (
           <ScenarioAnalytics
@@ -174,6 +188,7 @@ export function AdminPage({ apiMode }: AdminPageProps) {
             scenarios={editor.scenarios}
             readOnly={editor.isReadOnly}
             showExtendedFields={apiMode === 'mock'}
+            validation={editor.validation}
             onAddStep={editor.addStep}
             onOpenDemo={() =>
               navigate(editor.activeScenario?.url ?? appRoutes.demo.profile)

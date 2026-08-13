@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { appRoutes } from '@/shared/config/routes'
-import { AvitoLogo } from '@/shared/ui/AvitoLogo'
+import { ProductLogo } from '@/shared/ui/ProductLogo'
 
 type ClassifiedShellProps = {
   children: ReactNode
@@ -18,7 +18,7 @@ export function ClassifiedShell({ children }: ClassifiedShellProps) {
           <span>Каталоги</span>
         </div>
         <div className="classified-header__main">
-          <AvitoLogo />
+          <ProductLogo />
           <nav aria-label="Разделы классифайда">
             <Link to={appRoutes.demo.profile}>Бизнес360</Link>
             <Link to={appRoutes.demo.transport}>Авто</Link>

@@ -8,6 +8,7 @@ export type {
   AdminStep,
   CreateAdminScenarioRequest,
   CreateAdminStepRequest,
+  ReorderAdminStepsRequest,
   UpdateAdminScenarioRequest,
   UpdateAdminStepRequest,
 } from './adminClient'
