@@ -1,8 +1,12 @@
 import { createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { createHttpOnboardingClient } from './api/httpClient'
-import type { OnboardingApiClient } from './types/contracts'
+import type {
+  OnboardingApiClient,
+  OnboardingEligibility,
+} from './types/contracts'
 import { OnboardingWidget } from './ui/OnboardingWidget'
+import { resetOnboardingSession } from './core/session'
 
 export type OnboardingInitOptions = {
   projectKey: string
@@ -12,6 +16,10 @@ export type OnboardingInitOptions = {
   pageUrl?: string
   userId?: string
   enabled?: boolean
+  eligibility?: OnboardingEligibility
+  showDelayMs?: number
+  targetWaitMs?: number
+  onComplete?: () => void
 }
 
 export type OnboardingInstance = {
@@ -38,11 +46,15 @@ export function initOnboarding(options: OnboardingInitOptions): OnboardingInstan
     root.render(
       createElement(OnboardingWidget, {
         apiClient,
+        eligibility: options.eligibility,
         enabled: options.enabled,
         navigate: options.navigate,
         pageUrl: options.pageUrl,
         projectKey: options.projectKey,
         refreshKey,
+        showDelayMs: options.showDelayMs,
+        targetWaitMs: options.targetWaitMs,
+        onComplete: options.onComplete,
         userId: options.userId,
       }),
     )
@@ -65,12 +77,15 @@ export {
   createHttpOnboardingClient,
   OnboardingApiError,
 } from './api/httpClient'
+export { resetOnboardingSession }
 export type {
   FetchClient,
   HttpOnboardingClientOptions,
 } from './api/httpClient'
 export type {
   OnboardingApiClient,
+  OnboardingEligibility,
+  OnboardingEligibilityContext,
   OnboardingEventPayload,
   OnboardingEventType,
   OnboardingScenario,

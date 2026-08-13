@@ -26,6 +26,7 @@ import {
   Sparkles,
   Workflow,
 } from 'lucide-react'
+import type { ScenarioValidation } from '../model/scenarioValidation'
 
 const placementOptions: Array<{
   label: string
@@ -63,6 +64,7 @@ type ScenarioEditorProps = {
   activeStep?: OnboardingStep
   readOnly?: boolean
   showExtendedFields?: boolean
+  validation?: ScenarioValidation
   onAddStep: () => void
   onOpenDemo: () => void
   onSelectScenario: (scenarioId: string) => void
@@ -81,6 +83,7 @@ export function ScenarioEditor({
   activeStep,
   readOnly = false,
   showExtendedFields = true,
+  validation,
   onAddStep,
   onOpenDemo,
   onSelectScenario,
@@ -145,6 +148,7 @@ export function ScenarioEditor({
             showExtendedFields={showExtendedFields}
             onUpdateScenarioMeta={onUpdateScenarioMeta}
           />
+          {validation && <ScenarioValidationPanel validation={validation} />}
           <div className="scenario-editor-body">
             <StepTimeline
               activeScenario={activeScenario}
@@ -175,6 +179,41 @@ export function ScenarioEditor({
         </TabsContent>
       </div>
     </Tabs>
+  )
+}
+
+function ScenarioValidationPanel({
+  validation,
+}: {
+  validation: ScenarioValidation
+}) {
+  if (validation.issues.length === 0) {
+    return (
+      <aside className="scenario-validation scenario-validation--valid">
+        <strong>Готово к публикации</strong>
+        <span>Обязательные поля заполнены.</span>
+      </aside>
+    )
+  }
+
+  return (
+    <aside
+      className={`scenario-validation scenario-validation--${validation.status}`}
+      role={validation.status === 'invalid' ? 'alert' : 'status'}
+    >
+      <strong>
+        {validation.status === 'invalid'
+          ? 'Проверьте сценарий перед публикацией'
+          : 'Сценарий можно улучшить'}
+      </strong>
+      <ul>
+        {validation.issues.map((issue, index) => (
+          <li key={`${issue.code}-${issue.stepId ?? 'scenario'}-${index}`}>
+            {issue.message}
+          </li>
+        ))}
+      </ul>
+    </aside>
   )
 }
 

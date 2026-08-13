@@ -6,6 +6,14 @@
   --admin-border-strong: #d7dadd;
 }
 
+.admin-inline-notice {
+  background: var(--color-blue-soft);
+  border-bottom: 1px solid #cfe7ff;
+  color: #005eb8;
+  font-size: 13px;
+  padding: 10px 24px;
+}
+
 .visually-hidden {
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
@@ -264,25 +272,17 @@
   padding: 0 8px;
 }
 
-.admin-sidebar__brand > span {
-  color: var(--color-muted);
-  font-size: 11px;
-  font-weight: 700;
-  margin-left: 30px;
-  margin-top: -4px;
-}
-
-.admin-sidebar .avito-logo {
-  font-size: 25px;
-}
-
-.admin-sidebar .avito-logo__mark {
+.admin-sidebar .product-logo__mark {
   grid-template-columns: repeat(2, 8px);
 }
 
-.admin-sidebar .avito-logo__mark i {
+.admin-sidebar .product-logo__mark i {
   height: 8px;
   width: 8px;
+}
+
+.admin-sidebar .product-logo__copy strong {
+  font-size: 14px;
 }
 
 .admin-sidebar nav {
@@ -575,6 +575,227 @@
 
 .scenario-meta-section {
   border-bottom: 1px solid var(--color-border);
+}
+
+.scenario-validation {
+  align-items: flex-start;
+  border-bottom: 1px solid #e4e6e8;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 24px;
+}
+
+.scenario-validation strong {
+  font-size: 14px;
+}
+
+.scenario-validation span,
+.scenario-validation li {
+  color: #61666d;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.scenario-validation ul {
+  display: grid;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.scenario-validation--valid {
+  background: #effaf4;
+  color: #16764a;
+}
+
+.scenario-validation--invalid {
+  background: #fff5f5;
+  color: #c92c3a;
+}
+
+.ui-dialog-overlay {
+  animation: admin-dialog-fade 160ms ease-out;
+  background: rgba(12, 15, 18, 0.58);
+  inset: 0;
+  position: fixed;
+  z-index: 1000;
+}
+
+.ui-dialog-content {
+  animation: admin-dialog-enter 180ms ease-out;
+  background: #ffffff;
+  border: 1px solid #dfe2e5;
+  border-radius: 8px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.24);
+  left: 50%;
+  max-height: calc(100svh - 40px);
+  overflow: auto;
+  position: fixed;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(720px, calc(100vw - 40px));
+  z-index: 1001;
+}
+
+.ui-dialog-header {
+  align-items: flex-start;
+  border-bottom: 1px solid #e6e8ea;
+  display: flex;
+  justify-content: space-between;
+  padding: 22px 24px 18px;
+}
+
+.ui-dialog-header h2 {
+  font-size: 22px;
+  margin: 0;
+}
+
+.ui-dialog-header p {
+  color: #6a6f75;
+  font-size: 14px;
+  margin: 5px 0 0;
+}
+
+.ui-dialog-close {
+  align-items: center;
+  background: #f1f2f3;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  font-size: 24px;
+  height: 34px;
+  justify-content: center;
+  line-height: 1;
+  width: 34px;
+}
+
+.scenario-guide {
+  display: grid;
+  gap: 26px;
+  padding: 22px 24px 28px;
+}
+
+.scenario-guide__terms {
+  border-bottom: 1px solid #e6e8ea;
+  padding-bottom: 24px;
+}
+
+.scenario-guide h3 {
+  font-size: 17px;
+  margin: 0 0 14px;
+}
+
+.scenario-guide__terms dl {
+  margin: 0;
+}
+
+.scenario-guide__terms dl > div {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 120px minmax(0, 1fr);
+  padding: 7px 0;
+}
+
+.scenario-guide__terms dt {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.scenario-guide__terms dd {
+  color: #62676e;
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.scenario-guide__workflow ol {
+  counter-reset: guide-step;
+  display: grid;
+  gap: 18px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.scenario-guide__workflow li {
+  counter-increment: guide-step;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 28px minmax(0, 1fr);
+}
+
+.scenario-guide__workflow li::before {
+  align-items: center;
+  background: #eaf4ff;
+  border-radius: 50%;
+  color: #0067cb;
+  content: counter(guide-step);
+  display: flex;
+  font-size: 12px;
+  font-weight: 800;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.scenario-guide__workflow h4 {
+  font-size: 15px;
+  margin: 3px 0 5px;
+}
+
+.scenario-guide__workflow p {
+  color: #34383d;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.scenario-guide__workflow small {
+  color: #6a6f75;
+  display: block;
+  font-size: 12px;
+  line-height: 1.45;
+  margin-top: 4px;
+}
+
+@keyframes admin-dialog-fade {
+  from { opacity: 0; }
+}
+
+@keyframes admin-dialog-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 8px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-dialog-content,
+  .ui-dialog-overlay {
+    animation: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .ui-dialog-content {
+    max-height: calc(100svh - 20px);
+    width: calc(100vw - 20px);
+  }
+
+  .ui-dialog-header,
+  .scenario-guide {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .scenario-guide__terms dl > div {
+    gap: 2px;
+    grid-template-columns: 1fr;
+    padding: 8px 0;
+  }
 }
 
 .scenario-meta-section > .workspace-section-header {
@@ -1071,7 +1292,6 @@
     padding: 0 4px;
   }
 
-  .admin-sidebar__brand > span,
   .admin-sidebar__profile {
     display: none;
   }

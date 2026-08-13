@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/M2IE/Interactive-onboarding/pkg/database/olap"
 	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/domain"
 	"github.com/M2IE/Interactive-onboarding/services/widget/queries"
@@ -16,7 +17,10 @@ import (
 	"github.com/google/uuid"
 )
 
-var testDB rdb.Database
+var (
+	testDB rdb.Database
+	testCH olap.Database
+)
 
 func TestMain(m *testing.M) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -24,11 +28,21 @@ func TestMain(m *testing.M) {
 
 	db, cleanup, err := dbScenario.StartPostgres(ctx)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "setup: %v\n", err)
+		fmt.Fprintf(os.Stderr, "setup postgres: %v\n", err)
 		os.Exit(1)
 	}
 	testDB = db
+
+	ch, chCleanup, err := dbScenario.StartClickHouse(ctx)
+	if err != nil {
+		cleanup()
+		fmt.Fprintf(os.Stderr, "setup clickhouse: %v\n", err)
+		os.Exit(1)
+	}
+	testCH = ch
+
 	code := m.Run()
+	chCleanup()
 	cleanup()
 	os.Exit(code)
 }
@@ -251,5 +265,80 @@ func TestStep_GetMaxOrder(t *testing.T) {
 	}
 	if max != 3 {
 		t.Errorf("max order = %d, want 3", max)
+	}
+}
+
+// EventClickHouseRepository
+
+func TestEvent_Insert_And_ExistsByKey(t *testing.T) {
+	ctx := context.Background()
+	repo := NewEventRepository(testCH, queries.New())
+
+	scID := uuid.New()
+	key := "evt-" + uuid.New().String()
+	event := &domain.Event{
+		ID:         uuid.New(),
+		ProjectID:  uuid.New(),
+		ScenarioID: &scID,
+		SessionID:  "sess-1",
+		Type:       domain.StepViewed,
+		EventKey:   key,
+	}
+
+	if err := repo.InsertEvent(ctx, nil, event); err != nil {
+		t.Fatalf("insert event: %v", err)
+	}
+
+	exists, err := repo.ExistsEventByKey(ctx, nil, key)
+	if err != nil {
+		t.Fatalf("exists by key: %v", err)
+	}
+	if !exists {
+		t.Error("expected inserted event to exist by key")
+	}
+
+	exists, err = repo.ExistsEventByKey(ctx, nil, "nonexistent-"+uuid.New().String())
+	if err != nil {
+		t.Fatalf("exists by key: %v", err)
+	}
+	if exists {
+		t.Error("expected nonexistent key to not exist")
+	}
+}
+
+func TestEvent_ExistsScenarioCompleted(t *testing.T) {
+	ctx := context.Background()
+	repo := NewEventRepository(testCH, queries.New())
+
+	scID := uuid.New()
+	sessionID := "sess-" + uuid.New().String()
+	event := &domain.Event{
+		ID:         uuid.New(),
+		ProjectID:  uuid.New(),
+		ScenarioID: &scID,
+		SessionID:  sessionID,
+		Type:       domain.ScenarioCompleted,
+		EventKey:   "evt-" + uuid.New().String(),
+	}
+
+	if err := repo.InsertEvent(ctx, nil, event); err != nil {
+		t.Fatalf("insert event: %v", err)
+	}
+
+	exists, err := repo.ExistsScenarioCompleted(ctx, nil, sessionID, &scID)
+	if err != nil {
+		t.Fatalf("exists scenario completed: %v", err)
+	}
+	if !exists {
+		t.Error("expected scenario_completed to exist for this session+scenario")
+	}
+
+	otherSc := uuid.New()
+	exists, err = repo.ExistsScenarioCompleted(ctx, nil, sessionID, &otherSc)
+	if err != nil {
+		t.Fatalf("exists scenario completed: %v", err)
+	}
+	if exists {
+		t.Error("expected no scenario_completed for a different scenario")
 	}
 }

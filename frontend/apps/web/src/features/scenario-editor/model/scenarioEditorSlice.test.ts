@@ -29,6 +29,7 @@ describe('scenarioEditorReducer', () => {
     expect(nextState.scenarios[0].steps[0].title).toBe(
       'Обновленный заголовок',
     )
+    expect(nextState.dirtyScenarioIds).toEqual([scenario.id])
   })
 
   it('uses the published scenario returned by the repository', () => {
@@ -160,6 +161,7 @@ describe('scenarioEditorReducer', () => {
 
     expect(nextState.scenarios[0].url).toBe('/custom/listing/create')
     expect(nextState.scenarios[0].steps[0]).not.toHaveProperty('pagePath')
+    expect(nextState.dirtyScenarioIds).toEqual([scenario.id])
   })
 })
 

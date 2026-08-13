@@ -12,14 +12,14 @@ type WidgetInfrastructure struct {
 	*repositories.ProjectRepository
 	*repositories.ScenarioRepository
 	*repositories.StepRepository
-	*repositories.EventClickHouseRepository
+	*repositories.EventRepository
 }
 
 func NewWidgetInfrastructure(db rdb.Querier, q *queries.Query, chConn olap.Database) *WidgetInfrastructure {
 	return &WidgetInfrastructure{
-		ProjectRepository:         repositories.NewProjectRepository(db, q),
-		ScenarioRepository:        repositories.NewScenarioRepository(db, q),
-		StepRepository:            repositories.NewStepRepository(db, q),
-		EventClickHouseRepository: repositories.NewEventClickHouseRepository(chConn),
+		ProjectRepository:  repositories.NewProjectRepository(db, q),
+		ScenarioRepository: repositories.NewScenarioRepository(db, q),
+		StepRepository:     repositories.NewStepRepository(db, q),
+		EventRepository:    repositories.NewEventRepository(chConn, q),
 	}
 }

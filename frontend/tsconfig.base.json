@@ -26,6 +26,12 @@
       "@interactive-onboarding/api-client/*": [
         "packages/api-client/src/*"
       ],
+      "@interactive-onboarding/element-selector": [
+        "packages/element-selector/src/index.ts"
+      ],
+      "@interactive-onboarding/element-selector/*": [
+        "packages/element-selector/src/*"
+      ],
       "@interactive-onboarding/ui": ["packages/ui/src/index.tsx"],
       "@interactive-onboarding/ui/*": ["packages/ui/src/*"],
       "@m2ie/onboarding-sdk": [

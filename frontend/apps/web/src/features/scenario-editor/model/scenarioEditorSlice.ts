@@ -30,6 +30,7 @@ export type ScenarioEditorState = {
   selectedScenarioId?: string
   selectedStepId?: string
   workflow: ScenarioEditorWorkflow
+  dirtyScenarioIds: string[]
 }
 
 type UpdateScenarioMetaPayload = {
@@ -142,6 +143,7 @@ export function buildInitialScenarioEditorState(
     selectedScenarioId: firstScenario?.id,
     selectedStepId: firstScenario?.steps[0]?.id,
     workflow: scenarios.length > 0 ? { status: 'ready' } : { status: 'idle' },
+    dirtyScenarioIds: [],
   }
 }
 
@@ -178,6 +180,7 @@ const scenarioEditorSlice = createSlice({
 
       if (scenario) {
         applyScenarioPatch(scenario, action.payload.patch)
+        markDirty(state, scenario.id)
       }
     },
     updateStep(state, action: PayloadAction<UpdateStepPayload>) {
@@ -191,6 +194,7 @@ const scenarioEditorSlice = createSlice({
       if (scenario && step) {
         Object.assign(step, action.payload.patch)
         markScenarioDraft(scenario)
+        markDirty(state, scenario.id)
       }
     },
   },
@@ -233,6 +237,7 @@ const scenarioEditorSlice = createSlice({
       })
       .addCase(saveScenario.fulfilled, (state, action) => {
         replaceScenario(state, action.payload)
+        clearDirty(state, action.payload.id)
         state.workflow = { status: 'ready' }
       })
       .addCase(saveScenario.rejected, (state, action) => {
@@ -244,6 +249,8 @@ const scenarioEditorSlice = createSlice({
       .addCase(publishScenario.fulfilled, (state, action) => {
         removeSupersededPublishedScenario(state, action.payload)
         replaceScenario(state, action.payload)
+        clearDirty(state, action.meta.arg.id)
+        clearDirty(state, action.payload.id)
         state.workflow = {
           status: 'published',
           scenarioId: action.payload.id,
@@ -258,6 +265,8 @@ const scenarioEditorSlice = createSlice({
       .addCase(unpublishScenario.fulfilled, (state, action) => {
         removeArchivedScenarioCopies(state, action.payload)
         replaceScenario(state, action.payload)
+        clearDirty(state, action.meta.arg.id)
+        clearDirty(state, action.payload.id)
         state.workflow = { status: 'ready' }
       })
       .addCase(unpublishScenario.rejected, (state, action) => {
@@ -304,6 +313,7 @@ function replaceWorkspace(
   state.selectedScenarioId = nextSelected?.id
   state.selectedStepId = nextSelected?.steps[0]?.id
   state.workflow = { status: 'ready' }
+  state.dirtyScenarioIds = []
 }
 
 function replaceScenario(
@@ -359,6 +369,18 @@ function setError(
     operation,
     message: message ?? 'Не удалось выполнить запрос',
   }
+}
+
+function markDirty(state: ScenarioEditorState, scenarioId: string) {
+  if (!state.dirtyScenarioIds.includes(scenarioId)) {
+    state.dirtyScenarioIds.push(scenarioId)
+  }
+}
+
+function clearDirty(state: ScenarioEditorState, scenarioId: string) {
+  state.dirtyScenarioIds = state.dirtyScenarioIds.filter(
+    (item) => item !== scenarioId,
+  )
 }
 
 function getErrorMessage(error: unknown) {

@@ -35,8 +35,10 @@ This frontend uses npm workspaces:
 ```text
 frontend/
 ├── apps/
+│   ├── extension/
 │   └── web/
 ├── packages/
+│   ├── element-selector/
 │   ├── onboarding-sdk/
 │   ├── shared/
 │   └── ui/
@@ -69,6 +71,43 @@ Layer import rule:
 
 Keep route components thin. A page should compose widgets/features and delegate
 logic to hooks or model files.
+
+### `apps/extension`
+
+`apps/extension` is a Chrome Manifest V3 application with three isolated
+runtimes:
+
+```text
+apps/extension/src/
+├── background/   # service worker, injection and tab lifecycle
+├── content/      # DOM picker and in-page SDK preview
+├── sidepanel/    # React composition entrypoint
+├── features/     # editor workflows, hooks, model and API adapters
+├── entities/     # extension draft and settings models
+└── shared/       # typed messages, Chrome adapters and storage
+```
+
+The Side Panel follows the same FSD dependency direction as `apps/web`.
+Background and content entrypoints are runtime boundaries: they must not import
+Side Panel UI or web application modules. Cross-runtime communication must use
+the typed `ExtensionMessage` union.
+
+Use `chrome.storage.local` for durable connection settings and
+`chrome.storage.session` for per-tab draft/editor state. Service-worker globals
+are not durable state. The extension may create and update drafts, but publishing
+remains owned by the admin SPA.
+
+The content script must not collect input values, page HTML or text content.
+Preview uses an in-memory `OnboardingApiClient`, strips `nextUrl` and does not
+send analytics. Keep the extension on `activeTab`; do not add permanent
+`<all_urls>` access.
+
+### `packages/element-selector`
+
+This package contains pure DOM selector heuristics shared by the extension
+picker and its tests. It must not import Chrome APIs, React, SDK runtime code or
+application business logic. A selector is automatically accepted only when it
+matches exactly one element.
 
 ### `packages/onboarding-sdk`
 
@@ -238,6 +277,11 @@ Useful examples:
 - Widget emits `target_not_found` when selector does not match any element.
 - Analytics funnel counts views and completions per step.
 
+Playwright lives in `frontend/e2e` as an additional browser-level quality gate.
+Keep Jest + RTL as the required unit/integration test stack. Run web E2E with
+`npm run e2e` and the unpacked Manifest V3 smoke test with
+`npm run e2e:extension`.
+
 ## Routing
 
 Current routes:
@@ -374,6 +418,16 @@ When SDK packaging or its public API changes, also run:
 ```bash
 npm run sdk:pack
 ```
+
+When extension code changes, also run:
+
+```bash
+npm run build:extension
+```
+
+Then load `apps/extension/dist` through Chrome's Load unpacked flow and verify
+picker cancellation, local preview, draft save, step reorder and the admin
+deep-link. The Docker image intentionally contains only the web SPA.
 
 SDK releases are handled by
 `.github/workflows/publish-onboarding-sdk.yml` through npm Trusted Publishing.

@@ -10,6 +10,10 @@ module.exports = {
       '<rootDir>/packages/api-client/src/index.ts',
     '^@interactive-onboarding/api-client/(.*)$':
       '<rootDir>/packages/api-client/src/$1',
+    '^@interactive-onboarding/element-selector$':
+      '<rootDir>/packages/element-selector/src/index.ts',
+    '^@interactive-onboarding/element-selector/(.*)$':
+      '<rootDir>/packages/element-selector/src/$1',
     '^@interactive-onboarding/ui$': '<rootDir>/packages/ui/src/index.tsx',
     '^@interactive-onboarding/ui/(.*)$': '<rootDir>/packages/ui/src/$1',
     '^@m2ie/onboarding-sdk$':
