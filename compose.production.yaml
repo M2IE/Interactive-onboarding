@@ -1,0 +1,15 @@
+services:
+  admin_service:
+    restart: unless-stopped
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+
+  widget_service:
+    restart: unless-stopped
+
+  frontend:
+    restart: unless-stopped
+
+  gateway:
+    restart: unless-stopped

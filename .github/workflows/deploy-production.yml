@@ -1,0 +1,91 @@
+name: Deploy production
+run-name: "Deploy ${{ github.event.workflow_run.head_sha }} to m2ie.ru"
+
+on:
+  workflow_run:
+    workflows: [CI]
+    branches: [main]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-vps
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.repository == 'M2IE/Interactive-onboarding'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://demo.m2ie.ru
+    env:
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+      VPS_HOST_KEY: ${{ secrets.VPS_HOST_KEY }}
+    steps:
+      - name: Checkout tested commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
+          persist-credentials: false
+
+      - name: Validate deployment secrets
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for variable in VPS_HOST VPS_USER VPS_SSH_KEY VPS_HOST_KEY; do
+            if [[ -z ${!variable} ]]; then
+              echo "Missing required secret: ${variable}" >&2
+              exit 1
+            fi
+          done
+
+      - name: Create committed-source release
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git archive --format=tar.gz --output=release.tar.gz "$DEPLOY_SHA"
+          if tar -tzf release.tar.gz | grep -q '^onboarding-frontend/'; then
+            echo "Nested onboarding-frontend repository must not be deployed" >&2
+            exit 1
+          fi
+
+      - name: Configure pinned SSH identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          install -m 700 -d "$RUNNER_TEMP/deploy-ssh"
+          printf '%s\n' "$VPS_SSH_KEY" > "$RUNNER_TEMP/deploy-ssh/id_ed25519"
+          printf '%s\n' "$VPS_HOST_KEY" > "$RUNNER_TEMP/deploy-ssh/known_hosts"
+          chmod 600 "$RUNNER_TEMP/deploy-ssh/id_ed25519"
+          chmod 644 "$RUNNER_TEMP/deploy-ssh/known_hosts"
+          ssh-keygen -F "$VPS_HOST" -f "$RUNNER_TEMP/deploy-ssh/known_hosts" >/dev/null
+
+      - name: Deploy release
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          ssh \
+            -i "$RUNNER_TEMP/deploy-ssh/id_ed25519" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/deploy-ssh/known_hosts" \
+            "$VPS_USER@$VPS_HOST" \
+            "deploy $DEPLOY_SHA" < release.tar.gz
+
+      - name: Remove deployment credentials
+        if: always()
+        shell: bash
+        run: rm -rf -- "$RUNNER_TEMP/deploy-ssh"
