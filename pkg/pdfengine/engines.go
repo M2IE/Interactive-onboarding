@@ -3,23 +3,22 @@ package pdfengine
 import (
 	"context"
 	"fmt"
+
+	"github.com/M2IE/Interactive-onboarding/pkg/pdfengine/elements"
 )
 
 type Type string
 
 const (
-	SignintechGoPDF Type = "signintechgopdf"
-	TypeGPDF        Type = "gpdf"
+	TypeGPDF Type = "gpdf"
 )
 
 type Engine interface {
-	GeneratePDF(ctx context.Context, content Content) ([]byte, error)
+	GeneratePDF(ctx context.Context, content elements.Content) ([]byte, error)
 }
 
 func New(engineType Type) (Engine, error) {
 	switch engineType {
-	case SignintechGoPDF:
-		return NewSignintech(), nil
 	case TypeGPDF:
 		return NewGPDF(), nil
 	default:
