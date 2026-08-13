@@ -19,12 +19,21 @@ jest.mock('@/features/journey-map/ui/JourneyCanvas', () => ({
   ),
 }))
 
+jest.mock('@/shared/hooks/useMediaQuery', () => ({
+  useMediaQuery: () => false,
+}))
+
 describe('JourneyStudio', () => {
   it('loads published scenarios and starts a selected path in an iframe', async () => {
     renderStudio(createRepository())
 
     expect(await screen.findByTestId('journey-canvas')).toBeInTheDocument()
     expect(screen.getAllByText('Первое объявление: профиль')).not.toHaveLength(0)
+    expect(
+      screen.getByRole('separator', {
+        name: 'Изменить ширину Live Session',
+      }),
+    ).toHaveAttribute('aria-orientation', 'vertical')
 
     fireEvent.click(screen.getByRole('button', { name: 'Начать отсюда' }))
 

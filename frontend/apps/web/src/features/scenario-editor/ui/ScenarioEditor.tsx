@@ -8,6 +8,9 @@ import {
   Badge,
   Button,
   IconButton,
+  ResizablePanel,
+  ResizableWorkspace,
+  ResizeHandle,
   SelectField,
   Tabs,
   TabsContent,
@@ -26,6 +29,7 @@ import {
   Sparkles,
   Workflow,
 } from 'lucide-react'
+import { useMediaQuery } from '@/shared/hooks/useMediaQuery'
 import type { ScenarioValidation } from '../model/scenarioValidation'
 
 const placementOptions: Array<{
@@ -91,6 +95,8 @@ export function ScenarioEditor({
   onUpdateScenarioMeta,
   onUpdateStep,
 }: ScenarioEditorProps) {
+  const isResizableDesktop = useMediaQuery('(min-width: 1351px)')
+
   if (!activeScenario) {
     return null
   }
@@ -106,6 +112,63 @@ export function ScenarioEditor({
       </section>
     )
   }
+
+  const registry = (
+    <TabsContent
+      className="scenario-registry"
+      forceMount
+      value="scenarios"
+    >
+      <ScenarioRegistry
+        activeScenario={activeScenario}
+        onSelectScenario={onSelectScenario}
+        scenarios={scenarios}
+      />
+    </TabsContent>
+  )
+  const editor = (
+    <TabsContent
+      className="scenario-editor-surface"
+      forceMount
+      value="editor"
+    >
+      <ScenarioMetaForm
+        scenario={activeScenario}
+        readOnly={readOnly}
+        showExtendedFields={showExtendedFields}
+        onUpdateScenarioMeta={onUpdateScenarioMeta}
+      />
+      {validation && <ScenarioValidationPanel validation={validation} />}
+      <div className="scenario-editor-body">
+        <StepTimeline
+          activeScenario={activeScenario}
+          activeStep={activeStep}
+          readOnly={readOnly}
+          onAddStep={onAddStep}
+          onSelectStep={onSelectStep}
+        />
+        <StepForm
+          activeStep={activeStep}
+          readOnly={readOnly}
+          showExtendedFields={showExtendedFields}
+          onUpdateStep={onUpdateStep}
+        />
+      </div>
+    </TabsContent>
+  )
+  const preview = (
+    <TabsContent
+      className="scenario-preview-surface"
+      forceMount
+      value="preview"
+    >
+      <ScenarioPreview
+        activeStep={activeStep}
+        status={activeScenario.status}
+        onOpenDemo={onOpenDemo}
+      />
+    </TabsContent>
+  )
 
   return (
     <Tabs className="scenario-tabs" defaultValue="editor">
@@ -124,60 +187,53 @@ export function ScenarioEditor({
         </TabsTrigger>
       </TabsList>
 
-      <div className="scenario-workspace">
-        <TabsContent
-          className="scenario-registry"
-          forceMount
-          value="scenarios"
+      {isResizableDesktop ? (
+        <ResizableWorkspace
+          className="scenario-workspace"
+          panelIds={['scenario-registry', 'scenario-editor', 'scenario-preview']}
+          storageKey="scenario-editor"
         >
-          <ScenarioRegistry
-            activeScenario={activeScenario}
-            onSelectScenario={onSelectScenario}
-            scenarios={scenarios}
+          <ResizablePanel
+            defaultSize="18%"
+            groupResizeBehavior="preserve-pixel-size"
+            id="scenario-registry"
+            maxSize={420}
+            minSize={240}
+          >
+            {registry}
+          </ResizablePanel>
+          <ResizeHandle
+            id="scenario-registry-handle"
+            label="Изменить ширину списка сценариев"
           />
-        </TabsContent>
-
-        <TabsContent
-          className="scenario-editor-surface"
-          forceMount
-          value="editor"
-        >
-          <ScenarioMetaForm
-            scenario={activeScenario}
-            readOnly={readOnly}
-            showExtendedFields={showExtendedFields}
-            onUpdateScenarioMeta={onUpdateScenarioMeta}
+          <ResizablePanel
+            defaultSize="58%"
+            id="scenario-editor"
+            minSize={520}
+          >
+            {editor}
+          </ResizablePanel>
+          <ResizeHandle
+            id="scenario-preview-handle"
+            label="Изменить ширину предпросмотра"
           />
-          {validation && <ScenarioValidationPanel validation={validation} />}
-          <div className="scenario-editor-body">
-            <StepTimeline
-              activeScenario={activeScenario}
-              activeStep={activeStep}
-              readOnly={readOnly}
-              onAddStep={onAddStep}
-              onSelectStep={onSelectStep}
-            />
-            <StepForm
-              activeStep={activeStep}
-              readOnly={readOnly}
-              showExtendedFields={showExtendedFields}
-              onUpdateStep={onUpdateStep}
-            />
-          </div>
-        </TabsContent>
-
-        <TabsContent
-          className="scenario-preview-surface"
-          forceMount
-          value="preview"
-        >
-          <ScenarioPreview
-            activeStep={activeStep}
-            status={activeScenario.status}
-            onOpenDemo={onOpenDemo}
-          />
-        </TabsContent>
-      </div>
+          <ResizablePanel
+            defaultSize="24%"
+            groupResizeBehavior="preserve-pixel-size"
+            id="scenario-preview"
+            maxSize={520}
+            minSize={300}
+          >
+            {preview}
+          </ResizablePanel>
+        </ResizableWorkspace>
+      ) : (
+        <div className="scenario-workspace">
+          {registry}
+          {editor}
+          {preview}
+        </div>
+      )}
     </Tabs>
   )
 }

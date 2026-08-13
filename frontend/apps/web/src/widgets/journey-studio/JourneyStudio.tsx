@@ -1,5 +1,14 @@
 import { useMemo, useState } from 'react'
-import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@interactive-onboarding/ui'
+import {
+  Button,
+  ResizablePanel,
+  ResizableWorkspace,
+  ResizeHandle,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@interactive-onboarding/ui'
 import { LayoutGrid, RefreshCw, Search } from 'lucide-react'
 import { useJourneyMap } from '@/features/journey-map'
 import { JourneyCanvas } from '@/features/journey-map/ui/JourneyCanvas'
@@ -107,7 +116,36 @@ export function JourneyStudio() {
   )
 
   if (!isCompact) {
-    return <div className="journey-studio journey-studio--desktop">{map}{preview}</div>
+    return (
+      <div className="journey-studio-frame">
+        <ResizableWorkspace
+          className="journey-studio journey-studio--desktop"
+          panelIds={['journey-map', 'journey-preview']}
+          storageKey="journey-studio"
+        >
+          <ResizablePanel
+            defaultSize="68%"
+            id="journey-map"
+            minSize={520}
+          >
+            {map}
+          </ResizablePanel>
+          <ResizeHandle
+            id="journey-preview-handle"
+            label="Изменить ширину Live Session"
+          />
+          <ResizablePanel
+            defaultSize="32%"
+            groupResizeBehavior="preserve-pixel-size"
+            id="journey-preview"
+            maxSize={640}
+            minSize={360}
+          >
+            {preview}
+          </ResizablePanel>
+        </ResizableWorkspace>
+      </div>
+    )
   }
 
   return (

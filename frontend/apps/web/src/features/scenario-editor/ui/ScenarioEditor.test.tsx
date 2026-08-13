@@ -4,6 +4,10 @@ import { defaultScenarios } from '@/entities/scenario/defaultScenario'
 import { ScenarioEditor } from './ScenarioEditor'
 import { validateScenario } from '../model/scenarioValidation'
 
+jest.mock('@/shared/hooks/useMediaQuery', () => ({
+  useMediaQuery: () => true,
+}))
+
 describe('ScenarioEditor', () => {
   const activeScenario = defaultScenarios[0]
   const activeStep = activeScenario.steps[0]
@@ -28,6 +32,21 @@ describe('ScenarioEditor', () => {
 
     return props
   }
+
+  it('renders keyboard-accessible desktop resize handles', () => {
+    renderEditor()
+
+    expect(
+      screen.getByRole('separator', {
+        name: 'Изменить ширину списка сценариев',
+      }),
+    ).toHaveAttribute('aria-orientation', 'vertical')
+    expect(
+      screen.getByRole('separator', {
+        name: 'Изменить ширину предпросмотра',
+      }),
+    ).toHaveAttribute('tabindex', '0')
+  })
 
   it('filters the scenario registry by name or page path', () => {
     renderEditor()
