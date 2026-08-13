@@ -20,6 +20,7 @@ export function App({ services }: AppProps) {
       <Route
         element={
           <DemoPage
+            analyticsEnabled={services.analyticsEnabled}
             onboardingClient={services.onboardingClient}
             projectKey={services.projectKey}
           />

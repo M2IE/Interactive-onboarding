@@ -14,11 +14,13 @@ import {
 import { createRealScenarioRepository } from '@/features/scenario-editor/api/createRealScenarioRepository'
 import type { ScenarioRepository } from '@/features/scenario-editor/api/types'
 import type { ApiMode, AppConfig } from '@/shared/config/appConfig'
+import { applyAnalyticsPolicy } from '@/shared/api/applyAnalyticsPolicy'
 import type { JourneyRepository } from '@/features/journey-map'
 import { createJourneyRepository } from './createJourneyRepository'
 
 export type AppServices = {
   analyticsRepository: AnalyticsRepository
+  analyticsEnabled: boolean
   apiMode: ApiMode
   onboardingClient: OnboardingApiClient
   projectKey: string
@@ -32,6 +34,7 @@ export function createAppServices(config: AppConfig): AppServices {
     const scenarioRepository = createMockScenarioRepository()
     return {
       analyticsRepository,
+      analyticsEnabled: config.analyticsEnabled,
       apiMode: config.apiMode,
       onboardingClient: mockOnboardingClient,
       projectKey: config.projectKey,
@@ -52,10 +55,12 @@ export function createAppServices(config: AppConfig): AppServices {
     })
   return {
     analyticsRepository,
+    analyticsEnabled: config.analyticsEnabled,
     apiMode: config.apiMode,
-    onboardingClient: createHttpOnboardingClient({
-      apiBaseUrl: config.apiBaseUrl,
-    }),
+    onboardingClient: applyAnalyticsPolicy(
+      createHttpOnboardingClient({ apiBaseUrl: config.apiBaseUrl }),
+      config.analyticsEnabled,
+    ),
     projectKey: config.projectKey,
     scenarioRepository,
     journeyRepository: createJourneyRepository({ analyticsRepository, scenarioRepository }),

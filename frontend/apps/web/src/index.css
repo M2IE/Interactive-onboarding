@@ -1442,3 +1442,14 @@ textarea:focus {
     animation: none;
   }
 }
+.demo-preview-banner {
+  position: sticky;
+  top: 0;
+  z-index: 10000;
+  padding: 10px 16px;
+  background: #fff4cc;
+  border-bottom: 1px solid #e8c94d;
+  color: #594700;
+  font: 600 14px/1.4 Arial, sans-serif;
+  text-align: center;
+}

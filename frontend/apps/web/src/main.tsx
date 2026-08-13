@@ -11,9 +11,10 @@ import { createAppConfig } from './shared/config/appConfig'
 const config = createAppConfig({
   VITE_API_MODE: import.meta.env.VITE_API_MODE,
   VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+  VITE_ANALYTICS_ENABLED_HOSTS: import.meta.env.VITE_ANALYTICS_ENABLED_HOSTS,
   VITE_ONBOARDING_PROJECT_KEY: import.meta.env.VITE_ONBOARDING_PROJECT_KEY,
   VITE_ONBOARDING_PROJECT_ID: import.meta.env.VITE_ONBOARDING_PROJECT_ID,
-})
+}, { hostname: window.location.hostname })
 const services = createAppServices(config)
 const store = createAppStore(services)
 const router = createBrowserRouter([

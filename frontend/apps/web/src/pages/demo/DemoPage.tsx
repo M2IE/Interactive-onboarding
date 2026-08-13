@@ -10,11 +10,13 @@ import {
 import { useLiveSessionPublisher } from '@/features/live-session'
 
 type DemoPageProps = {
+  analyticsEnabled: boolean
   onboardingClient: OnboardingApiClient
   projectKey: string
 }
 
 export function DemoPage({
+  analyticsEnabled,
   onboardingClient,
   projectKey,
 }: DemoPageProps) {
@@ -36,6 +38,11 @@ export function DemoPage({
 
   return (
     <>
+      {!analyticsEnabled && (
+        <aside className="demo-preview-banner" role="status">
+          Тестовый режим — события аналитики не записываются
+        </aside>
+      )}
       <ClassifiedShell>
         <Routes>
           <Route element={<ProfileScreen />} path="profile" />
