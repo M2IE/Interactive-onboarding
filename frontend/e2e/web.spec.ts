@@ -117,6 +117,24 @@ test('completed demo can be restarted from the final dialog', async ({ page }) =
   ).toBeVisible()
 })
 
+test('dismissed onboarding opens the demo outcome dialog', async ({ page }) => {
+  await page.goto('/demo/profile')
+
+  await page.getByRole('button', { name: 'Пропустить' }).click()
+
+  const dismissedDialog = page.getByRole('dialog', {
+    name: 'Онбординг остановлен',
+  })
+  await expect(dismissedDialog).toBeVisible()
+  await expect(dismissedDialog).toContainText('Хотите начать путь заново')
+
+  await dismissedDialog.getByRole('button', { name: 'Повторить демо' }).click()
+  await expect(page).toHaveURL(/\/demo\/profile$/)
+  await expect(
+    page.getByRole('dialog', { name: 'Начните с первого объявления' }),
+  ).toBeVisible()
+})
+
 test('admin layout remains usable on a mobile viewport', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/admin')

@@ -1,28 +1,39 @@
 import { Button, Dialog } from '@interactive-onboarding/ui'
 import { Home, RotateCcw } from 'lucide-react'
+import type { DemoOutcome } from '../hooks/useDemoCompletion'
 
 type DemoCompletionDialogProps = {
-  open: boolean
+  outcome: DemoOutcome | null
   onRepeat: () => void
   onReturnHome: () => void
 }
 
 export function DemoCompletionDialog({
-  open,
+  outcome,
   onRepeat,
   onReturnHome,
 }: DemoCompletionDialogProps) {
+  const dismissed = outcome === 'dismissed'
+
   return (
     <Dialog
       className="demo-completion-dialog"
-      description="Вы прошли все подсказки пользовательского пути."
+      description={
+        dismissed
+          ? 'Вы остановили пользовательский путь до завершения.'
+          : 'Вы прошли все подсказки пользовательского пути.'
+      }
       onOpenChange={() => undefined}
-      open={open}
+      open={outcome !== null}
       showCloseButton={false}
-      title="Демо завершено"
+      title={dismissed ? 'Онбординг остановлен' : 'Демо завершено'}
     >
       <div className="demo-completion">
-        <p>Хотите пройти онбординг ещё раз или вернуться на главную?</p>
+        <p>
+          {dismissed
+            ? 'Хотите начать путь заново или вернуться на главную?'
+            : 'Хотите пройти онбординг ещё раз или вернуться на главную?'}
+        </p>
         <div className="demo-completion__actions">
           <Button
             icon={<RotateCcw aria-hidden="true" size={17} />}

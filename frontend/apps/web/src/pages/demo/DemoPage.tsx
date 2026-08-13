@@ -54,12 +54,12 @@ export function DemoPage({
         key={`${completion.runId}:${liveSessionId ?? 'standard'}`}
         navigate={navigateOnboarding}
         onComplete={liveSessionId ? undefined : completion.completeDemo}
-        onEvent={live.onEvent}
+        onEvent={liveSessionId ? live.onEvent : completion.handleOnboardingEvent}
         pageUrl={location.pathname}
         projectKey={projectKey}
       />
       <DemoCompletionDialog
-        open={completion.isComplete}
+        outcome={completion.outcome}
         onRepeat={completion.repeatDemo}
         onReturnHome={completion.returnHome}
       />
