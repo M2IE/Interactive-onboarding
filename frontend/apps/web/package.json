@@ -10,15 +10,20 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^3.1.1",
     "@interactive-onboarding/api-client": "*",
-    "@m2ie/onboarding-sdk": "*",
     "@interactive-onboarding/shared": "*",
     "@interactive-onboarding/ui": "*",
+    "@m2ie/onboarding-sdk": "*",
     "@reduxjs/toolkit": "^2.12.0",
+    "@xyflow/react": "^12.11.3",
     "lucide-react": "^1.30.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-redux": "^9.3.0",
     "react-router-dom": "^7.18.2"
+  },
+  "devDependencies": {
+    "@types/dagre": "^0.7.54"
   }
 }

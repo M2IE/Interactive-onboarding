@@ -41,7 +41,10 @@ const useScenarioEditorDispatch = useDispatch.withTypes<ScenarioEditorDispatch>(
 const useScenarioEditorSelector =
   useSelector.withTypes<ScenarioEditorRootState>()
 
-export function useScenarioEditor(requestedScenarioId?: string | null) {
+export function useScenarioEditor(
+  requestedScenarioId?: string | null,
+  enabled = true,
+) {
   const dispatch = useScenarioEditorDispatch()
   const scenarios = useScenarioEditorSelector((state) =>
     selectScenarios(state.scenarioEditor),
@@ -60,10 +63,10 @@ export function useScenarioEditor(requestedScenarioId?: string | null) {
   )
 
   useEffect(() => {
-    if (workflow.status === 'idle') {
+    if (enabled && workflow.status === 'idle') {
       void dispatch(loadScenarios())
     }
-  }, [dispatch, workflow.status])
+  }, [dispatch, enabled, workflow.status])
 
   const deepLinkResolution = resolveScenarioDeepLink(
     scenarios,
@@ -72,12 +75,12 @@ export function useScenarioEditor(requestedScenarioId?: string | null) {
 
   useEffect(() => {
     if (
-      deepLinkResolution.status === 'found' &&
+      enabled && deepLinkResolution.status === 'found' &&
       activeScenario?.id !== deepLinkResolution.scenarioId
     ) {
       dispatch(selectScenario(deepLinkResolution.scenarioId))
     }
-  }, [activeScenario?.id, deepLinkResolution, dispatch])
+  }, [activeScenario?.id, deepLinkResolution, dispatch, enabled])
 
   const isPublished = activeScenario?.status === 'published'
   const isArchived = activeScenario?.status === 'archived'

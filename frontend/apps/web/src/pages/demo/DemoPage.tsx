@@ -7,6 +7,7 @@ import {
   DemoCompletionDialog,
   useDemoCompletion,
 } from '@/features/demo-completion'
+import { useLiveSessionPublisher } from '@/features/live-session'
 
 type DemoPageProps = {
   onboardingClient: OnboardingApiClient
@@ -20,6 +21,18 @@ export function DemoPage({
   const location = useLocation()
   const navigate = useNavigate()
   const completion = useDemoCompletion()
+  const liveSessionId = new URLSearchParams(location.search).get('liveSession')
+  const live = useLiveSessionPublisher(liveSessionId, onboardingClient)
+
+  const navigateOnboarding = (url: string) => {
+    if (!liveSessionId) {
+      navigate(url)
+      return
+    }
+    const destination = new URL(url, window.location.origin)
+    destination.searchParams.set('liveSession', liveSessionId)
+    navigate(`${destination.pathname}${destination.search}`)
+  }
 
   return (
     <>
@@ -37,10 +50,11 @@ export function DemoPage({
       </ClassifiedShell>
 
       <OnboardingProvider
-        apiClient={onboardingClient}
-        key={completion.runId}
-        navigate={navigate}
-        onComplete={completion.completeDemo}
+        apiClient={live.onboardingClient}
+        key={`${completion.runId}:${liveSessionId ?? 'standard'}`}
+        navigate={navigateOnboarding}
+        onComplete={liveSessionId ? undefined : completion.completeDemo}
+        onEvent={live.onEvent}
         pageUrl={location.pathname}
         projectKey={projectKey}
       />
