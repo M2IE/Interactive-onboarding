@@ -71,8 +71,8 @@ function ProfileScreen() {
   return (
     <main className="classified-page classified-page--profile">
       <aside className="profile-sidebar">
-        <div className="profile-avatar">E</div>
-        <h1>EL</h1>
+        <div className="profile-avatar">МВ</div>
+        <h1>Марина Волкова</h1>
         <p>
           <strong>0,0</strong> Нет отзывов
         </p>
@@ -264,7 +264,7 @@ function AutoFormScreen() {
         <input placeholder="₽" />
         <h2>Контакты</h2>
         <input placeholder="Ваш email" />
-        <input defaultValue="8 912 583-99-19" />
+        <input inputMode="tel" placeholder="Номер телефона" type="tel" />
         <div className="radio-list">
           <label>
             <input defaultChecked name="contact" type="radio" /> Звонки и

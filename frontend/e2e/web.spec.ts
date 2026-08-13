@@ -76,6 +76,18 @@ test('published onboarding advances through SPA pages and returns back', async (
   ).toBeVisible()
 })
 
+test('demo uses fictional profile data and an empty phone field', async ({
+  page,
+}) => {
+  await page.goto('/demo/profile')
+  await expect(
+    page.getByRole('heading', { name: 'Марина Волкова' }),
+  ).toBeVisible()
+
+  await page.goto('/demo/new/auto')
+  await expect(page.getByPlaceholder('Номер телефона')).toHaveValue('')
+})
+
 test('completed demo can be restarted from the final dialog', async ({ page }) => {
   await page.goto('/demo/profile')
   await completeDemo(page)
