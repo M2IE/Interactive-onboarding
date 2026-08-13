@@ -304,11 +304,53 @@ button:disabled {
   padding-right: 20px;
 }
 
+.home-sdk-link {
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 24px minmax(0, 1fr) 18px;
+  margin-top: 28px;
+  max-width: 610px;
+  padding: 14px 2px;
+  transition: border-color 160ms ease, color 160ms ease;
+}
+
+.home-sdk-link > svg:first-child {
+  color: var(--color-blue);
+}
+
+.home-sdk-link > svg:last-child {
+  color: var(--color-muted);
+}
+
+.home-sdk-link span {
+  display: grid;
+  gap: 3px;
+}
+
+.home-sdk-link small {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.home-sdk-link strong {
+  font-size: 14px;
+}
+
+.home-sdk-link:hover,
+.home-sdk-link:focus-visible {
+  border-color: var(--color-blue);
+  color: #0067cb;
+}
+
 .home-shell__stages {
   display: grid;
   gap: 0;
   list-style: none;
-  margin: 48px 0 0;
+  margin: 24px 0 0;
   max-width: 610px;
   padding: 0;
 }

@@ -20,6 +20,12 @@ test('home presents the product and branded entry points', async ({ page }) => {
   await expect(page.getByText('Подключите SDK', { exact: true })).toBeVisible()
   await expect(page.getByText('Оцените результат', { exact: true })).toBeVisible()
   await expect(
+    page.getByRole('link', { name: /@m2ie\/onboarding-sdk/i }),
+  ).toHaveAttribute(
+    'href',
+    'https://www.npmjs.com/package/@m2ie/onboarding-sdk',
+  )
+  await expect(
     page.getByLabel('Сценарий ведёт пользователя от элемента к результату'),
   ).toBeVisible()
 })

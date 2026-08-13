@@ -1,5 +1,11 @@
 import { Button } from '@interactive-onboarding/ui'
-import { BarChart3, Code2, MousePointer2 } from 'lucide-react'
+import {
+  BarChart3,
+  Code2,
+  ExternalLink,
+  MousePointer2,
+  PackageOpen,
+} from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { appRoutes } from '@/shared/config/routes'
 import { ProductLogo } from '@/shared/ui/ProductLogo'
@@ -54,6 +60,20 @@ export function AppShell() {
               Посмотреть демо
             </Button>
           </div>
+
+          <a
+            className="home-sdk-link"
+            href="https://www.npmjs.com/package/@m2ie/onboarding-sdk"
+            rel="noreferrer"
+            target="_blank"
+          >
+            <PackageOpen aria-hidden="true" size={20} />
+            <span>
+              <small>Публичный SDK в npm</small>
+              <strong>@m2ie/onboarding-sdk</strong>
+            </span>
+            <ExternalLink aria-hidden="true" size={17} />
+          </a>
 
           <ol className="home-shell__stages">
             {productStages.map(({ icon: Icon, title, text }) => (
