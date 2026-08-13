@@ -16,12 +16,12 @@ import (
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 )
 
-func StartPostgres(ctx context.Context) (database.Database, func(), error) {
+func StartPostgres(ctx context.Context) (rdb.Database, func(), error) {
 	var (
-		db     database.Database
+		db     rdb.Database
 		pg     *postgres.PostgresContainer
 		net    *testcontainers.DockerNetwork
 		migCtr testcontainers.Container
@@ -89,7 +89,7 @@ func StartPostgres(ctx context.Context) (database.Database, func(), error) {
 
 	dsn, _ := pg.ConnectionString(ctx)
 	dsn += "sslmode=disable"
-	db, err = database.New(ctx, database.Postgres, dsn)
+	db, err = rdb.New(ctx, rdb.PostgresType, dsn)
 	if err != nil {
 		return nil, nil, fmt.Errorf("new db: %w", err)
 	}

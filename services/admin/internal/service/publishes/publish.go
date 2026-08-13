@@ -4,25 +4,25 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/google/uuid"
 )
 
 type IPublishInfrastructure interface {
-	GetScenario(ctx context.Context, db database.Querier, id uuid.UUID) (*domain.Scenario, error)
-	CreateScenario(ctx context.Context, db database.Querier, projectID uuid.UUID, name, url string, status domain.ScenarioStatus) (*domain.Scenario, error)
-	UpdateScenarioStatus(ctx context.Context, db database.Querier, id uuid.UUID, status domain.ScenarioStatus) error
-	ArchiveByProjectAndStatus(ctx context.Context, db database.Querier, projectID uuid.UUID, status domain.ScenarioStatus, url string) (int64, error)
-	CopyStepsToScenario(ctx context.Context, db database.Querier, destScenarioID, srcScenarioID uuid.UUID) error
+	GetScenario(ctx context.Context, db rdb.Querier, id uuid.UUID) (*domain.Scenario, error)
+	CreateScenario(ctx context.Context, db rdb.Querier, projectID uuid.UUID, name, url string, status domain.ScenarioStatus) (*domain.Scenario, error)
+	UpdateScenarioStatus(ctx context.Context, db rdb.Querier, id uuid.UUID, status domain.ScenarioStatus) error
+	ArchiveByProjectAndStatus(ctx context.Context, db rdb.Querier, projectID uuid.UUID, status domain.ScenarioStatus, url string) (int64, error)
+	CopyStepsToScenario(ctx context.Context, db rdb.Querier, destScenarioID, srcScenarioID uuid.UUID) error
 }
 
 type PublishService struct {
 	infra     IPublishInfrastructure
-	txManager database.Database
+	txManager rdb.Database
 }
 
-func NewPublishService(infra IPublishInfrastructure, txManager database.Database) *PublishService {
+func NewPublishService(infra IPublishInfrastructure, txManager rdb.Database) *PublishService {
 	return &PublishService{
 		infra:     infra,
 		txManager: txManager,

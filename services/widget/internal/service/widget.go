@@ -6,29 +6,29 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/domain"
 	"github.com/google/uuid"
 )
 
 type IWidgetInfrastructure interface {
-	InsertEvent(ctx context.Context, db database.Querier, event *domain.Event) error
-	GetProjectByKey(ctx context.Context, db database.Querier, key string) (*domain.Project, error)
-	GetPublishedScenarioByURL(ctx context.Context, db database.Querier, projectID uuid.UUID, url string) (*domain.Scenario, error)
-	GetScenarioByID(ctx context.Context, db database.Querier, id uuid.UUID) (*domain.Scenario, error)
-	GetStepsByScenario(ctx context.Context, db database.Querier, scenarioID uuid.UUID) ([]domain.Step, error)
-	GetStepByID(ctx context.Context, db database.Querier, stepID uuid.UUID) (*domain.Step, error)
-	GetMaxOrderByScenario(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (int, error)
-	ExistsScenarioCompleted(ctx context.Context, db database.Querier, sessionID string, scenarioID *uuid.UUID) (bool, error)
-	ExistsEventByKey(ctx context.Context, db database.Querier, eventKey string) (bool, error)
+	InsertEvent(ctx context.Context, db rdb.Querier, event *domain.Event) error
+	GetProjectByKey(ctx context.Context, db rdb.Querier, key string) (*domain.Project, error)
+	GetPublishedScenarioByURL(ctx context.Context, db rdb.Querier, projectID uuid.UUID, url string) (*domain.Scenario, error)
+	GetScenarioByID(ctx context.Context, db rdb.Querier, id uuid.UUID) (*domain.Scenario, error)
+	GetStepsByScenario(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) ([]domain.Step, error)
+	GetStepByID(ctx context.Context, db rdb.Querier, stepID uuid.UUID) (*domain.Step, error)
+	GetMaxOrderByScenario(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (int, error)
+	ExistsScenarioCompleted(ctx context.Context, db rdb.Querier, sessionID string, scenarioID *uuid.UUID) (bool, error)
+	ExistsEventByKey(ctx context.Context, db rdb.Querier, eventKey string) (bool, error)
 }
 
 type WidgetService struct {
 	infra     IWidgetInfrastructure
-	txManager database.Database
+	txManager rdb.Database
 }
 
-func NewWidgetService(infra IWidgetInfrastructure, txManager database.Database) *WidgetService {
+func NewWidgetService(infra IWidgetInfrastructure, txManager rdb.Database) *WidgetService {
 	return &WidgetService{
 		infra:     infra,
 		txManager: txManager,

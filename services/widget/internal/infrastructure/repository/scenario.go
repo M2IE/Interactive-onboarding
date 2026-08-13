@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/domain"
 	"github.com/M2IE/Interactive-onboarding/services/widget/queries"
 	"github.com/M2IE/Interactive-onboarding/services/widget/queries/sqlc/gen"
@@ -14,14 +14,14 @@ import (
 
 type ScenarioRepository struct {
 	q  *queries.Query
-	db database.Querier
+	db rdb.Querier
 }
 
-func NewScenarioRepository(db database.Querier, q *queries.Query) *ScenarioRepository {
+func NewScenarioRepository(db rdb.Querier, q *queries.Query) *ScenarioRepository {
 	return &ScenarioRepository{q: q, db: db}
 }
 
-func (r *ScenarioRepository) GetPublishedScenarioByURL(ctx context.Context, db database.Querier, projectID uuid.UUID, url string) (*domain.Scenario, error) {
+func (r *ScenarioRepository) GetPublishedScenarioByURL(ctx context.Context, db rdb.Querier, projectID uuid.UUID, url string) (*domain.Scenario, error) {
 	row, err := r.q.GetPublishedScenarioByURL(ctx, r.querier(db), gen.GetPublishedScenarioByURLParams{
 		ProjectID: projectID,
 		Url:       url,
@@ -35,7 +35,7 @@ func (r *ScenarioRepository) GetPublishedScenarioByURL(ctx context.Context, db d
 	return toDomainScenario(&row), nil
 }
 
-func (r *ScenarioRepository) GetScenarioByID(ctx context.Context, db database.Querier, id uuid.UUID) (*domain.Scenario, error) {
+func (r *ScenarioRepository) GetScenarioByID(ctx context.Context, db rdb.Querier, id uuid.UUID) (*domain.Scenario, error) {
 	row, err := r.q.GetScenarioByID(ctx, r.querier(db), id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -46,7 +46,7 @@ func (r *ScenarioRepository) GetScenarioByID(ctx context.Context, db database.Qu
 	return toDomainScenario(&row), nil
 }
 
-func (s *ScenarioRepository) querier(db database.Querier) database.Querier {
+func (s *ScenarioRepository) querier(db rdb.Querier) rdb.Querier {
 	if db != nil {
 		return db
 	}

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/google/uuid"
 )
@@ -56,16 +56,16 @@ type mockInfra struct {
 	stepsErr   error
 }
 
-func (m *mockInfra) Get(_ context.Context, _ database.Querier, id uuid.UUID) (*domain.Scenario, error) {
+func (m *mockInfra) Get(_ context.Context, _ rdb.Querier, id uuid.UUID) (*domain.Scenario, error) {
 	m.getID = id
 	return m.getResp, m.getErr
 }
 
-func (m *mockInfra) GetSteps(_ context.Context, _ database.Querier, _ uuid.UUID) ([]domain.Step, error) {
+func (m *mockInfra) GetSteps(_ context.Context, _ rdb.Querier, _ uuid.UUID) ([]domain.Step, error) {
 	return m.stepsResp, m.stepsErr
 }
 
-func (m *mockInfra) Create(_ context.Context, _ database.Querier, projectID uuid.UUID, name, url string, status domain.ScenarioStatus) (*domain.Scenario, error) {
+func (m *mockInfra) Create(_ context.Context, _ rdb.Querier, projectID uuid.UUID, name, url string, status domain.ScenarioStatus) (*domain.Scenario, error) {
 	m.createProjectID = projectID
 	m.createName = name
 	m.createURL = url
@@ -73,7 +73,7 @@ func (m *mockInfra) Create(_ context.Context, _ database.Querier, projectID uuid
 	return m.createResp, m.createErr
 }
 
-func (m *mockInfra) Update(_ context.Context, _ database.Querier, id uuid.UUID, name, url *string) (*domain.Scenario, error) {
+func (m *mockInfra) Update(_ context.Context, _ rdb.Querier, id uuid.UUID, name, url *string) (*domain.Scenario, error) {
 	m.updateCalled = true
 	m.updateID = id
 	m.updateName = name
@@ -81,7 +81,7 @@ func (m *mockInfra) Update(_ context.Context, _ database.Querier, id uuid.UUID, 
 	return m.updateResp, m.updateErr
 }
 
-func (m *mockInfra) List(_ context.Context, _ database.Querier, size, page int, projectID *uuid.UUID) ([]domain.Scenario, int64, error) {
+func (m *mockInfra) List(_ context.Context, _ rdb.Querier, size, page int, projectID *uuid.UUID) ([]domain.Scenario, int64, error) {
 	m.listSize = size
 	m.listPage = page
 	m.listProjectID = projectID

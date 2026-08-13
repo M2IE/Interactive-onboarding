@@ -2,9 +2,9 @@ go 1.26.5
 
 use (
 	./gen/rest/v1/go
-	./pkg/clickhouse
 	./pkg/configs
-	./pkg/database
+	./pkg/database/olap
+	./pkg/database/rdb
 	./pkg/pdfengine
 	./pkg/s3
 	./services/admin

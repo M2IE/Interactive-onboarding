@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/domain"
 	"github.com/google/uuid"
 )
@@ -65,7 +65,7 @@ func (m *mockDB) QueryContext(context.Context, string, ...any) (*sql.Rows, error
 func (m *mockDB) QueryRowContext(context.Context, string, ...any) *sql.Row { return nil }
 func (m *mockDB) Ping() error                                              { return nil }
 func (m *mockDB) Close() error                                             { return nil }
-func (m *mockDB) Begin() (database.Tx, error) {
+func (m *mockDB) Begin() (rdb.Tx, error) {
 	if m.beginErr != nil {
 		return nil, m.beginErr
 	}
@@ -89,44 +89,44 @@ type mockInfra struct {
 	insertedEvent     *domain.Event
 }
 
-func (m *mockInfra) InsertEvent(ctx context.Context, db database.Querier, event *domain.Event) error {
+func (m *mockInfra) InsertEvent(ctx context.Context, db rdb.Querier, event *domain.Event) error {
 	m.insertedEvent = event
 	return m.insertEventErr
 }
 
-func (m *mockInfra) GetProjectByKey(ctx context.Context, db database.Querier, key string) (*domain.Project, error) {
+func (m *mockInfra) GetProjectByKey(ctx context.Context, db rdb.Querier, key string) (*domain.Project, error) {
 	return m.projectResp, m.projectErr
 }
 
-func (m *mockInfra) GetPublishedScenarioByURL(ctx context.Context, db database.Querier, projectID uuid.UUID, url string) (*domain.Scenario, error) {
+func (m *mockInfra) GetPublishedScenarioByURL(ctx context.Context, db rdb.Querier, projectID uuid.UUID, url string) (*domain.Scenario, error) {
 	return m.publishedScenario, m.publishedErr
 }
 
-func (m *mockInfra) GetScenarioByID(ctx context.Context, db database.Querier, id uuid.UUID) (*domain.Scenario, error) {
+func (m *mockInfra) GetScenarioByID(ctx context.Context, db rdb.Querier, id uuid.UUID) (*domain.Scenario, error) {
 	return m.scenarioByIDResp, m.scenarioByIDErr
 }
 
-func (m *mockInfra) GetStepsByScenario(ctx context.Context, db database.Querier, scenarioID uuid.UUID) ([]domain.Step, error) {
+func (m *mockInfra) GetStepsByScenario(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) ([]domain.Step, error) {
 	return m.stepsResp, m.stepsErr
 }
 
-func (m *mockInfra) GetStepByID(ctx context.Context, db database.Querier, stepID uuid.UUID) (*domain.Step, error) {
+func (m *mockInfra) GetStepByID(ctx context.Context, db rdb.Querier, stepID uuid.UUID) (*domain.Step, error) {
 	return m.stepByIDResp, m.stepByIDErr
 }
 
-func (m *mockInfra) GetMaxOrderByScenario(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (int, error) {
+func (m *mockInfra) GetMaxOrderByScenario(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (int, error) {
 	return m.maxOrder, m.maxOrderErr
 }
 
-func (m *mockInfra) ExistsEventByKey(ctx context.Context, db database.Querier, eventKey string) (bool, error) {
+func (m *mockInfra) ExistsEventByKey(ctx context.Context, db rdb.Querier, eventKey string) (bool, error) {
 	return false, nil
 }
 
-func (m *mockInfra) ExistsScenarioCompleted(ctx context.Context, db database.Querier, sessionID string, scenarioID *uuid.UUID) (bool, error) {
+func (m *mockInfra) ExistsScenarioCompleted(ctx context.Context, db rdb.Querier, sessionID string, scenarioID *uuid.UUID) (bool, error) {
 	return false, nil
 }
 
-func newSvc(infra IWidgetInfrastructure, db database.Database) *WidgetService {
+func newSvc(infra IWidgetInfrastructure, db rdb.Database) *WidgetService {
 	return NewWidgetService(infra, db)
 }
 

@@ -6,14 +6,14 @@ import (
 	"os"
 
 	apiv1 "github.com/M2IE/Interactive-onboarding/gen/rest/v1/go/widget"
-	"github.com/M2IE/Interactive-onboarding/pkg/clickhouse"
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/olap"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/config"
 	delivery "github.com/M2IE/Interactive-onboarding/services/widget/internal/delivery/http"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/infrastructure"
+	"github.com/M2IE/Interactive-onboarding/services/widget/internal/server"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/service"
 	"github.com/M2IE/Interactive-onboarding/services/widget/queries"
-	"github.com/M2IE/Interactive-onboarding/services/widget/server"
 )
 
 func main() {
@@ -25,7 +25,7 @@ func main() {
 		slog.Error("Config did not parsed", "error", err)
 	}
 
-	db, err := database.New(context.Background(), database.Postgres, cfg.DSN())
+	db, err := rdb.New(context.Background(), rdb.PostgresType, cfg.DSN())
 	if err != nil {
 		slog.Error("Database connection error", "error", err)
 	}
@@ -35,7 +35,7 @@ func main() {
 		}
 	}()
 
-	chConn, err := clickhouse.New(context.Background(), clickhouse.Options{
+	chConn, err := olap.New(context.Background(), olap.ClickhouseType, olap.Options{
 		Addr:     cfg.Addr(),
 		Database: cfg.ClickHouseConfig.DBName,
 		Username: cfg.ClickHouseConfig.User,

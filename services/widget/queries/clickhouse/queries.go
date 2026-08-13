@@ -3,6 +3,7 @@ package clickhouse
 import (
 	"context"
 
+	"github.com/M2IE/Interactive-onboarding/pkg/database/olap"
 	"github.com/google/uuid"
 )
 
@@ -16,7 +17,7 @@ type InsertEventParams struct {
 	EventKey   string
 }
 
-func (q *CHQueries) InsertEvent(ctx context.Context, conn CHConn, arg InsertEventParams) error {
+func (q *CHQueries) InsertEvent(ctx context.Context, conn olap.Database, arg InsertEventParams) error {
 	batch, err := conn.PrepareBatch(ctx, `INSERT INTO analytics.events (id, project_id, scenario_id, step_id, session_id, type, event_key)`)
 	if err != nil {
 		return err
@@ -37,7 +38,7 @@ func (q *CHQueries) InsertEvent(ctx context.Context, conn CHConn, arg InsertEven
 	return batch.Send()
 }
 
-func (q *CHQueries) ExistsEventByKey(ctx context.Context, conn CHConn, eventKey string) (bool, error) {
+func (q *CHQueries) ExistsEventByKey(ctx context.Context, conn olap.Database, eventKey string) (bool, error) {
 	var count uint64
 	if err := conn.QueryRow(ctx, `SELECT count() FROM analytics.events WHERE event_key = ?`, eventKey).Scan(&count); err != nil {
 		return false, err
@@ -46,7 +47,7 @@ func (q *CHQueries) ExistsEventByKey(ctx context.Context, conn CHConn, eventKey 
 	return count > 0, nil
 }
 
-func (q *CHQueries) ExistsScenarioCompleted(ctx context.Context, conn CHConn, sessionID string, scenarioID uuid.UUID) (bool, error) {
+func (q *CHQueries) ExistsScenarioCompleted(ctx context.Context, conn olap.Database, sessionID string, scenarioID uuid.UUID) (bool, error) {
 	var count uint64
 	if err := conn.QueryRow(ctx, `SELECT count() FROM analytics.events WHERE session_id = ? AND scenario_id = ? AND type = 'scenario_completed'`, sessionID, scenarioID).Scan(&count); err != nil {
 		return false, err

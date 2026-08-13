@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/google/uuid"
 )
@@ -42,8 +42,8 @@ func (m *mockTx) QueryContext(context.Context, string, ...any) (*sql.Rows, error
 	return nil, nil
 }
 func (m *mockTx) QueryRowContext(context.Context, string, ...any) *sql.Row { return nil }
-func (m *mockTx) Commit() error   { m.committed = true; return m.commitErr }
-func (m *mockTx) Rollback() error { m.rolledBack = true; return m.rollbackErr }
+func (m *mockTx) Commit() error                                            { m.committed = true; return m.commitErr }
+func (m *mockTx) Rollback() error                                          { m.rolledBack = true; return m.rollbackErr }
 
 type mockDB struct {
 	beginErr error
@@ -58,9 +58,9 @@ func (m *mockDB) QueryContext(context.Context, string, ...any) (*sql.Rows, error
 	return nil, nil
 }
 func (m *mockDB) QueryRowContext(context.Context, string, ...any) *sql.Row { return nil }
-func (m *mockDB) Ping() error  { return nil }
-func (m *mockDB) Close() error { return nil }
-func (m *mockDB) Begin() (database.Tx, error) {
+func (m *mockDB) Ping() error                                              { return nil }
+func (m *mockDB) Close() error                                             { return nil }
+func (m *mockDB) Begin() (rdb.Tx, error) {
 	if m.beginErr != nil {
 		return nil, m.beginErr
 	}
@@ -68,60 +68,60 @@ func (m *mockDB) Begin() (database.Tx, error) {
 }
 
 type mockInfra struct {
-	stepByIDResp    *domain.Step
-	stepByIDErr     error
-	stepsByScenario []domain.Step
+	stepByIDResp       *domain.Step
+	stepByIDErr        error
+	stepsByScenario    []domain.Step
 	stepsByScenarioErr error
 	createStepErr      error
 	updateStepErr      error
 	deleteStepErr      error
-	maxOrder       int
-	maxOrderErr    error
-	decrementErr   error
-	updateOrderErr error
-	scenarioStatus domain.ScenarioStatus
-	scenarioStatusErr error
-	createdStep    *domain.Step
+	maxOrder           int
+	maxOrderErr        error
+	decrementErr       error
+	updateOrderErr     error
+	scenarioStatus     domain.ScenarioStatus
+	scenarioStatusErr  error
+	createdStep        *domain.Step
 }
 
-func (m *mockInfra) GetStepByID(ctx context.Context, db database.Querier, id uuid.UUID) (*domain.Step, error) {
+func (m *mockInfra) GetStepByID(ctx context.Context, db rdb.Querier, id uuid.UUID) (*domain.Step, error) {
 	return m.stepByIDResp, m.stepByIDErr
 }
 
-func (m *mockInfra) GetStepsByScenario(ctx context.Context, db database.Querier, scenarioID uuid.UUID) ([]domain.Step, error) {
+func (m *mockInfra) GetStepsByScenario(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) ([]domain.Step, error) {
 	return m.stepsByScenario, m.stepsByScenarioErr
 }
 
-func (m *mockInfra) CreateStep(ctx context.Context, db database.Querier, step *domain.Step) error {
+func (m *mockInfra) CreateStep(ctx context.Context, db rdb.Querier, step *domain.Step) error {
 	m.createdStep = step
 	return m.createStepErr
 }
 
-func (m *mockInfra) UpdateStep(ctx context.Context, db database.Querier, step *domain.Step) error {
+func (m *mockInfra) UpdateStep(ctx context.Context, db rdb.Querier, step *domain.Step) error {
 	return m.updateStepErr
 }
 
-func (m *mockInfra) DeleteStep(ctx context.Context, db database.Querier, id uuid.UUID) error {
+func (m *mockInfra) DeleteStep(ctx context.Context, db rdb.Querier, id uuid.UUID) error {
 	return m.deleteStepErr
 }
 
-func (m *mockInfra) GetMaxOrder(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (int, error) {
+func (m *mockInfra) GetMaxOrder(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (int, error) {
 	return m.maxOrder, m.maxOrderErr
 }
 
-func (m *mockInfra) DecrementOrdersAfter(ctx context.Context, db database.Querier, scenarioID uuid.UUID, afterOrder int) error {
+func (m *mockInfra) DecrementOrdersAfter(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID, afterOrder int) error {
 	return m.decrementErr
 }
 
-func (m *mockInfra) UpdateStepOrder(ctx context.Context, db database.Querier, stepID uuid.UUID, newOrder int) error {
+func (m *mockInfra) UpdateStepOrder(ctx context.Context, db rdb.Querier, stepID uuid.UUID, newOrder int) error {
 	return m.updateOrderErr
 }
 
-func (m *mockInfra) GetScenarioStatus(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (domain.ScenarioStatus, error) {
+func (m *mockInfra) GetScenarioStatus(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (domain.ScenarioStatus, error) {
 	return m.scenarioStatus, m.scenarioStatusErr
 }
 
-func newSvc(infra IStepsInfrastructure, db database.Database) *StepsService {
+func newSvc(infra IStepsInfrastructure, db rdb.Database) *StepsService {
 	return NewStepsService(infra, db)
 }
 

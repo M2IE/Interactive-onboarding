@@ -4,18 +4,17 @@ go 1.26.5
 
 replace (
 	github.com/M2IE/Interactive-onboarding/gen/rest/v1/go => ../../gen/rest/v1/go
-	github.com/M2IE/Interactive-onboarding/pkg/clickhouse => ../../pkg/clickhouse
 	github.com/M2IE/Interactive-onboarding/pkg/configs => ../../pkg/configs
-	github.com/M2IE/Interactive-onboarding/pkg/database => ../../pkg/database
+	github.com/M2IE/Interactive-onboarding/pkg/database/olap => ../../pkg/database/olap
+	github.com/M2IE/Interactive-onboarding/pkg/database/rdb => ../../pkg/database/rdb
 	github.com/M2IE/Interactive-onboarding/tests => ../../tests
 )
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.48.0
 	github.com/M2IE/Interactive-onboarding/gen/rest/v1/go v0.0.0-00010101000000-000000000000
-	github.com/M2IE/Interactive-onboarding/pkg/clickhouse v0.0.0-00010101000000-000000000000
 	github.com/M2IE/Interactive-onboarding/pkg/configs v0.0.0-00010101000000-000000000000
-	github.com/M2IE/Interactive-onboarding/pkg/database v0.0.0-00010101000000-000000000000
+	github.com/M2IE/Interactive-onboarding/pkg/database/olap v0.0.0-00010101000000-000000000000
+	github.com/M2IE/Interactive-onboarding/pkg/database/rdb v0.0.0-00010101000000-000000000000
 	github.com/M2IE/Interactive-onboarding/tests v0.0.0-00010101000000-000000000000
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/caarlos0/env/v11 v11.4.1
@@ -27,6 +26,7 @@ require (
 	dario.cat/mergo v1.0.2 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/ClickHouse/ch-go v0.74.0 // indirect
+	github.com/ClickHouse/clickhouse-go/v2 v2.48.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/andybalholm/brotli v1.2.2 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
@@ -79,6 +79,7 @@ require (
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/testcontainers/testcontainers-go v0.44.0 // indirect
+	github.com/testcontainers/testcontainers-go/modules/clickhouse v0.44.0 // indirect
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.44.0 // indirect
 	github.com/tklauser/go-sysconf v0.4.0 // indirect
 	github.com/tklauser/numcpus v0.12.0 // indirect

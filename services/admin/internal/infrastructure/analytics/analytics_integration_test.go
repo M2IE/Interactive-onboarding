@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/olap"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/pkg/pdfengine"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/M2IE/Interactive-onboarding/services/admin/queries"
@@ -26,8 +26,8 @@ import (
 )
 
 var (
-	testDB database.Database
-	testCH driver.Conn
+	testDB rdb.Database
+	testCH olap.Database
 )
 
 type mockS3 struct {
@@ -88,19 +88,19 @@ func TestMain(m *testing.M) {
 
 func insertCHEvents(t *testing.T, ctx context.Context, projID, scID uuid.UUID, stepID *uuid.UUID, eventType string, n int) {
 	t.Helper()
-	batch, err := testCH.PrepareBatch(ctx, chq.InsertEvent)
-
-	if err != nil {
-		t.Fatalf("prepare ch batch: %v", err)
-	}
-	for i := 0; i < n; i++ {
-		if err := batch.Append(uuid.New(), projID, scID, stepID, fmt.Sprintf("sess-%s-%d", eventType, i), eventType, uuid.NewString()); err != nil {
-			t.Fatalf("append ch event: %v", err)
+	q := chq.NewCH()
+	for i := range n {
+		if err := q.InsertEvent(ctx, testCH, chq.InsertEventParams{
+			ID:         uuid.New(),
+			ProjectID:  projID,
+			ScenarioID: scID,
+			StepID:     stepID,
+			SessionID:  fmt.Sprintf("sess-%s-%d", eventType, i),
+			Type:       eventType,
+			EventKey:   uuid.NewString(),
+		}); err != nil {
+			t.Fatalf("insert ch event: %v", err)
 		}
-	}
-
-	if err := batch.Send(); err != nil {
-		t.Fatalf("send ch batch: %v", err)
 	}
 }
 

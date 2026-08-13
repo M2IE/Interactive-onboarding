@@ -3,23 +3,24 @@ package repositories
 import (
 	"context"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/olap"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/domain"
 	"github.com/M2IE/Interactive-onboarding/services/widget/queries"
 	chq "github.com/M2IE/Interactive-onboarding/services/widget/queries/clickhouse"
 	"github.com/google/uuid"
 )
 
-type EventClickHouseRepository struct {
+type EventRepository struct {
 	q    *queries.Query
-	conn chq.CHConn
+	conn olap.Database
 }
 
-func NewEventClickHouseRepository(conn chq.CHConn, q *queries.Query) *EventClickHouseRepository {
-	return &EventClickHouseRepository{q: q, conn: conn}
+func NewEventRepository(conn olap.Database, q *queries.Query) *EventRepository {
+	return &EventRepository{q: q, conn: conn}
 }
 
-func (r *EventClickHouseRepository) InsertEvent(ctx context.Context, _ database.Querier, event *domain.Event) error {
+func (r *EventRepository) InsertEvent(ctx context.Context, _ rdb.Querier, event *domain.Event) error {
 	var scenarioID uuid.UUID
 	if event.ScenarioID != nil {
 		scenarioID = *event.ScenarioID
@@ -36,11 +37,11 @@ func (r *EventClickHouseRepository) InsertEvent(ctx context.Context, _ database.
 	})
 }
 
-func (r *EventClickHouseRepository) ExistsEventByKey(ctx context.Context, _ database.Querier, eventKey string) (bool, error) {
+func (r *EventRepository) ExistsEventByKey(ctx context.Context, _ rdb.Querier, eventKey string) (bool, error) {
 	return r.q.ExistsEventByKey(ctx, r.conn, eventKey)
 }
 
-func (r *EventClickHouseRepository) ExistsScenarioCompleted(ctx context.Context, _ database.Querier, sessionID string, scenarioID *uuid.UUID) (bool, error) {
+func (r *EventRepository) ExistsScenarioCompleted(ctx context.Context, _ rdb.Querier, sessionID string, scenarioID *uuid.UUID) (bool, error) {
 	var scID uuid.UUID
 	if scenarioID != nil {
 		scID = *scenarioID

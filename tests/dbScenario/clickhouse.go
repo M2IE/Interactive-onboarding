@@ -10,13 +10,13 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	chmod "github.com/testcontainers/testcontainers-go/modules/clickhouse"
 
-	chpkg "github.com/M2IE/Interactive-onboarding/pkg/clickhouse"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/olap"
+	chpkg "github.com/M2IE/Interactive-onboarding/pkg/database/olap"
 )
 
-func StartClickHouse(ctx context.Context) (driver.Conn, func(), error) {
+func StartClickHouse(ctx context.Context) (olap.Database, func(), error) {
 	ch, err := chmod.Run(ctx, "clickhouse/clickhouse-server:24.8-alpine",
 		chmod.WithUsername("test"),
 		chmod.WithPassword("test"),
@@ -33,7 +33,7 @@ func StartClickHouse(ctx context.Context) (driver.Conn, func(), error) {
 		return nil, nil, fmt.Errorf("clickhouse host: %w", err)
 	}
 
-	conn, err := chpkg.New(ctx, chpkg.Options{
+	conn, err := chpkg.New(ctx, olap.ClickhouseType, chpkg.Options{
 		Addr:     host,
 		Database: "analytics",
 		Username: "test",

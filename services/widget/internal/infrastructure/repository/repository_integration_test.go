@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/olap"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/domain"
 	"github.com/M2IE/Interactive-onboarding/services/widget/queries"
 	"github.com/M2IE/Interactive-onboarding/tests/dbScenario"
@@ -18,8 +18,8 @@ import (
 )
 
 var (
-	testDB database.Database
-	testCH driver.Conn
+	testDB rdb.Database
+	testCH olap.Database
 )
 
 func TestMain(m *testing.M) {
@@ -272,7 +272,7 @@ func TestStep_GetMaxOrder(t *testing.T) {
 
 func TestEvent_Insert_And_ExistsByKey(t *testing.T) {
 	ctx := context.Background()
-	repo := NewEventClickHouseRepository(testCH, queries.New())
+	repo := NewEventRepository(testCH, queries.New())
 
 	scID := uuid.New()
 	key := "evt-" + uuid.New().String()
@@ -308,7 +308,7 @@ func TestEvent_Insert_And_ExistsByKey(t *testing.T) {
 
 func TestEvent_ExistsScenarioCompleted(t *testing.T) {
 	ctx := context.Background()
-	repo := NewEventClickHouseRepository(testCH, queries.New())
+	repo := NewEventRepository(testCH, queries.New())
 
 	scID := uuid.New()
 	sessionID := "sess-" + uuid.New().String()
