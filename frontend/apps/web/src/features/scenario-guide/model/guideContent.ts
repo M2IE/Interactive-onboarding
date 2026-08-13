@@ -1,18 +1,7 @@
-import type { LucideIcon } from 'lucide-react'
-import {
-  BarChart3,
-  Eye,
-  FilePlus2,
-  ListPlus,
-  Route,
-  Send,
-} from 'lucide-react'
-
 export type GuideStep = {
   title: string
   description: string
   note: string
-  icon: LucideIcon
 }
 
 export const scenarioGuideSteps: GuideStep[] = [
@@ -21,42 +10,36 @@ export const scenarioGuideSteps: GuideStep[] = [
     description:
       'Нажмите «Создать сценарий». Черновик можно менять, пока он не опубликован.',
     note: 'Один сценарий относится к одной странице сайта.',
-    icon: FilePlus2,
   },
   {
     title: 'Укажите страницу',
     description:
       'Дайте сценарию понятное название и укажите путь, на котором он должен появиться.',
     note: 'Например: /demo/profile. Домен указывать не нужно.',
-    icon: Route,
   },
   {
     title: 'Настройте шаги',
     description:
       'Для каждого шага заполните заголовок, текст и селектор элемента, который нужно выделить.',
     note: 'Надёжнее всего использовать уникальный data-onboarding-id.',
-    icon: ListPlus,
   },
   {
     title: 'Свяжите следующую страницу',
     description:
       'Если после подсказки пользователь должен перейти дальше, укажите адрес следующей страницы.',
     note: 'Если перехода нет, оставьте поле пустым.',
-    icon: Route,
   },
   {
     title: 'Проверьте результат',
     description:
       'Сохраните изменения и откройте демо. Убедитесь, что элемент найден, а текст понятен.',
     note: 'Предупреждения конструктора лучше устранить до публикации.',
-    icon: Eye,
   },
   {
     title: 'Опубликуйте и следите за результатом',
     description:
       'После публикации SDK начнёт отдавать сценарий пользователям. Результаты появятся в аналитике.',
     note: 'Снять сценарий с публикации можно из той же верхней панели.',
-    icon: Send,
   },
 ]
 
@@ -90,5 +73,3 @@ export const scenarioGuideTerms = [
     definition: 'Просмотры, завершения, пропуски и воронка по шагам.',
   },
 ]
-
-export const guideAnalyticsIcon = BarChart3

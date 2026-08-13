@@ -19,7 +19,7 @@ import {
 import { ScenarioEditor, useScenarioEditor } from '@/features/scenario-editor'
 import { ScenarioGuideDialog } from '@/features/scenario-guide'
 import { appRoutes } from '@/shared/config/routes'
-import { AvitoLogo } from '@/shared/ui/AvitoLogo'
+import { ProductLogo } from '@/shared/ui/ProductLogo'
 import type { ApiMode } from '@/shared/config/appConfig'
 
 type AdminPageProps = {
@@ -40,8 +40,7 @@ export function AdminPage({ apiMode }: AdminPageProps) {
     <div className="admin-shell">
       <aside className="admin-sidebar">
         <div className="admin-sidebar__brand">
-          <AvitoLogo />
-          <span>Onboarding</span>
+          <ProductLogo subtitle="Admin Panel" />
         </div>
 
         <nav aria-label="Разделы админки">

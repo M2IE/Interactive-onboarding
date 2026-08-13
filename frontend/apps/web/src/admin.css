@@ -272,25 +272,17 @@
   padding: 0 8px;
 }
 
-.admin-sidebar__brand > span {
-  color: var(--color-muted);
-  font-size: 11px;
-  font-weight: 700;
-  margin-left: 30px;
-  margin-top: -4px;
-}
-
-.admin-sidebar .avito-logo {
-  font-size: 25px;
-}
-
-.admin-sidebar .avito-logo__mark {
+.admin-sidebar .product-logo__mark {
   grid-template-columns: repeat(2, 8px);
 }
 
-.admin-sidebar .avito-logo__mark i {
+.admin-sidebar .product-logo__mark i {
   height: 8px;
   width: 8px;
+}
+
+.admin-sidebar .product-logo__copy strong {
+  font-size: 14px;
 }
 
 .admin-sidebar nav {
@@ -681,146 +673,92 @@
 }
 
 .scenario-guide {
-  padding: 22px 24px 24px;
-}
-
-.scenario-guide__progress {
   display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(6, 1fr);
-  margin-bottom: 22px;
-}
-
-.scenario-guide__progress button {
-  align-items: center;
-  background: #edf0f2;
-  border: 0;
-  border-radius: 6px;
-  color: #6b7178;
-  cursor: pointer;
-  display: flex;
-  font-size: 12px;
-  font-weight: 800;
-  height: 32px;
-  justify-content: center;
-}
-
-.scenario-guide__progress button.is-active {
-  background: #0a84ff;
-  color: #ffffff;
-}
-
-.scenario-guide__step {
-  min-height: 255px;
-}
-
-.scenario-guide__step > small {
-  color: #158a55;
-  display: block;
-  font-size: 12px;
-  font-weight: 800;
-  margin-top: 18px;
-}
-
-.scenario-guide__step h3 {
-  font-size: 24px;
-  margin: 8px 0 10px;
-}
-
-.scenario-guide__step p {
-  color: #34383d;
-  line-height: 1.55;
-  margin: 0;
-  max-width: 610px;
-}
-
-.scenario-guide__step aside {
-  background: #eff7ff;
-  border-left: 3px solid #0a84ff;
-  color: #324b64;
-  font-size: 13px;
-  margin-top: 16px;
-  padding: 11px 13px;
-}
-
-.scenario-guide__visual {
-  align-items: center;
-  background: #f6f7f8;
-  border: 1px solid #e5e7e9;
-  display: flex;
-  gap: 14px;
-  min-height: 82px;
-  padding: 18px;
-}
-
-.scenario-guide__visual span {
-  align-items: center;
-  background: #ffffff;
-  border: 1px solid #dfe2e5;
-  border-radius: 7px;
-  color: #0a84ff;
-  display: flex;
-  height: 48px;
-  justify-content: center;
-  width: 58px;
-}
-
-.scenario-guide__visual i {
-  background: #cdd2d7;
-  height: 2px;
-  position: relative;
-  width: 94px;
-}
-
-.scenario-guide__visual i::after {
-  border-bottom: 4px solid transparent;
-  border-left: 7px solid #cdd2d7;
-  border-top: 4px solid transparent;
-  content: '';
-  position: absolute;
-  right: -1px;
-  top: -3px;
+  gap: 26px;
+  padding: 22px 24px 28px;
 }
 
 .scenario-guide__terms {
-  border-top: 1px solid #e6e8ea;
-  padding-top: 16px;
+  border-bottom: 1px solid #e6e8ea;
+  padding-bottom: 24px;
 }
 
-.scenario-guide__terms summary {
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 800;
+.scenario-guide h3 {
+  font-size: 17px;
+  margin: 0 0 14px;
 }
 
 .scenario-guide__terms dl {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 14px 0 0;
+  margin: 0;
 }
 
 .scenario-guide__terms dl > div {
-  background: #f7f8f9;
-  padding: 10px 12px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 120px minmax(0, 1fr);
+  padding: 7px 0;
 }
 
 .scenario-guide__terms dt {
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .scenario-guide__terms dd {
   color: #62676e;
-  font-size: 12px;
-  line-height: 1.4;
-  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0;
 }
 
-.scenario-guide__actions {
+.scenario-guide__workflow ol {
+  counter-reset: guide-step;
+  display: grid;
+  gap: 18px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.scenario-guide__workflow li {
+  counter-increment: guide-step;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 28px minmax(0, 1fr);
+}
+
+.scenario-guide__workflow li::before {
+  align-items: center;
+  background: #eaf4ff;
+  border-radius: 50%;
+  color: #0067cb;
+  content: counter(guide-step);
   display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
+  font-size: 12px;
+  font-weight: 800;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.scenario-guide__workflow h4 {
+  font-size: 15px;
+  margin: 3px 0 5px;
+}
+
+.scenario-guide__workflow p {
+  color: #34383d;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.scenario-guide__workflow small {
+  color: #6a6f75;
+  display: block;
+  font-size: 12px;
+  line-height: 1.45;
+  margin-top: 4px;
 }
 
 @keyframes admin-dialog-fade {
@@ -853,8 +791,10 @@
     padding-right: 18px;
   }
 
-  .scenario-guide__terms dl {
+  .scenario-guide__terms dl > div {
+    gap: 2px;
     grid-template-columns: 1fr;
+    padding: 8px 0;
   }
 }
 
@@ -1352,7 +1292,6 @@
     padding: 0 4px;
   }
 
-  .admin-sidebar__brand > span,
   .admin-sidebar__profile {
     display: none;
   }
