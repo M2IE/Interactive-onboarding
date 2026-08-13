@@ -487,6 +487,65 @@ describe('OnboardingWidget', () => {
     await waitFor(() => expect(apiClient.getConfig).toHaveBeenCalledTimes(2))
     expect(screen.queryByText('Начните сценарий')).toBeNull()
   })
+
+  it('notifies the event observer about the complete SDK event lifecycle', async () => {
+    createTarget('create-button')
+    const onEvent = jest.fn()
+
+    render(
+      <OnboardingWidget
+        apiClient={createApiClient(createStep())}
+        onEvent={onEvent}
+        pageUrl="/demo/profile"
+        projectKey="avito-demo"
+      />,
+    )
+
+    await waitFor(() =>
+      expect(onEvent.mock.calls.map(([event]) => event.type)).toEqual([
+        'scenario_started',
+        'step_viewed',
+      ]),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Далее' }))
+
+    await waitFor(() =>
+      expect(onEvent.mock.calls.map(([event]) => event.type)).toEqual([
+        'scenario_started',
+        'step_viewed',
+        'step_completed',
+        'scenario_completed',
+      ]),
+    )
+  })
+
+  it('isolates observer failures from API event delivery', async () => {
+    createTarget('create-button')
+    const apiClient = createApiClient(createStep())
+    const onEvent = jest.fn(() => {
+      throw new Error('Live observer failed')
+    })
+
+    render(
+      <OnboardingWidget
+        apiClient={apiClient}
+        onEvent={onEvent}
+        pageUrl="/demo/profile"
+        projectKey="avito-demo"
+      />,
+    )
+
+    await screen.findByRole('dialog')
+
+    await waitFor(() =>
+      expect(
+        jest
+          .mocked(apiClient.trackEvent)
+          .mock.calls.some(([event]) => event.type === 'step_viewed'),
+      ).toBe(true),
+    )
+  })
 })
 
 function createStep(patch: Partial<OnboardingStep> = {}): OnboardingStep {

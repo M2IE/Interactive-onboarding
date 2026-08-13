@@ -92,6 +92,27 @@ export function OnboardingIntegration() {
 | `userId` | No | `string` | Stable pseudonymous identifier from the host application's authentication system. Omit it for anonymous users. |
 | `enabled` | No | `boolean` | Enables configuration loading and widget rendering. Defaults to `true`; it can be connected to a feature flag or audience rule. |
 | `refreshKey` | No | `number` | Changing the value forces the provider to request its configuration again. Most integrations do not need it. |
+| `onEvent` | No | `(event: OnboardingEventPayload) => void` | Observes every event created by the SDK, including internal lifecycle and target diagnostics. Observer failures never interrupt the widget or backend delivery. |
+
+### Observing SDK events
+
+Use `onEvent` for local previews, diagnostics, or an application-owned event
+bridge. It receives both backend-supported events and internal SDK events such
+as `scenario_started`, `scenario_completed`, and `target_not_found`.
+
+```tsx
+<OnboardingProvider
+  apiClient={onboardingClient}
+  onEvent={(event) => {
+    previewChannel.publish(event)
+  }}
+  projectKey="classified-production"
+/>
+```
+
+The callback observes an event; it does not replace `apiClient.trackEvent`.
+Throwing from the callback does not prevent the SDK from continuing the tour or
+attempting its normal analytics delivery.
 
 ### Providing `userId`
 
@@ -191,6 +212,9 @@ import { initOnboarding } from '@m2ie/onboarding-sdk'
 
 const onboarding = initOnboarding({
   apiBaseUrl: 'https://onboarding-api.example.com',
+  onEvent(event) {
+    console.debug('Onboarding event', event.type)
+  },
   projectKey: 'classified-production',
 })
 
