@@ -272,7 +272,7 @@ func TestStep_GetMaxOrder(t *testing.T) {
 
 func TestEvent_Insert_And_ExistsByKey(t *testing.T) {
 	ctx := context.Background()
-	repo := NewEventClickHouseRepository(testCH)
+	repo := NewEventClickHouseRepository(testCH, queries.New())
 
 	scID := uuid.New()
 	key := "evt-" + uuid.New().String()
@@ -308,7 +308,7 @@ func TestEvent_Insert_And_ExistsByKey(t *testing.T) {
 
 func TestEvent_ExistsScenarioCompleted(t *testing.T) {
 	ctx := context.Background()
-	repo := NewEventClickHouseRepository(testCH)
+	repo := NewEventClickHouseRepository(testCH, queries.New())
 
 	scID := uuid.New()
 	sessionID := "sess-" + uuid.New().String()
