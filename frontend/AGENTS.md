@@ -304,6 +304,7 @@ Current routes:
 /
 /admin
 /admin/analytics
+/admin/journey
 /demo/profile
 /demo/new
 /demo/new/transport
@@ -401,6 +402,8 @@ Validated on 2026-08-09:
   backend-compatible UUIDs even in insecure LAN HTTP contexts.
 - The production frontend is built by `frontend/Dockerfile`; the root gateway
   serves the SPA and proxies `/api/v1/admin/*` and `/api/v1/widget/*`.
+- FSD direction, SDK isolation, extension runtime boundaries and Journey model
+  purity are enforced by `npm run architecture:check` as part of frontend CI.
 
 Treat regressions from this snapshot as architectural debt to fix before
 expanding product surface area.
@@ -419,6 +422,7 @@ Before handing off frontend changes, run:
 npm run typecheck
 npm run lint
 npm run build
+npm run architecture:check
 ```
 
 When tests are added, also run:

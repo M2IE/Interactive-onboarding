@@ -8,6 +8,7 @@
     "packages/*"
   ],
   "scripts": {
+    "architecture:check": "node scripts/check-architecture.mjs",
     "api:generate": "npm run api:generate:admin && npm run api:generate:widget",
     "api:generate:admin": "npx --yes openapi-typescript@7.13.0 ../api/openapi/v1/admin/specs.yaml -o packages/api-client/src/generated/admin.ts",
     "api:generate:widget": "npx --yes openapi-typescript@7.13.0 ../api/openapi/v1/widget/specs.yaml -o packages/api-client/src/generated/widget.ts",
@@ -20,7 +21,7 @@
     "build:extension": "npm run build --workspace @interactive-onboarding/element-selector && npm run build --workspace @interactive-onboarding/api-client && npm run build --workspace @interactive-onboarding/ui && npm run build --workspace @m2ie/onboarding-sdk && npm run build --workspace @interactive-onboarding/extension",
     "extension:release": "npm run package --workspace @interactive-onboarding/extension",
     "ci": "npm run typecheck && npm run lint && npm test && npm run build",
-    "lint": "eslint .",
+    "lint": "npm run architecture:check && eslint .",
     "preview": "npm run preview --workspace @interactive-onboarding/web",
     "sdk:pack": "npm run pack:check --workspace @m2ie/onboarding-sdk",
     "sdk:verify-release": "node scripts/verify-sdk-release.mjs",

@@ -12,8 +12,8 @@ import {
 } from '@xyflow/react'
 import type { OnboardingEventPayload } from '@m2ie/onboarding-sdk'
 import type { AsyncState } from '@/shared/lib/asyncState'
-import { mergeJourneyNodes } from '../model/mergeJourneyNodes'
 import type { JourneyGraph, JourneyMetrics } from '../model/types'
+import { mergeJourneyNodes } from './mergeJourneyNodes'
 import { JourneyNodeCard, type JourneyNodeData } from './JourneyNodeCard'
 
 type JourneyCanvasProps = {

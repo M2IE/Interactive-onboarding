@@ -1,6 +1,6 @@
 import type { Node } from '@xyflow/react'
-import { mergeJourneyNodes } from '../model/mergeJourneyNodes'
 import type { JourneyNodeData } from './JourneyNodeCard'
+import { mergeJourneyNodes } from './mergeJourneyNodes'
 
 describe('mergeJourneyNodes', () => {
   it('preserves a dragged position while refreshing node data', () => {

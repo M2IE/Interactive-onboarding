@@ -1,10 +1,8 @@
-import type { ExtensionSettings } from '../../entities/settings/model/types'
-
 const settingsKey = 'onboarding-studio:settings'
 
 type StorageArea = Pick<chrome.storage.StorageArea, 'get' | 'set' | 'remove'>
 
-export function createExtensionStorage({
+export function createExtensionStorage<TSettings = unknown>({
   local = chrome.storage.local,
   session = chrome.storage.session,
 }: {
@@ -12,12 +10,12 @@ export function createExtensionStorage({
   session?: StorageArea
 } = {}) {
   return {
-    async getSettings(): Promise<ExtensionSettings | null> {
+    async getSettings(): Promise<TSettings | null> {
       const result = await local.get(settingsKey)
-      return (result[settingsKey] as ExtensionSettings | undefined) ?? null
+      return (result[settingsKey] as TSettings | undefined) ?? null
     },
 
-    async setSettings(settings: ExtensionSettings) {
+    async setSettings(settings: TSettings) {
       await local.set({ [settingsKey]: settings })
     },
 
