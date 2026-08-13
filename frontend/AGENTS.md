@@ -12,6 +12,7 @@ The frontend must demonstrate three connected surfaces:
 - Admin panel for creating, editing, publishing and analyzing onboarding scenarios.
 - Test classifieds site under `/demo/*`.
 - Embeddable onboarding SDK/widget that can be connected to a host web app.
+- Journey Map with an analytics-backed, non-persistent Live Session preview.
 
 The widget is universal. Admin-created scenario configs are dynamic. Do not
 hardcode final onboarding behavior directly into demo UI components.
@@ -71,6 +72,16 @@ Layer import rule:
 
 Keep route components thin. A page should compose widgets/features and delegate
 logic to hooks or model files.
+
+Journey topology is a pure feature model. It must not depend on React Flow,
+Redux UI components or browser transports. `widgets/journey-studio` composes
+the independent `journey-map` and `live-session` features.
+
+Live Session uses a versioned message contract from `packages/shared` and a
+browser transport adapter from `apps/web/src/shared/api`. BroadcastChannel is
+the current adapter, not the domain contract; a later WebSocket or SSE adapter
+must not require changes to Journey or Live Session UI. Preview analytics must
+never be sent to Widget API or persisted in mock analytics.
 
 ### `apps/extension`
 
@@ -161,6 +172,9 @@ Use Redux Toolkit for application state in `apps/web`:
 The SDK package can keep small internal React state for widget runtime, but
 business state and persisted scenario/event data must live behind API clients or
 shared contracts.
+
+SDK event observers such as `onEvent` are public integration points. Observer
+failures must be isolated from widget navigation and API analytics delivery.
 
 ## UI And Business Logic Separation
 
