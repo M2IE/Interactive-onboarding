@@ -29,6 +29,21 @@ const styles = `
   z-index: 2147483001;
 }
 
+.onboarding-sdk__page-transition {
+  background: rgba(0, 0, 0, 0.62);
+  inset: 0;
+  opacity: 1;
+  pointer-events: auto;
+  position: fixed;
+  transition: opacity 180ms ease-out;
+  z-index: 2147483003;
+}
+
+.onboarding-sdk__page-transition.is-revealing {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .onboarding-sdk__tooltip {
   background: #ffffff;
   border-radius: var(--onboarding-radius);
@@ -116,7 +131,8 @@ const styles = `
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .onboarding-sdk__spotlight {
+  .onboarding-sdk__spotlight,
+  .onboarding-sdk__page-transition {
     transition: none;
   }
 }

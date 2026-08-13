@@ -40,6 +40,7 @@ export type OnboardingWidgetProps = {
   refreshKey?: number;
   showDelayMs?: number;
   targetWaitMs?: number;
+  onComplete?: () => void;
 };
 
 type ConfigState =
@@ -52,6 +53,10 @@ type StepActionState =
   | { status: "idle" }
   | { status: "completing"; stepId: string };
 
+type PageTransitionState =
+  | { status: "idle" }
+  | { status: "navigating" };
+
 export function OnboardingWidget({
   projectKey,
   apiClient,
@@ -63,6 +68,7 @@ export function OnboardingWidget({
   refreshKey = 0,
   showDelayMs = 0,
   targetWaitMs = 5_000,
+  onComplete,
 }: OnboardingWidgetProps) {
   const resolvedPageUrl = pageUrl ?? window.location.pathname;
   const [configState, setConfigState] = useState<ConfigState>({
@@ -73,6 +79,8 @@ export function OnboardingWidget({
   const [stepActionState, setStepActionState] = useState<StepActionState>({
     status: "idle",
   });
+  const [pageTransitionState, setPageTransitionState] =
+    useState<PageTransitionState>({ status: "idle" });
   const [tooltipHeight, setTooltipHeight] = useState(0);
   const tooltipRef = useRef<HTMLElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -135,6 +143,12 @@ export function OnboardingWidget({
     targetState.selector === activeStep?.selector
       ? targetState.target
       : null;
+  const transitionCanReveal =
+    Boolean(config && activeStep && target) ||
+    (configState.pageUrl === resolvedPageUrl &&
+      (configState.status === "empty" || configState.status === "error")) ||
+    (targetState.status === "missing" &&
+      targetState.selector === activeStep?.selector);
 
   useLayoutEffect(() => {
     const nextHeight = tooltipRef.current?.getBoundingClientRect().height ?? 0;
@@ -143,6 +157,21 @@ export function OnboardingWidget({
       setTooltipHeight(nextHeight);
     }
   }, [activeStep, target, tooltipHeight]);
+
+  useEffect(() => {
+    if (
+      pageTransitionState.status !== "navigating" ||
+      !transitionCanReveal
+    ) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setPageTransitionState({ status: "idle" });
+    }, 180);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [pageTransitionState.status, transitionCanReveal]);
 
   useEffect(() => {
     if (!enabled) {
@@ -336,8 +365,24 @@ export function OnboardingWidget({
     };
   }, [activeStep, config, resolvedPageUrl, targetState.status, track]);
 
-  if (!enabled || !config || !activeStep || !target) {
+  if (!enabled) {
     return null;
+  }
+
+  const transitionOverlay =
+    pageTransitionState.status === "idle" ? null : (
+      <div
+        aria-hidden="true"
+        className={`onboarding-sdk__page-transition${
+          transitionCanReveal ? " is-revealing" : ""
+        }`}
+      />
+    );
+
+  if (!config || !activeStep || !target) {
+    return transitionOverlay ? (
+      <div className="onboarding-sdk">{transitionOverlay}</div>
+    ) : null;
   }
 
   const renderedConfig = config;
@@ -362,6 +407,7 @@ export function OnboardingWidget({
 
     if (renderedStep.nextUrl) {
       setStepActionState({ status: "completing", stepId: renderedStep.id });
+      setPageTransitionState({ status: "navigating" });
       await completionEvent;
 
       rememberPageNavigation({
@@ -389,7 +435,7 @@ export function OnboardingWidget({
     void completionEvent;
 
     if (isLastPageStep) {
-      void track("scenario_completed");
+      await track("scenario_completed");
       rememberScenarioOutcome(renderedConfig.scenarioId, "completed");
     }
 
@@ -399,6 +445,7 @@ export function OnboardingWidget({
     }
 
     setConfigState({ status: "empty", pageUrl: resolvedPageUrl });
+    onComplete?.();
   }
 
   function skipScenario() {
@@ -418,6 +465,8 @@ export function OnboardingWidget({
     if (!previousPageUrl) {
       return;
     }
+
+    setPageTransitionState({ status: "navigating" });
 
     if (navigate) {
       navigate(previousPageUrl);
@@ -476,6 +525,7 @@ export function OnboardingWidget({
           </button>
         </div>
       </article>
+      {transitionOverlay}
     </div>
   );
 }

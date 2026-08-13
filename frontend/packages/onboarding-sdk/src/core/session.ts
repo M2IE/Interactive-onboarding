@@ -17,6 +17,13 @@ export type OnboardingNavigationEntry = {
   toPageUrl: string
 }
 
+export function resetOnboardingSession() {
+  window.sessionStorage.removeItem(STORAGE_KEY)
+  window.sessionStorage.removeItem(OUTCOMES_STORAGE_KEY)
+  window.sessionStorage.removeItem(NAVIGATION_STORAGE_KEY)
+  window.sessionStorage.removeItem(RESUME_STORAGE_KEY)
+}
+
 export function getOrCreateSessionId() {
   const existing = window.sessionStorage.getItem(STORAGE_KEY)
 

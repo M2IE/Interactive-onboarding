@@ -3,6 +3,10 @@ import type { OnboardingApiClient } from '@m2ie/onboarding-sdk'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { ClassifiedShell } from "@/widgets/classified-shell/ClassifiedShell";
 import { appRoutes } from '@/shared/config/routes'
+import {
+  DemoCompletionDialog,
+  useDemoCompletion,
+} from '@/features/demo-completion'
 
 type DemoPageProps = {
   onboardingClient: OnboardingApiClient
@@ -15,6 +19,7 @@ export function DemoPage({
 }: DemoPageProps) {
   const location = useLocation()
   const navigate = useNavigate()
+  const completion = useDemoCompletion()
 
   return (
     <>
@@ -33,9 +38,16 @@ export function DemoPage({
 
       <OnboardingProvider
         apiClient={onboardingClient}
+        key={completion.runId}
         navigate={navigate}
+        onComplete={completion.completeDemo}
         pageUrl={location.pathname}
         projectKey={projectKey}
+      />
+      <DemoCompletionDialog
+        open={completion.isComplete}
+        onRepeat={completion.repeatDemo}
+        onReturnHome={completion.returnHome}
       />
     </>
   );

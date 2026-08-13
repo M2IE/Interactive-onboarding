@@ -6,6 +6,7 @@ import {
   hasPreviousOnboardingPage,
   preparePreviousOnboardingPage,
   rememberPageNavigation,
+  resetOnboardingSession,
 } from './session'
 
 const UUID_V4_PATTERN =
@@ -37,6 +38,30 @@ describe('onboarding session', () => {
 
     expect(sessionId).toMatch(UUID_V4_PATTERN)
     expect(sessionId).not.toContain('session-')
+  })
+
+  it('clears onboarding state without touching host session data', () => {
+    window.sessionStorage.setItem(
+      'interactive-onboarding:session-id',
+      crypto.randomUUID(),
+    )
+    window.sessionStorage.setItem(
+      'interactive-onboarding:scenario-outcomes:v1',
+      '[]',
+    )
+    window.sessionStorage.setItem('host:cart', 'preserved')
+
+    resetOnboardingSession()
+
+    expect(
+      window.sessionStorage.getItem('interactive-onboarding:session-id'),
+    ).toBeNull()
+    expect(
+      window.sessionStorage.getItem(
+        'interactive-onboarding:scenario-outcomes:v1',
+      ),
+    ).toBeNull()
+    expect(window.sessionStorage.getItem('host:cart')).toBe('preserved')
   })
 
   it('stores a cross-page return point and consumes it once', () => {

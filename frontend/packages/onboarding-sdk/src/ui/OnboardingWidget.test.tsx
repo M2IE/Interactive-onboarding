@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type {
   OnboardingApiClient,
   OnboardingStep,
@@ -8,8 +8,10 @@ import type {
 import { OnboardingWidget } from './OnboardingWidget'
 
 describe('OnboardingWidget', () => {
-  afterEach(() => {
-    document.body.replaceChildren()
+  afterEach(async () => {
+    await act(async () => {
+      document.body.replaceChildren()
+    })
     window.sessionStorage.clear()
   })
 
@@ -168,6 +170,47 @@ describe('OnboardingWidget', () => {
     ).toHaveLength(1)
   })
 
+  it('notifies the host only after the final step without navigation', async () => {
+    createTarget('create-button')
+    const onComplete = jest.fn()
+    const apiClient = createApiClient(createStep())
+
+    render(
+      <OnboardingWidget
+        apiClient={apiClient}
+        onComplete={onComplete}
+        pageUrl="/demo/profile"
+        projectKey="avito-demo"
+      />,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Далее' }))
+    await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(1))
+  })
+
+  it('does not notify the host while navigating to another scenario page', async () => {
+    createTarget('create-button')
+    const navigate = jest.fn<(url: string) => void>()
+    const onComplete = jest.fn()
+    const apiClient = createApiClient(
+      createStep({ nextUrl: '/demo/new' }),
+    )
+
+    render(
+      <OnboardingWidget
+        apiClient={apiClient}
+        navigate={navigate}
+        onComplete={onComplete}
+        pageUrl="/demo/profile"
+        projectKey="avito-demo"
+      />,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Далее' }))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/demo/new'))
+    expect(onComplete).not.toHaveBeenCalled()
+  })
+
   it('requests a fresh scenario when the SPA path changes', async () => {
     createTarget('profile-button')
     createTarget('category-button')
@@ -212,6 +255,107 @@ describe('OnboardingWidget', () => {
     expect(getConfig).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({ pageUrl: '/demo/new' }),
+    )
+  })
+
+  it('keeps the page covered until the next page step is ready', async () => {
+    createTarget('profile-button')
+    createTarget('category-button')
+    let resolveNextConfig: ((config: WidgetConfig) => void) | undefined
+    const navigate = jest.fn<(url: string) => void>()
+    const profileStep = createStep({
+      id: 'profile-step',
+      selector: '[data-onboarding-id="profile-button"]',
+      nextUrl: '/demo/new',
+    })
+    const categoryStep = createStep({
+      id: 'category-step',
+      selector: '[data-onboarding-id="category-button"]',
+      title: 'Category step',
+    })
+    const getConfig = jest
+      .fn<OnboardingApiClient['getConfig']>()
+      .mockResolvedValueOnce(createConfig(profileStep, '/demo/profile'))
+      .mockImplementationOnce(
+        () =>
+          new Promise<WidgetConfig>((resolve) => {
+            resolveNextConfig = resolve
+          }),
+      )
+    const apiClient = createApiClient(profileStep, getConfig)
+    const view = render(
+      <OnboardingWidget
+        apiClient={apiClient}
+        navigate={navigate}
+        pageUrl="/demo/profile"
+        projectKey="avito-demo"
+      />,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Далее' }))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/demo/new'))
+
+    view.rerender(
+      <OnboardingWidget
+        apiClient={apiClient}
+        navigate={navigate}
+        pageUrl="/demo/new"
+        projectKey="avito-demo"
+      />,
+    )
+
+    expect(document.querySelector('.onboarding-sdk__page-transition')).not.toBeNull()
+    await act(async () => {
+      resolveNextConfig?.(createConfig(categoryStep, '/demo/new'))
+    })
+
+    expect(await screen.findByText('Category step')).toBeTruthy()
+    await waitFor(() =>
+      expect(
+        document.querySelector('.onboarding-sdk__page-transition'),
+      ).toBeNull(),
+    )
+  })
+
+  it('releases the page cover when the next page has no scenario', async () => {
+    createTarget('profile-button')
+    const navigate = jest.fn<(url: string) => void>()
+    const profileStep = createStep({
+      id: 'profile-step',
+      selector: '[data-onboarding-id="profile-button"]',
+      nextUrl: '/demo/new',
+    })
+    const getConfig = jest
+      .fn<OnboardingApiClient['getConfig']>()
+      .mockResolvedValueOnce(createConfig(profileStep, '/demo/profile'))
+      .mockResolvedValueOnce(null)
+    const apiClient = createApiClient(profileStep, getConfig)
+    const view = render(
+      <OnboardingWidget
+        apiClient={apiClient}
+        navigate={navigate}
+        pageUrl="/demo/profile"
+        projectKey="avito-demo"
+      />,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Далее' }))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/demo/new'))
+
+    view.rerender(
+      <OnboardingWidget
+        apiClient={apiClient}
+        navigate={navigate}
+        pageUrl="/demo/new"
+        projectKey="avito-demo"
+      />,
+    )
+
+    expect(document.querySelector('.onboarding-sdk__page-transition')).not.toBeNull()
+    await waitFor(() =>
+      expect(
+        document.querySelector('.onboarding-sdk__page-transition'),
+      ).toBeNull(),
     )
   })
 

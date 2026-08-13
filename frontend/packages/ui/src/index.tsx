@@ -182,6 +182,7 @@ type DialogProps = ComponentPropsWithoutRef<typeof RadixDialog.Root> & {
   children: ReactNode
   closeLabel?: string
   className?: string
+  showCloseButton?: boolean
 }
 
 export function Dialog({
@@ -190,6 +191,7 @@ export function Dialog({
   children,
   closeLabel = 'Закрыть',
   className,
+  showCloseButton = true,
   ...props
 }: DialogProps) {
   return (
@@ -208,11 +210,13 @@ export function Dialog({
                 </RadixDialog.Description>
               )}
             </div>
-            <RadixDialog.Close asChild>
-              <button aria-label={closeLabel} className="ui-dialog-close">
-                <X aria-hidden="true" size={19} />
-              </button>
-            </RadixDialog.Close>
+            {showCloseButton && (
+              <RadixDialog.Close asChild>
+                <button aria-label={closeLabel} className="ui-dialog-close">
+                  <X aria-hidden="true" size={19} />
+                </button>
+              </RadixDialog.Close>
+            )}
           </header>
           {children}
         </RadixDialog.Content>
