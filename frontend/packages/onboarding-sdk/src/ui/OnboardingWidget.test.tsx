@@ -5,6 +5,7 @@ import type {
   OnboardingStep,
   WidgetConfig,
 } from '../types/contracts'
+import { createHttpOnboardingClient } from '../api/httpClient'
 import { OnboardingWidget } from './OnboardingWidget'
 
 describe('OnboardingWidget', () => {
@@ -256,6 +257,53 @@ describe('OnboardingWidget', () => {
       2,
       expect.objectContaining({ pageUrl: '/demo/new' }),
     )
+  })
+
+  it('shows global linear progress from the HTTP page-local contract', async () => {
+    createTarget('profile')
+    createTarget('category')
+    const scenarios = new Map([
+      ['/demo/profile', createBackendScenario('profile', ['profile'], '/demo/new')],
+      ['/demo/new', createBackendScenario('category', ['category'], '/demo/transport')],
+      ['/demo/transport', createBackendScenario('transport', ['transport'], '/demo/auto')],
+      ['/demo/auto', createBackendScenario('auto', ['photo', 'details', 'publish'])],
+    ])
+    const fetchClient = jest.fn<typeof fetch>(async (input) => {
+      const url = new URL(String(input), 'https://onboarding.test')
+      const scenario = scenarios.get(url.searchParams.get('pageUrl') ?? '')
+      return {
+        ok: Boolean(scenario),
+        status: scenario ? 200 : 404,
+        json: async () => scenario ? { scenario } : undefined,
+      } as Response
+    })
+    const apiClient = createHttpOnboardingClient({
+      apiBaseUrl: '/api/v1',
+      fetchClient,
+    })
+    const navigate = jest.fn<(url: string) => void>()
+    const view = render(
+      <OnboardingWidget
+        apiClient={apiClient}
+        navigate={navigate}
+        pageUrl="/demo/profile"
+        projectKey="avito-demo"
+      />,
+    )
+
+    expect(await screen.findByText('Шаг 1 из 6')).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Далее' }))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/demo/new'))
+
+    view.rerender(
+      <OnboardingWidget
+        apiClient={apiClient}
+        navigate={navigate}
+        pageUrl="/demo/new"
+        projectKey="avito-demo"
+      />,
+    )
+    expect(await screen.findByText('Шаг 2 из 6')).toBeVisible()
   })
 
   it('keeps the page covered until the next page step is ready', async () => {
@@ -611,4 +659,23 @@ function createTarget(id: string) {
     }) as DOMRect
   document.body.append(target)
   return target
+}
+
+function createBackendScenario(
+  id: string,
+  targetIds: string[],
+  nextUrl?: string,
+) {
+  return {
+    id,
+    name: id,
+    steps: targetIds.map((targetId, index) => ({
+      id: `${id}-step-${index + 1}`,
+      orderNum: index + 1,
+      selector: `[data-onboarding-id="${targetId}"]`,
+      title: `${id} step ${index + 1}`,
+      body: 'Body',
+      nextUrl: index === targetIds.length - 1 ? nextUrl : undefined,
+    })),
+  }
 }

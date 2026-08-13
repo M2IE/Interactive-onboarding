@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from '@jest/globals'
+import { beforeEach, describe, expect, it, jest } from '@jest/globals'
 import type { OnboardingEventPayload } from '../types/contracts'
 import {
   createHttpOnboardingClient,
@@ -6,6 +6,8 @@ import {
 } from './httpClient'
 
 describe('HTTP onboarding client adapter', () => {
+  beforeEach(() => sessionStorage.clear())
+
   it('maps the MVP response to a page-local widget config', async () => {
     const fetchClient = createFetch({
       scenario: {
@@ -143,6 +145,43 @@ describe('HTTP onboarding client adapter', () => {
       }),
     })
   })
+
+  it('resolves global progress through page-local nextUrl scenarios', async () => {
+    const scenarios = new Map([
+      ['/profile', createBackendScenario('profile', 1, '/new')],
+      ['/new', createBackendScenario('new', 1, '/transport')],
+      ['/transport', createBackendScenario('transport', 1, '/auto')],
+      ['/auto', createBackendScenario('auto', 3)],
+    ])
+    const fetchClient = jest.fn<typeof fetch>(async (input) => {
+      const url = new URL(String(input), 'https://onboarding.test')
+      const scenario = scenarios.get(url.searchParams.get('pageUrl') ?? '')
+      return {
+        ok: Boolean(scenario),
+        status: scenario ? 200 : 404,
+        json: async () => scenario ? { scenario } : undefined,
+      } as Response
+    })
+    const client = createHttpOnboardingClient({
+      apiBaseUrl: '/api/v1',
+      fetchClient,
+    })
+
+    const profile = await client.getConfig({
+      projectKey: 'avito-demo',
+      pageUrl: '/profile',
+      sessionId: 'linear-session',
+    })
+    const auto = await client.getConfig({
+      projectKey: 'avito-demo',
+      pageUrl: '/auto',
+      sessionId: 'linear-session',
+    })
+
+    expect(profile).toMatchObject({ stepOffset: 0, totalSteps: 6 })
+    expect(auto).toMatchObject({ stepOffset: 3, totalSteps: 6 })
+    expect(fetchClient).toHaveBeenCalledTimes(5)
+  })
 })
 
 function createEvent(
@@ -167,4 +206,23 @@ function createFetch(body: unknown, status = 200) {
     status,
     json: async () => body,
   } as Response)
+}
+
+function createBackendScenario(
+  id: string,
+  stepCount: number,
+  nextUrl?: string,
+) {
+  return {
+    id,
+    name: id,
+    steps: Array.from({ length: stepCount }, (_, index) => ({
+      id: `${id}-step-${index + 1}`,
+      orderNum: index + 1,
+      selector: `#${id}-${index + 1}`,
+      title: `Step ${index + 1}`,
+      body: 'Body',
+      nextUrl: index === stepCount - 1 ? nextUrl : undefined,
+    })),
+  }
 }

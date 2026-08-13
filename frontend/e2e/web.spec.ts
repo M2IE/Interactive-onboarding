@@ -65,10 +65,12 @@ test('published onboarding advances through SPA pages and returns back', async (
   await expect(
     page.getByRole('dialog', { name: 'Начните с первого объявления' }),
   ).toBeVisible()
+  await expect(page.getByText('Шаг 1 из 6')).toBeVisible()
   await page.getByRole('button', { name: 'Далее' }).click()
   await expect(page).toHaveURL(/\/demo\/new$/)
 
   await expect(page.getByRole('dialog', { name: 'Выберите транспорт' })).toBeVisible()
+  await expect(page.getByText('Шаг 2 из 6')).toBeVisible()
   await page.getByRole('button', { name: 'Назад' }).click()
   await expect(page).toHaveURL(/\/demo\/profile$/)
   await expect(

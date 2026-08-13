@@ -25,6 +25,7 @@ import {
   rememberPageNavigation,
   rememberScenarioOutcome,
 } from "../core/session";
+import { clearLinearJourneyProgress } from "../api/linearJourneyResolver";
 import {
   calculateTooltipPosition,
 } from "../dom/target";
@@ -450,6 +451,7 @@ export function OnboardingWidget({
     if (isLastPageStep) {
       await track("scenario_completed");
       rememberScenarioOutcome(renderedConfig.scenarioId, "completed");
+      clearLinearJourneyProgress();
     }
 
     if (!isLastPageStep) {
@@ -464,6 +466,7 @@ export function OnboardingWidget({
   function skipScenario() {
     void track("scenario_dismissed", renderedStep);
     rememberScenarioOutcome(renderedConfig.scenarioId, "dismissed");
+    clearLinearJourneyProgress();
     setConfigState({ status: "empty", pageUrl: resolvedPageUrl });
   }
 

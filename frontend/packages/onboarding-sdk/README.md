@@ -162,6 +162,19 @@ A `204` or `404` response while loading configuration means that no onboarding
 scenario is available for the page, so the widget remains hidden. Other errors
 are surfaced and never replaced with mock data.
 
+### Cross-page progress
+
+When the API returns page-local scenarios, the HTTP client follows the
+`nextUrl` of each page's final step through the same Widget endpoint. For a
+linear journey, the SDK can therefore display global progress such as
+`Step 2 of 6` without requiring a separate flow response from the backend.
+
+The resolved page sequence is cached in `sessionStorage` for the current SDK
+session and cleared when the journey is completed, dismissed, or reset. Cycles,
+multiple transitions from one page, excessive depth, and failed look-ahead
+requests safely fall back to page-local progress. Branch-aware totals still
+require an explicit flow contract from the backend.
+
 If the host application uses a different API contract, provide an adapter:
 
 ```tsx
