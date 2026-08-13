@@ -13,50 +13,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type EventType string
-
-const (
-	EventTypeStepViewed        EventType = "step_viewed"
-	EventTypeStepCompleted     EventType = "step_completed"
-	EventTypeScenarioCompleted EventType = "scenario_completed"
-	EventTypeScenarioDismissed EventType = "scenario_dismissed"
-)
-
-func (e *EventType) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = EventType(s)
-	case string:
-		*e = EventType(s)
-	default:
-		return fmt.Errorf("unsupported scan type for EventType: %T", src)
-	}
-	return nil
-}
-
-type NullEventType struct {
-	EventType EventType
-	Valid     bool // Valid is true if EventType is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullEventType) Scan(value interface{}) error {
-	if value == nil {
-		ns.EventType, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.EventType.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullEventType) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.EventType), nil
-}
-
 type ScenarioStatus string
 
 const (
@@ -100,15 +56,19 @@ func (ns NullScenarioStatus) Value() (driver.Value, error) {
 	return string(ns.ScenarioStatus), nil
 }
 
-type Event struct {
-	ID         uuid.UUID     `db:"id"`
-	ProjectID  uuid.UUID     `db:"project_id"`
-	StepID     uuid.NullUUID `db:"step_id"`
-	SessionID  string        `db:"session_id"`
-	Type       EventType     `db:"type"`
-	EventKey   string        `db:"event_key"`
-	CreatedAt  time.Time     `db:"created_at"`
-	ScenarioID uuid.NullUUID `db:"scenario_id"`
+type Flow struct {
+	ID          uuid.UUID      `db:"id"`
+	ProjectID   uuid.UUID      `db:"project_id"`
+	Name        string         `db:"name"`
+	Description sql.NullString `db:"description"`
+	FlowKey     string         `db:"flow_key"`
+	CreatedAt   time.Time      `db:"created_at"`
+}
+
+type FlowScenario struct {
+	FlowID     uuid.UUID `db:"flow_id"`
+	ScenarioID uuid.UUID `db:"scenario_id"`
+	OrderNum   int32     `db:"order_num"`
 }
 
 type Project struct {

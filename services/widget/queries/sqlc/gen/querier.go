@@ -11,6 +11,9 @@ import (
 )
 
 type Querier interface {
+	GetFlowByKey(ctx context.Context, db DBTX, arg GetFlowByKeyParams) (Flow, error)
+	GetFlowByScenarioID(ctx context.Context, db DBTX, scenarioID uuid.UUID) (Flow, error)
+	GetFlowScenariosWithDetails(ctx context.Context, db DBTX, flowID uuid.UUID) ([]GetFlowScenariosWithDetailsRow, error)
 	GetMaxOrderByScenario(ctx context.Context, db DBTX, scenarioID uuid.UUID) (int32, error)
 	GetProjectByKey(ctx context.Context, db DBTX, projectKey string) (Project, error)
 	GetPublishedScenarioByURL(ctx context.Context, db DBTX, arg GetPublishedScenarioByURLParams) (Scenario, error)

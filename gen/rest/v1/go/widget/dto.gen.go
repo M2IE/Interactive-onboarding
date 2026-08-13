@@ -87,6 +87,13 @@ type ErrorResponse struct {
 // ErrorResponseErrorCode defines model for ErrorResponse.Error.Code.
 type ErrorResponseErrorCode string
 
+// FlowConfigItem defines model for FlowConfigItem.
+type FlowConfigItem struct {
+	OrderNum   int                `json:"orderNum"`
+	ScenarioId openapi_types.UUID `json:"scenarioId"`
+	Url        string             `json:"url"`
+}
+
 // InternalErrorResponse defines model for InternalErrorResponse.
 type InternalErrorResponse struct {
 	Error struct {
@@ -131,6 +138,13 @@ type Step struct {
 	Title string `json:"title"`
 }
 
+// WidgetConfigResponse defines model for WidgetConfigResponse.
+type WidgetConfigResponse struct {
+	FlowId    openapi_types.UUID `json:"flowId"`
+	FlowKey   string             `json:"flowKey"`
+	Scenarios []FlowConfigItem   `json:"scenarios"`
+}
+
 // WidgetEventRequest defines model for WidgetEventRequest.
 type WidgetEventRequest struct {
 	// EventKey Уникальный ключ события. Если не передан, бекенд сгенерирует сам.
@@ -160,7 +174,21 @@ type WidgetEventRequestType string
 
 // WidgetScenarioResponse defines model for WidgetScenarioResponse.
 type WidgetScenarioResponse struct {
+	// Flow Информация о потоке, если сценарий входит в какой-либо flow
+	Flow *struct {
+		FlowId  *openapi_types.UUID `json:"flowId,omitempty"`
+		FlowKey *string             `json:"flowKey,omitempty"`
+	} `json:"flow,omitempty"`
 	Scenario *Scenario `json:"scenario,omitempty"`
+}
+
+// GetWidgetConfigParams defines parameters for GetWidgetConfig.
+type GetWidgetConfigParams struct {
+	// ProjectKey Ключ проекта
+	ProjectKey string `form:"projectKey" json:"projectKey"`
+
+	// FlowKey Ключ потока (flow_key)
+	FlowKey string `form:"flowKey" json:"flowKey"`
 }
 
 // GetWidgetScenarioParams defines parameters for GetWidgetScenario.

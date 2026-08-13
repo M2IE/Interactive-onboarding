@@ -21,6 +21,9 @@ type IWidgetInfrastructure interface {
 	GetMaxOrderByScenario(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (int, error)
 	ExistsScenarioCompleted(ctx context.Context, db rdb.Querier, sessionID string, scenarioID *uuid.UUID) (bool, error)
 	ExistsEventByKey(ctx context.Context, db rdb.Querier, eventKey string) (bool, error)
+	GetFlowByKey(ctx context.Context, db rdb.Querier, projectID uuid.UUID, flowKey string) (*domain.Flow, error)
+	GetFlowByScenarioID(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (*domain.Flow, error)
+	GetFlowScenariosWithDetails(ctx context.Context, db rdb.Querier, flowID uuid.UUID) ([]domain.FlowScenarioDetail, error)
 }
 
 type WidgetService struct {
@@ -36,30 +39,67 @@ func NewWidgetService(infra IWidgetInfrastructure, txManager rdb.Database) *Widg
 }
 
 // GetScenario возвращает опубликованный сценарий и его шаги для заданного проекта и URL.
-func (s *WidgetService) GetScenario(ctx context.Context, projectKey, pageUrl string) (*domain.Scenario, []domain.Step, error) {
+func (s *WidgetService) GetScenario(ctx context.Context, projectKey, pageUrl string) (*domain.Scenario, []domain.Step, *uuid.UUID, *string, error) {
 	project, err := s.infra.GetProjectByKey(ctx, nil, projectKey)
 	if err != nil {
 		if errors.Is(err, domain.ErrProjectNotFound) {
-			return nil, nil, domain.ErrProjectNotFound
+			return nil, nil, nil, nil, domain.ErrProjectNotFound
 		}
-		return nil, nil, fmt.Errorf("get project by key: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("get project by key: %w", err)
 	}
 
 	scenario, err := s.infra.GetPublishedScenarioByURL(ctx, nil, project.ID, pageUrl)
 	if err != nil {
 		if errors.Is(err, domain.ErrNoPublishedScenario) {
-			return nil, nil, domain.ErrNoPublishedScenario
+			return nil, nil, nil, nil, domain.ErrNoPublishedScenario
 		}
-		return nil, nil, fmt.Errorf("get published scenario: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("get published scenario: %w", err)
 	}
 
 	// Получаем шаги сценария
 	steps, err := s.infra.GetStepsByScenario(ctx, nil, scenario.ID)
 	if err != nil {
-		return nil, nil, fmt.Errorf("get steps: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("get steps: %w", err)
 	}
 
-	return scenario, steps, nil
+	flow, err := s.infra.GetFlowByScenarioID(ctx, nil, scenario.ID)
+	if err != nil && !errors.Is(err, domain.ErrFlowNotFound) {
+		return nil, nil, nil, nil, fmt.Errorf("get flow by scenario: %w", err)
+	}
+
+	if flow == nil {
+		return scenario, steps, nil, nil, nil
+	}
+
+	return scenario, steps, &flow.ID, &flow.FlowKey, nil
+}
+
+// GetFlowConfig возвращает список сценариев в потоке с их порядком и информацией о потоке
+func (s *WidgetService) GetFlowConfig(ctx context.Context, projectKey, flowKey string) ([]domain.FlowScenarioDetail, *domain.Flow, error) {
+	project, err := s.infra.GetProjectByKey(ctx, nil, projectKey)
+	if err != nil {
+		if errors.Is(err, domain.ErrProjectNotFound) {
+			return nil, nil, domain.ErrProjectNotFound
+		}
+		return nil, nil, fmt.Errorf("get project: %w", err)
+	}
+
+	// Получить поток по ключу и project_id
+	flow, err := s.infra.GetFlowByKey(ctx, nil, project.ID, flowKey)
+	if err != nil {
+		if errors.Is(err, domain.ErrFlowNotFound) {
+			return nil, nil, domain.ErrFlowNotFound
+		}
+		return nil, nil, fmt.Errorf("get flow: %w", err)
+	}
+
+	// Получить сценарии потока с деталями
+	scenarios, err := s.infra.GetFlowScenariosWithDetails(ctx, nil, flow.ID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("get flow scenarios: %w", err)
+	}
+
+	return scenarios, flow, nil
 }
 
 func (s *WidgetService) ProcessEvent(ctx context.Context, sessionID string, eventType domain.EventType, stepID, scenarioID *uuid.UUID, eventKey *string) error {
