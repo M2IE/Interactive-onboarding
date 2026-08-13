@@ -57,6 +57,10 @@ the Chrome Side Panel as an inspector, injects a DOM picker into the active tab,
 generates stable selectors through `packages/element-selector` and saves drafts
 through the existing Admin API. Publishing remains in the web admin app.
 
+Full installation, connection and manual distribution instructions:
+
+- [Onboarding Studio extension guide](./apps/extension/README.md)
+
 Build the unpacked extension:
 
 ```bash
