@@ -180,13 +180,18 @@ func createScenario(ctx context.Context, db rdb.Database, projectID uuid.UUID, n
 }
 
 func seedEvents(ctx context.Context, ch olap.Database, projectID, scenarioID uuid.UUID, stepIDs []uuid.UUID) error {
-	batch, err := ch.PrepareBatch(ctx, chq.InsertEvent)
-	if err != nil {
-		return err
-	}
+	q := chq.NewCH()
 
 	add := func(stepID *uuid.UUID, sessionID, eventType string) error {
-		return batch.Append(uuid.New(), projectID, scenarioID, stepID, sessionID, eventType, uuid.NewString())
+		return q.InsertEvent(ctx, ch, chq.InsertEventParams{
+			ID:         uuid.New(),
+			ProjectID:  projectID,
+			ScenarioID: scenarioID,
+			StepID:     stepID,
+			SessionID:  sessionID,
+			Type:       eventType,
+			EventKey:   uuid.NewString(),
+		})
 	}
 
 	step1 := &stepIDs[0]
@@ -214,5 +219,5 @@ func seedEvents(ctx context.Context, ch olap.Database, projectID, scenarioID uui
 		}
 	}
 
-	return batch.Send()
+	return nil
 }

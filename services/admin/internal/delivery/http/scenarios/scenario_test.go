@@ -46,7 +46,7 @@ func TestListHandler_Success(t *testing.T) {
 	h := NewScenarioHandler(svc)
 
 	resp, err := h.ListScenarios(context.Background(), apiv1.ListScenariosRequestObject{
-		Params: apiv1.ListScenariosParams{Page: ptr(1), Size: ptr(20)},
+		Params: apiv1.ListScenariosParams{Page: new(1), Size: new(20)},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -69,7 +69,7 @@ func TestListHandler_Error(t *testing.T) {
 	h := NewScenarioHandler(svc)
 
 	resp, err := h.ListScenarios(context.Background(), apiv1.ListScenariosRequestObject{
-		Params: apiv1.ListScenariosParams{Page: ptr(1), Size: ptr(20)},
+		Params: apiv1.ListScenariosParams{Page: new(1), Size: new(20)},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -193,5 +193,3 @@ func TestUpdateHandler_NotFound(t *testing.T) {
 		t.Errorf("expected 404, got %T", resp)
 	}
 }
-
-func ptr[T any](v T) *T { return &v }
