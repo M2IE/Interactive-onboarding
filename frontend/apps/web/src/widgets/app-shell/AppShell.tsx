@@ -7,6 +7,7 @@ import {
   PackageOpen,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import extensionDemoVideo from "@/assets/extension-demo.webm";
 import { ExtensionInstallGuideDialog } from "@/features/extension-install-guide";
 import { appRoutes } from "@/shared/config/routes";
 import { ProductLogo } from "@/shared/ui/ProductLogo";
@@ -119,7 +120,7 @@ export function AppShell() {
       </section>
 
       <section className="home-extension" aria-labelledby="extension-title">
-        <div>
+        <div className="home-extension__content">
           <small>Chrome Side Panel</small>
           <h2 id="extension-title">Создавайте подсказки прямо на сайте</h2>
           <p>
@@ -127,24 +128,34 @@ export function AppShell() {
             выберите подготовленный элемент, настройте текст, проверьте
             подсказку и сохраните черновик в админ-панель.
           </p>
+          <ul>
+            <li>Интерактивный выбор элементов</li>
+            <li>Предпросмотр прямо на сайте</li>
+            <li>Сохранение черновиков в проект</li>
+            <li>Синхронизация с админ-панелью</li>
+          </ul>
+          <div className="home-extension__actions">
+            <ExtensionInstallGuideDialog />
+            <a
+              href="https://github.com/M2IE/Interactive-onboarding/tree/main/frontend/apps/extension"
+              rel="noreferrer"
+              target="_blank"
+            >
+              Исходный код
+              <ExternalLink aria-hidden="true" size={16} />
+            </a>
+          </div>
         </div>
-        <ul>
-          <li>Интерактивный выбор элементов</li>
-          <li>Предпросмотр прямо на сайте</li>
-          <li>Сохранение черновиков в проект</li>
-          <li>Синхронизация с админ-панелью</li>
-        </ul>
-        <div className="home-extension__actions">
-          <ExtensionInstallGuideDialog />
-          <a
-            href="https://github.com/M2IE/Interactive-onboarding/tree/main/frontend/apps/extension"
-            rel="noreferrer"
-            target="_blank"
-          >
-            Исходный код
-            <ExternalLink aria-hidden="true" size={16} />
-          </a>
-        </div>
+
+        <figure className="home-extension__demo">
+          <video autoPlay controls loop muted playsInline preload="metadata">
+            <source src={extensionDemoVideo} type="video/webm" />
+            Ваш браузер не поддерживает воспроизведение видео.
+          </video>
+          <figcaption>
+            Выбор элемента и создание подсказки в Onboarding Studio
+          </figcaption>
+        </figure>
       </section>
     </main>
   );
