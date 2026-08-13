@@ -1,4 +1,4 @@
-package repositories
+package projects
 
 import (
 	"context"
@@ -8,14 +8,15 @@ import (
 	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/domain"
 	"github.com/M2IE/Interactive-onboarding/services/widget/queries"
+	"github.com/M2IE/Interactive-onboarding/services/widget/queries/sqlc/gen"
 )
 
 type ProjectRepository struct {
 	q  *queries.Query
-	db rdb.Querier
+	db rdb.Database
 }
 
-func NewProjectRepository(db rdb.Querier, q *queries.Query) *ProjectRepository {
+func NewProjectRepository(db rdb.Database, q *queries.Query) *ProjectRepository {
 	return &ProjectRepository{q: q, db: db}
 }
 
@@ -35,4 +36,13 @@ func (s *ProjectRepository) querier(db rdb.Querier) rdb.Querier {
 		return db
 	}
 	return s.db
+}
+
+func toDomainProject(row *gen.Project) *domain.Project {
+	return &domain.Project{
+		ID:         row.ID,
+		Name:       row.Name,
+		ProjectKey: row.ProjectKey,
+		CreatedAt:  row.CreatedAt,
+	}
 }

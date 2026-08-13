@@ -1,4 +1,4 @@
-package repositories
+package scenarios
 
 import (
 	"context"
@@ -14,10 +14,10 @@ import (
 
 type ScenarioRepository struct {
 	q  *queries.Query
-	db rdb.Querier
+	db rdb.Database
 }
 
-func NewScenarioRepository(db rdb.Querier, q *queries.Query) *ScenarioRepository {
+func NewScenarioRepository(db rdb.Database, q *queries.Query) *ScenarioRepository {
 	return &ScenarioRepository{q: q, db: db}
 }
 
@@ -51,4 +51,16 @@ func (s *ScenarioRepository) querier(db rdb.Querier) rdb.Querier {
 		return db
 	}
 	return s.db
+}
+
+func toDomainScenario(row *gen.Scenario) *domain.Scenario {
+	return &domain.Scenario{
+		ID:        row.ID,
+		ProjectID: row.ProjectID,
+		Name:      row.Name,
+		URL:       row.Url,
+		Status:    domain.ScenarioStatus(row.Status),
+		CreatedAt: row.CreatedAt,
+		UpdatedAt: row.UpdatedAt,
+	}
 }
