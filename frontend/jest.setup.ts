@@ -3,6 +3,18 @@ import { TextDecoder, TextEncoder } from 'node:util'
 
 Object.assign(globalThis, { TextDecoder, TextEncoder })
 
+class TestResizeObserver implements ResizeObserver {
+  constructor() {}
+
+  disconnect() {}
+
+  observe() {}
+
+  unobserve() {}
+}
+
+Object.assign(globalThis, { ResizeObserver: TestResizeObserver })
+
 class TestBroadcastChannel extends EventTarget implements BroadcastChannel {
   static channels = new Map<string, Set<TestBroadcastChannel>>()
   readonly name: string

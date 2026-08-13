@@ -11,6 +11,12 @@ import {
   Tooltip,
 } from 'radix-ui'
 
+export {
+  ResizablePanel,
+  ResizableWorkspace,
+  ResizeHandle,
+} from './resizable'
+
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type ButtonSize = 'small' | 'medium' | 'large'
 
