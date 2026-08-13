@@ -197,18 +197,28 @@ func seedEvents(ctx context.Context, ch olap.Database, projectID, scenarioID uui
 	step1 := &stepIDs[0]
 	step2 := &stepIDs[1]
 
-	specs := []struct {
+	type eventSpec struct {
 		count     int
 		stepID    *uuid.UUID
 		prefix    string
 		eventType string
-	}{
+	}
+
+	specs := []eventSpec{
 		{10, step1, "session-s1", "step_viewed"},
 		{7, step2, "session-s2", "step_viewed"},
 		{5, step1, "session-c1", "step_completed"},
 		{3, step2, "session-c2", "step_completed"},
 		{2, nil, "session-sc", "scenario_completed"},
 		{1, nil, "session-dismiss", "scenario_dismissed"},
+	}
+
+	if len(stepIDs) >= 3 {
+		step3 := &stepIDs[2]
+		specs = append(specs,
+			eventSpec{5, step3, "session-s3", "step_viewed"},
+			eventSpec{2, step3, "session-c3", "step_completed"},
+		)
 	}
 
 	for _, sp := range specs {

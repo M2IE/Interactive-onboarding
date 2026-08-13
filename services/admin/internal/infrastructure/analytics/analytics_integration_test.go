@@ -14,7 +14,7 @@ import (
 
 	"github.com/M2IE/Interactive-onboarding/pkg/database/olap"
 	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
-	"github.com/M2IE/Interactive-onboarding/pkg/pdfengine"
+	"github.com/M2IE/Interactive-onboarding/pkg/pdfengine/elements"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/M2IE/Interactive-onboarding/services/admin/queries"
 	chq "github.com/M2IE/Interactive-onboarding/services/admin/queries/clickhouse"
@@ -56,7 +56,7 @@ func (m *mockS3) Download(ctx context.Context, bucket, key string) (io.ReadClose
 
 type mockPDF struct{}
 
-func (m *mockPDF) GeneratePDF(ctx context.Context, content pdfengine.Content) ([]byte, error) {
+func (m *mockPDF) GeneratePDF(ctx context.Context, content elements.Content) ([]byte, error) {
 	return []byte("PDF"), nil
 }
 

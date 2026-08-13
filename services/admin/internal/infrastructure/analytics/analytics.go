@@ -42,6 +42,11 @@ func NewAnalyticsInfrastructure(db rdb.Querier, q *queries.Query, ch olap.Databa
 }
 
 func (a *AnalyticsInfrastructure) GetScenarioAnalytics(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (*domain.Analytics, error) {
+	scenario, err := a.q.GetScenario(ctx, a.querier(db), scenarioID)
+	if err != nil {
+		return nil, err
+	}
+
 	firstStepID, err := a.q.GetFirstStepID(ctx, a.querier(db), scenarioID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
@@ -55,7 +60,9 @@ func (a *AnalyticsInfrastructure) GetScenarioAnalytics(ctx context.Context, db r
 		return nil, err
 	}
 
-	return toDomainAnalytics(&result), nil
+	analytics := toDomainAnalytics(&result)
+	analytics.Name = scenario.Name
+	return analytics, nil
 }
 
 func (a *AnalyticsInfrastructure) ScenarioExists(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (bool, error) {
