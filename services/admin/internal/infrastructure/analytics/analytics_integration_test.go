@@ -12,10 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
-	"github.com/M2IE/Interactive-onboarding/pkg/pdfengine"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/olap"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
+	"github.com/M2IE/Interactive-onboarding/pkg/pdfengine/elements"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/M2IE/Interactive-onboarding/services/admin/queries"
+	chq "github.com/M2IE/Interactive-onboarding/services/admin/queries/clickhouse"
 	"github.com/M2IE/Interactive-onboarding/services/admin/queries/sqlc/gen"
 	"github.com/M2IE/Interactive-onboarding/tests/dbScenario"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -23,7 +25,10 @@ import (
 	"github.com/google/uuid"
 )
 
-var testDB database.Database
+var (
+	testDB rdb.Database
+	testCH olap.Database
+)
 
 type mockS3 struct {
 	storage     map[string][]byte
@@ -35,20 +40,23 @@ func (m *mockS3) Upload(ctx context.Context, bucket, key string, body io.Reader,
 	m.storage[key] = data
 	return nil
 }
+
 func (m *mockS3) Download(ctx context.Context, bucket, key string) (io.ReadCloser, error) {
 	if m.downloadErr != nil {
 		return nil, m.downloadErr
 	}
+
 	data, ok := m.storage[key]
 	if !ok {
 		return nil, &types.NoSuchKey{Message: aws.String("not found")}
 	}
+
 	return io.NopCloser(bytes.NewReader(data)), nil
 }
 
 type mockPDF struct{}
 
-func (m *mockPDF) GeneratePDF(ctx context.Context, content pdfengine.Content) ([]byte, error) {
+func (m *mockPDF) GeneratePDF(ctx context.Context, content elements.Content) ([]byte, error) {
 	return []byte("PDF"), nil
 }
 
@@ -58,13 +66,42 @@ func TestMain(m *testing.M) {
 
 	db, cleanup, err := dbScenario.StartPostgres(ctx)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "setup: %v\n", err)
+		fmt.Fprintf(os.Stderr, "setup postgres: %v\n", err)
 		os.Exit(1)
 	}
+
 	testDB = db
+	ch, chCleanup, err := dbScenario.StartClickHouse(ctx)
+	if err != nil {
+		cleanup()
+		fmt.Fprintf(os.Stderr, "setup clickhouse: %v\n", err)
+		os.Exit(1)
+	}
+
+	testCH = ch
+
 	code := m.Run()
+	chCleanup()
 	cleanup()
 	os.Exit(code)
+}
+
+func insertCHEvents(t *testing.T, ctx context.Context, projID, scID uuid.UUID, stepID *uuid.UUID, eventType string, n int) {
+	t.Helper()
+	q := chq.NewCH()
+	for i := range n {
+		if err := q.InsertEvent(ctx, testCH, chq.InsertEventParams{
+			ID:         uuid.New(),
+			ProjectID:  projID,
+			ScenarioID: scID,
+			StepID:     stepID,
+			SessionID:  fmt.Sprintf("sess-%s-%d", eventType, i),
+			Type:       eventType,
+			EventKey:   uuid.NewString(),
+		}); err != nil {
+			t.Fatalf("insert ch event: %v", err)
+		}
+	}
 }
 
 func TestAnalytics_ScenarioExists(t *testing.T) {
@@ -72,7 +109,7 @@ func TestAnalytics_ScenarioExists(t *testing.T) {
 	q := queries.New()
 	s3Client := &mockS3{storage: make(map[string][]byte)}
 	pdfEngine := &mockPDF{}
-	infra := NewAnalyticsInfrastructure(testDB, q, nil, s3Client, pdfEngine, "reports")
+	infra := NewAnalyticsInfrastructure(testDB, q, testCH, s3Client, pdfEngine, "reports")
 	projID := createProject(t, ctx)
 
 	scID := createScenario(t, ctx, projID)
@@ -95,12 +132,11 @@ func TestAnalytics_ScenarioExists(t *testing.T) {
 }
 
 func TestAnalytics_GetAnalytics(t *testing.T) {
-	t.Skip("analytics counting moved to ClickHouse; needs a ClickHouse testcontainer (TODO)")
 	ctx := context.Background()
 	q := queries.New()
 	s3Client := &mockS3{storage: make(map[string][]byte)}
 	pdfEngine := &mockPDF{}
-	infra := NewAnalyticsInfrastructure(testDB, q, nil, s3Client, pdfEngine, "reports")
+	infra := NewAnalyticsInfrastructure(testDB, q, testCH, s3Client, pdfEngine, "reports")
 	projID := createProject(t, ctx)
 	scID := createScenario(t, ctx, projID)
 
@@ -114,6 +150,7 @@ func TestAnalytics_GetAnalytics(t *testing.T) {
 		Title:      "S1",
 		Body:       "B1",
 	})
+
 	if err != nil {
 		t.Fatalf("create step1: %v", err)
 	}
@@ -125,18 +162,13 @@ func TestAnalytics_GetAnalytics(t *testing.T) {
 		Title:      "S2",
 		Body:       "B2",
 	})
+
 	if err != nil {
 		t.Fatalf("create step2: %v", err)
 	}
 
-	for i := 0; i < 10; i++ {
-		testDB.ExecContext(ctx, `INSERT INTO event (id, project_id, scenario_id, step_id, session_id, type, event_key, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7, NOW())`,
-			uuid.New(), projID, scID, step1ID, fmt.Sprintf("s%d", i), "step_viewed", uuid.New())
-	}
-	for i := 0; i < 3; i++ {
-		testDB.ExecContext(ctx, `INSERT INTO event (id, project_id, scenario_id, step_id, session_id, type, event_key, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7, NOW())`,
-			uuid.New(), projID, scID, uuid.NullUUID{}, fmt.Sprintf("c%d", i), "scenario_completed", uuid.New())
-	}
+	insertCHEvents(t, ctx, projID, scID, &step1ID, "step_viewed", 10)
+	insertCHEvents(t, ctx, projID, scID, nil, "scenario_completed", 3)
 
 	result, err := infra.GetScenarioAnalytics(ctx, nil, scID)
 	if err != nil {
@@ -145,6 +177,7 @@ func TestAnalytics_GetAnalytics(t *testing.T) {
 	if result.TotalViews != 10 {
 		t.Errorf("totalViews = %d, want 10", result.TotalViews)
 	}
+
 	if result.Completed != 3 {
 		t.Errorf("completed = %d, want 3", result.Completed)
 	}
@@ -156,6 +189,7 @@ func TestAnalytics_GetAnalytics(t *testing.T) {
 	if len(steps) != 2 {
 		t.Fatalf("steps count = %d, want 2", len(steps))
 	}
+
 	if steps[0].Views != 10 {
 		t.Errorf("step1 views = %d, want 10", steps[0].Views)
 	}
@@ -166,7 +200,7 @@ func TestAnalytics_UploadAnalytics(t *testing.T) {
 	q := queries.New()
 	s3Client := &mockS3{storage: make(map[string][]byte)}
 	pdfEngine := &mockPDF{}
-	infra := NewAnalyticsInfrastructure(testDB, q, nil, s3Client, pdfEngine, "reports")
+	infra := NewAnalyticsInfrastructure(testDB, q, testCH, s3Client, pdfEngine, "reports")
 	projID := createProject(t, ctx)
 	scID := createScenario(t, ctx, projID)
 
@@ -184,9 +218,11 @@ func TestAnalytics_UploadAnalytics(t *testing.T) {
 	if key == "" {
 		t.Error("expected non-empty key")
 	}
+
 	if _, ok := s3Client.storage[key]; !ok {
 		t.Error("PDF was not uploaded to S3")
 	}
+
 	if string(s3Client.storage[key]) != "PDF" {
 		t.Errorf("uploaded content = %q, want PDF", string(s3Client.storage[key]))
 	}
@@ -197,7 +233,7 @@ func TestAnalytics_DownloadAnalytics(t *testing.T) {
 	q := queries.New()
 	s3Client := &mockS3{storage: make(map[string][]byte)}
 	pdfEngine := &mockPDF{}
-	infra := NewAnalyticsInfrastructure(testDB, q, nil, s3Client, pdfEngine, "reports")
+	infra := NewAnalyticsInfrastructure(testDB, q, testCH, s3Client, pdfEngine, "reports")
 	projID := createProject(t, ctx)
 	scID := createScenario(t, ctx, projID)
 
@@ -233,7 +269,7 @@ func TestAnalytics_DownloadAnalytics_NotFound(t *testing.T) {
 	q := queries.New()
 	s3Client := &mockS3{storage: make(map[string][]byte)}
 	pdfEngine := &mockPDF{}
-	infra := NewAnalyticsInfrastructure(testDB, q, nil, s3Client, pdfEngine, "reports")
+	infra := NewAnalyticsInfrastructure(testDB, q, testCH, s3Client, pdfEngine, "reports")
 
 	_, err := infra.DownloadAnalytics(ctx, "nonexistent.pdf")
 	if err == nil {
@@ -245,12 +281,11 @@ func TestAnalytics_DownloadAnalytics_NotFound(t *testing.T) {
 }
 
 func TestAnalytics_GetAnalytics_Empty(t *testing.T) {
-	t.Skip("analytics counting moved to ClickHouse; needs a ClickHouse testcontainer (TODO)")
 	ctx := context.Background()
 	q := queries.New()
 	s3Client := &mockS3{storage: make(map[string][]byte)}
 	pdfEngine := &mockPDF{}
-	infra := NewAnalyticsInfrastructure(testDB, q, nil, s3Client, pdfEngine, "reports")
+	infra := NewAnalyticsInfrastructure(testDB, q, testCH, s3Client, pdfEngine, "reports")
 	projID := createProject(t, ctx)
 	scID := createScenario(t, ctx, projID)
 

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/google/uuid"
 )
@@ -18,7 +18,7 @@ type mockInfra struct {
 	getErr  error
 }
 
-func (m *mockInfra) GetByKey(_ context.Context, _ database.Querier, projectKey string) (*domain.Project, error) {
+func (m *mockInfra) GetByKey(_ context.Context, _ rdb.Querier, projectKey string) (*domain.Project, error) {
 	m.getKey = projectKey
 	return m.getResp, m.getErr
 }

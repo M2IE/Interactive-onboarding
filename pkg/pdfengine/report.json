@@ -1,0 +1,70 @@
+{
+  "page": {"size": "A4", "margins": "20mm"},
+  "metadata": {"title": "{{.Title}}"},
+  "body": [
+    {"row": {"cols": [
+      {"span": 12, "elements": [
+        {"type": "text", "content": "{{.Title}}", "style": {"size": 24, "bold": true, "color": "#1A1A2E"}},
+        {"type": "spacer", "height": "2mm"},
+        {"type": "text", "content": "{{.Subtitle}}", "style": {"size": 14, "color": "#555555"}},
+        {"type": "spacer", "height": "1mm"},
+        {"type": "text", "content": "{{.Date}}", "style": {"size": 11, "color": "#777777"}},
+        {"type": "spacer", "height": "8mm"}
+      ]}
+    ]}},
+    {"row": {"cols": [
+      {"span": 5, "elements": [
+        {"type": "text", "content": "Ключевые метрики", "style": {"size": 14, "bold": true}},
+        {"type": "spacer", "height": "3mm"},
+        {"type": "image", "image": {"src": "{{pieChart .Metrics}}", "fit": "contain", "align": "center"}}
+      ]},
+      {"span": 7, "elements": [
+        {"type": "spacer", "height": "7mm"}
+        {{- range .Metrics}}
+        ,{"type": "text", "content": "{{.Label}}: {{.Value}} ({{.Share}})", "style": {"size": 12}}
+        {{- end}}
+        ,{"type": "spacer", "height": "3mm"},
+        {"type": "text", "content": "Процент завершения: {{.CompletionRate}}", "style": {"size": 13, "bold": true}}
+      ]}
+    ]}}
+    {{- if .FunnelRows}}
+    ,{"row": {"cols": [
+      {"span": 12, "elements": [
+        {"type": "spacer", "height": "6mm"},
+        {"type": "text", "content": "Воронка шагов", "style": {"size": 14, "bold": true}},
+        {"type": "spacer", "height": "3mm"},
+        {"type": "table", "table": {
+          "header": ["Шаг", "Просмотров", "Отток"],
+          "columnWidths": [40, 30, 30],
+          "headerStyle": {"bold": true, "color": "#FFFFFF", "background": "#1A237E"},
+          "stripeColor": "#F5F5F5",
+          "rows": {{toJSON .FunnelRows}}
+        }}
+      ]}
+    ]}}
+    ,{"row": {"cols": [
+      {"span": 12, "elements": [
+        {"type": "spacer", "height": "6mm"},
+        {"type": "text", "content": "Аналитика шагов", "style": {"size": 14, "bold": true}},
+        {"type": "spacer", "height": "3mm"},
+        {"type": "table", "table": {
+          "header": ["Шаг", "Просмотров", "Завершено", "Конверсия"],
+          "columnWidths": [25, 25, 25, 25],
+          "headerStyle": {"bold": true, "color": "#FFFFFF", "background": "#1A237E"},
+          "stripeColor": "#F5F5F5",
+          "rows": {{toJSON .StepRows}}
+        }}
+      ]}
+    ]}}
+    {{- end}}
+    ,
+    {"row": {"cols": [
+      {"span": 12, "elements": [
+        {"type": "spacer", "height": "6mm"},
+        {"type": "text", "content": "Ключевые моменты", "style": {"size": 14, "bold": true}},
+        {"type": "spacer", "height": "3mm"},
+        {"type": "list", "list": {"items": {{toJSON .Findings}}}}
+      ]}
+    ]}}
+  ]
+}

@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/clickhouse"
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/olap"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/pkg/pdfengine"
 	"github.com/M2IE/Interactive-onboarding/pkg/s3"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/config"
@@ -26,7 +26,7 @@ func main() {
 		slog.Error("Config did not parsed", "error", err)
 	}
 
-	db, err := database.New(context.Background(), database.Postgres, cfg.PostgresConfig.DSN())
+	db, err := rdb.New(context.Background(), rdb.PostgresType, cfg.PostgresConfig.DSN())
 	if err != nil {
 		slog.Error("Database connection error", "error", err)
 		return
@@ -49,7 +49,7 @@ func main() {
 		return
 	}
 
-	chConn, err := clickhouse.New(context.Background(), clickhouse.Options{
+	chConn, err := olap.New(context.Background(), olap.ClickhouseType, olap.Options{
 		Addr:     cfg.Addr(),
 		Database: cfg.ClickHouseConfig.DBName,
 		Username: cfg.ClickHouseConfig.User,

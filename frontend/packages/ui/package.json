@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "lucide-react": "^1.30.0",
-    "radix-ui": "^1.6.7"
+    "radix-ui": "^1.6.7",
+    "react-resizable-panels": "^4.12.2"
   }
 }

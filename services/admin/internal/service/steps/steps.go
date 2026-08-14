@@ -4,36 +4,36 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/google/uuid"
 )
 
 type IStepsInfrastructure interface {
-	GetStepByID(ctx context.Context, db database.Querier, id uuid.UUID) (*domain.Step, error)
-	GetStepsByScenario(ctx context.Context, db database.Querier, scenarioID uuid.UUID) ([]domain.Step, error)
-	CreateStep(ctx context.Context, db database.Querier, step *domain.Step) error
-	UpdateStep(ctx context.Context, db database.Querier, step *domain.Step) error
-	DeleteStep(ctx context.Context, db database.Querier, id uuid.UUID) error
-	GetMaxOrder(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (int, error)
-	DecrementOrdersAfter(ctx context.Context, db database.Querier, scenarioID uuid.UUID, afterOrder int) error
-	UpdateStepOrder(ctx context.Context, db database.Querier, stepID uuid.UUID, newOrder int) error
-	GetScenarioStatus(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (domain.ScenarioStatus, error)
+	GetStepByID(ctx context.Context, db rdb.Querier, id uuid.UUID) (*domain.Step, error)
+	GetStepsByScenario(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) ([]domain.Step, error)
+	CreateStep(ctx context.Context, db rdb.Querier, step *domain.Step) error
+	UpdateStep(ctx context.Context, db rdb.Querier, step *domain.Step) error
+	DeleteStep(ctx context.Context, db rdb.Querier, id uuid.UUID) error
+	GetMaxOrder(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (int, error)
+	DecrementOrdersAfter(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID, afterOrder int) error
+	UpdateStepOrder(ctx context.Context, db rdb.Querier, stepID uuid.UUID, newOrder int) error
+	GetScenarioStatus(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (domain.ScenarioStatus, error)
 }
 
 type StepsService struct {
 	infra     IStepsInfrastructure
-	txManager database.Database
+	txManager rdb.Database
 }
 
-func NewStepsService(infra IStepsInfrastructure, txManager database.Database) *StepsService {
+func NewStepsService(infra IStepsInfrastructure, txManager rdb.Database) *StepsService {
 	return &StepsService{
 		infra:     infra,
 		txManager: txManager,
 	}
 }
 
-func (s *StepsService) ensureScenarioNotPublished(ctx context.Context, db database.Querier, scenarioID uuid.UUID) error {
+func (s *StepsService) ensureScenarioNotPublished(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) error {
 	status, err := s.infra.GetScenarioStatus(ctx, db, scenarioID)
 	if err != nil {
 		return err

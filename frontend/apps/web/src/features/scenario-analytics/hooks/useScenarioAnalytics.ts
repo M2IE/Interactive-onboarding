@@ -24,17 +24,17 @@ const useScenarioAnalyticsDispatch =
 const useScenarioAnalyticsSelector =
   useSelector.withTypes<ScenarioAnalyticsRootState>()
 
-export function useScenarioAnalytics() {
+export function useScenarioAnalytics(enabled = true) {
   const dispatch = useScenarioAnalyticsDispatch()
   const state = useScenarioAnalyticsSelector(
     (rootState) => rootState.scenarioAnalytics,
   )
 
   useEffect(() => {
-    if (state.workspace.status === 'idle') {
+    if (enabled && state.workspace.status === 'idle') {
       void dispatch(loadScenarioAnalytics())
     }
-  }, [dispatch, state.workspace.status])
+  }, [dispatch, enabled, state.workspace.status])
 
   return {
     reportState: state.report,

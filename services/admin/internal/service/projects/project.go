@@ -3,12 +3,12 @@ package projects
 import (
 	"context"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 )
 
 type IProjectInfrastructure interface {
-	GetByKey(ctx context.Context, db database.Querier, projectKey string) (*domain.Project, error)
+	GetByKey(ctx context.Context, db rdb.Querier, projectKey string) (*domain.Project, error)
 }
 
 type ProjectService struct {

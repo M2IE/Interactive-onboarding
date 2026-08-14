@@ -2,6 +2,11 @@ import type { ComponentProps } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { defaultScenarios } from '@/entities/scenario/defaultScenario'
 import { ScenarioEditor } from './ScenarioEditor'
+import { validateScenario } from '../model/scenarioValidation'
+
+jest.mock('@/shared/hooks/useMediaQuery', () => ({
+  useMediaQuery: () => true,
+}))
 
 describe('ScenarioEditor', () => {
   const activeScenario = defaultScenarios[0]
@@ -27,6 +32,21 @@ describe('ScenarioEditor', () => {
 
     return props
   }
+
+  it('renders keyboard-accessible desktop resize handles', () => {
+    renderEditor()
+
+    expect(
+      screen.getByRole('separator', {
+        name: 'Изменить ширину списка сценариев',
+      }),
+    ).toHaveAttribute('aria-orientation', 'vertical')
+    expect(
+      screen.getByRole('separator', {
+        name: 'Изменить ширину предпросмотра',
+      }),
+    ).toHaveAttribute('tabindex', '0')
+  })
 
   it('filters the scenario registry by name or page path', () => {
     renderEditor()
@@ -103,5 +123,25 @@ describe('ScenarioEditor', () => {
       screen.getByRole('button', { name: 'Открыть демо' }),
     ).toBeDisabled()
     expect(screen.getAllByText('Архивный')).not.toHaveLength(0)
+  })
+
+  it('shows publication errors next to the editor', () => {
+    const invalidScenario = {
+      ...activeScenario,
+      name: '',
+      url: 'invalid',
+    }
+
+    renderEditor({
+      activeScenario: invalidScenario,
+      activeStep: invalidScenario.steps[0],
+      scenarios: [invalidScenario],
+      validation: validateScenario(invalidScenario),
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Проверьте сценарий перед публикацией',
+    )
+    expect(screen.getByText('Укажите понятное название сценария.')).toBeInTheDocument()
   })
 })

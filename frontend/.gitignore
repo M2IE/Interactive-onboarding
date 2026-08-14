@@ -11,6 +11,9 @@ node_modules
 .tsbuild
 dist
 dist-ssr
+playwright-report
+test-results
+release
 *.tsbuildinfo
 *.local
 

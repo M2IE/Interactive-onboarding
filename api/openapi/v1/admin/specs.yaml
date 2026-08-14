@@ -494,6 +494,299 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/InternalErrorResponse" }
 
+  /admin/flows:
+    post:
+      tags:
+        - Flows
+      summary: Create flow
+      operationId: createFlow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFlowRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Flow"
+        "400":
+          description: Неверный запрос
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "409":
+          description: Конфликт FlowKey
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+    get:
+      tags:
+        - Flows
+      summary: List flows
+      operationId: listFlows
+      parameters:
+        - name: projectId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List of flows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Flow"
+        "400":
+          description: Неверный запрос
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+
+  /admin/flows/{flowId}:
+    parameters:
+      - name: flowId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - Flows
+      summary: Get flow by ID
+      operationId: getFlow
+      responses:
+        "200":
+          description: Flow details with scenarios
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FlowDetails"
+        "400":
+          description: Неверный запрос
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "404":
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+    patch:
+      tags:
+        - Flows
+      summary: Update flow
+      operationId: updateFlow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFlowRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Flow"
+        "400":
+          description: Ошибка при запросе
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "404":
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Не прошёл валидацию
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+    delete:
+      tags:
+        - Flows
+      summary: Delete flow
+      operationId: deleteFlow
+      responses:
+        "204":
+          description: Deleted
+        "400":
+          description: Ошибка при запросе
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "404":
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+
+  /admin/flows/{flowId}/scenarios:
+    parameters:
+      - name: flowId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - Flows
+      summary: Add scenario to flow
+      operationId: addScenarioToFlow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddScenarioToFlowRequest"
+      responses:
+        "201":
+          description: Added
+        "400":
+          description: Неверный запрос
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "404":
+          description: Flow or scenario not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Не прошёл валидацию (например, дублирующийся order_num)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+
+  /admin/flows/{flowId}/scenarios/{scenarioId}:
+    parameters:
+      - name: flowId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: scenarioId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    delete:
+      tags:
+        - Flows
+      summary: Remove scenario from flow
+      operationId: removeScenarioFromFlow
+      responses:
+        "204":
+          description: Removed
+        "400":
+          description: Ошибка при запросе
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "404":
+          description: Flow or scenario not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+
+  /admin/flows/{flowId}/scenarios/order:
+    parameters:
+      - name: flowId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - Flows
+      summary: Reorder scenarios in flow
+      operationId: reorderFlowScenarios
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderFlowScenariosRequest"
+      responses:
+        "204":
+          description: Updated
+        "400":
+          description: Неверный запрос
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "404":
+          description: Flow not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: Не прошёл валидацию (дублирующиеся order_num и т.д.)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "500":
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InternalErrorResponse" }
+
+
 components:
   parameters:
     ScenarioId:
@@ -526,6 +819,8 @@ components:
                 - SCENARIO_NOT_FOUND
                 - STEP_NOT_FOUND
                 - PROJECT_NOT_FOUND
+                - FLOW_NOT_FOUND
+                - SCENARIO_NOT_IN_FLOW
 
                 # HTTP 409
                 - SCENARIO_ALREADY_PUBLISHED
@@ -533,6 +828,8 @@ components:
                 - SCENARIO_HAS_NO_STEPS
                 - SCENARIO_STATE_CONFLICT
                 - STEP_ORDER_CONFLICT
+                - FLOW_KEY_ALREADY_EXISTS
+                - SCENARIO_ALREADY_IN_FLOW
 
                 # HTTP 422
                 - INVALID_SCENARIO_NAME
@@ -540,6 +837,9 @@ components:
                 - INVALID_STEP_SELECTOR
                 - INVALID_STEP_TITLE
                 - INVALID_STEP_BODY
+                - INVALID_FLOW_KEY
+                - FLOW_ORDER_CONFLICT
+                - DUPLICATE_ORDER
             message:
               type: string
 
@@ -825,3 +1125,140 @@ components:
         nextUrl:
           type: string
           description: URL для перехода после завершения шага (опционально)
+    
+    Flow:
+      type: object
+      required:
+        - id
+        - projectId
+        - name
+        - flowKey
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        flowKey:
+          type: string
+          description: Уникальный ключ потока
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateFlowRequest:
+      type: object
+      required:
+        - projectId
+        - name
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        flowKey:
+          type: string
+          description: Опциональный уникальный ключ. Если не передан, будет сгенерирован автоматически.
+
+    UpdateFlowRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+
+    AddScenarioToFlowRequest:
+      type: object
+      required:
+        - scenarioId
+        - orderNum
+      properties:
+        scenarioId:
+          type: string
+          format: uuid
+        orderNum:
+          type: integer
+          minimum: 1
+    FlowScenarioItem:
+      type: object
+      required:
+        - scenarioId
+        - orderNum
+        - name
+        - url
+        - status
+      properties:
+        scenarioId:
+          type: string
+          format: uuid
+        orderNum:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+        url:
+          type: string
+        status:
+          $ref: "#/components/schemas/ScenarioStatus"
+
+    FlowDetails:
+      type: object
+      required:
+        - id
+        - projectId
+        - name
+        - flowKey
+        - scenarios
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        flowKey:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        scenarios:
+          type: array
+          items:
+            $ref: "#/components/schemas/FlowScenarioItem"
+
+    ReorderFlowScenariosRequest:
+      type: object
+      required:
+        - scenarios
+      properties:
+        scenarios:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required:
+              - scenarioId
+              - orderNum
+            properties:
+              scenarioId:
+                type: string
+                format: uuid
+              orderNum:
+                type: integer
+                minimum: 1

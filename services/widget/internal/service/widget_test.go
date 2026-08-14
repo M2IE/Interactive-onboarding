@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/domain"
 	"github.com/google/uuid"
 )
@@ -14,6 +14,7 @@ import (
 var testProjectID = uuid.MustParse("550e8400-e29b-41d4-a716-446655440000")
 var testScenarioID = uuid.MustParse("650e8400-e29b-41d4-a716-446655440001")
 var testStepID = uuid.MustParse("750e8400-e29b-41d4-a716-446655440002")
+var testFlowID = uuid.MustParse("850e8400-e29b-41d4-a716-446655440003")
 
 func testProject() *domain.Project {
 	return &domain.Project{ID: testProjectID, Name: "Test", ProjectKey: "test-key"}
@@ -27,6 +28,15 @@ func testSteps() []domain.Step {
 	return []domain.Step{
 		{ID: testStepID, ScenarioID: testScenarioID, OrderNum: 1, Selector: "#s1", Title: "Step 1", Body: "Body 1"},
 		{ID: uuid.New(), ScenarioID: testScenarioID, OrderNum: 2, Selector: "#s2", Title: "Step 2", Body: "Body 2"},
+	}
+}
+
+func testFlow() *domain.Flow {
+	return &domain.Flow{
+		ID:        testFlowID,
+		ProjectID: testProjectID,
+		Name:      "Test Flow",
+		FlowKey:   "test-flow",
 	}
 }
 
@@ -65,7 +75,7 @@ func (m *mockDB) QueryContext(context.Context, string, ...any) (*sql.Rows, error
 func (m *mockDB) QueryRowContext(context.Context, string, ...any) *sql.Row { return nil }
 func (m *mockDB) Ping() error                                              { return nil }
 func (m *mockDB) Close() error                                             { return nil }
-func (m *mockDB) Begin() (database.Tx, error) {
+func (m *mockDB) Begin() (rdb.Tx, error) {
 	if m.beginErr != nil {
 		return nil, m.beginErr
 	}
@@ -73,60 +83,78 @@ func (m *mockDB) Begin() (database.Tx, error) {
 }
 
 type mockInfra struct {
-	projectResp       *domain.Project
-	projectErr        error
-	publishedScenario *domain.Scenario
-	publishedErr      error
-	stepsResp         []domain.Step
-	stepsErr          error
-	stepByIDResp      *domain.Step
-	stepByIDErr       error
-	scenarioByIDResp  *domain.Scenario
-	scenarioByIDErr   error
-	maxOrder          int
-	maxOrderErr       error
-	insertEventErr    error
-	insertedEvent     *domain.Event
+	projectResp          *domain.Project
+	projectErr           error
+	publishedScenario    *domain.Scenario
+	publishedErr         error
+	stepsResp            []domain.Step
+	stepsErr             error
+	stepByIDResp         *domain.Step
+	stepByIDErr          error
+	scenarioByIDResp     *domain.Scenario
+	scenarioByIDErr      error
+	maxOrder             int
+	maxOrderErr          error
+	insertEventErr       error
+	insertedEvent        *domain.Event
+	flowByScenarioIDResp *domain.Flow
+	flowByScenarioIDErr  error
+	flowByKeyResp        *domain.Flow
+	flowByKeyErr         error
+	flowScenariosResp    []domain.FlowScenarioDetail
+	flowScenariosErr     error
 }
 
-func (m *mockInfra) InsertEvent(ctx context.Context, db database.Querier, event *domain.Event) error {
+func (m *mockInfra) InsertEvent(ctx context.Context, db rdb.Querier, event *domain.Event) error {
 	m.insertedEvent = event
 	return m.insertEventErr
 }
 
-func (m *mockInfra) GetProjectByKey(ctx context.Context, db database.Querier, key string) (*domain.Project, error) {
+func (m *mockInfra) GetProjectByKey(ctx context.Context, db rdb.Querier, key string) (*domain.Project, error) {
 	return m.projectResp, m.projectErr
 }
 
-func (m *mockInfra) GetPublishedScenarioByURL(ctx context.Context, db database.Querier, projectID uuid.UUID, url string) (*domain.Scenario, error) {
+func (m *mockInfra) GetPublishedScenarioByURL(ctx context.Context, db rdb.Querier, projectID uuid.UUID, url string) (*domain.Scenario, error) {
 	return m.publishedScenario, m.publishedErr
 }
 
-func (m *mockInfra) GetScenarioByID(ctx context.Context, db database.Querier, id uuid.UUID) (*domain.Scenario, error) {
+func (m *mockInfra) GetScenarioByID(ctx context.Context, db rdb.Querier, id uuid.UUID) (*domain.Scenario, error) {
 	return m.scenarioByIDResp, m.scenarioByIDErr
 }
 
-func (m *mockInfra) GetStepsByScenario(ctx context.Context, db database.Querier, scenarioID uuid.UUID) ([]domain.Step, error) {
+func (m *mockInfra) GetStepsByScenario(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) ([]domain.Step, error) {
 	return m.stepsResp, m.stepsErr
 }
 
-func (m *mockInfra) GetStepByID(ctx context.Context, db database.Querier, stepID uuid.UUID) (*domain.Step, error) {
+func (m *mockInfra) GetStepByID(ctx context.Context, db rdb.Querier, stepID uuid.UUID) (*domain.Step, error) {
 	return m.stepByIDResp, m.stepByIDErr
 }
 
-func (m *mockInfra) GetMaxOrderByScenario(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (int, error) {
+func (m *mockInfra) GetMaxOrderByScenario(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (int, error) {
 	return m.maxOrder, m.maxOrderErr
 }
 
-func (m *mockInfra) ExistsEventByKey(ctx context.Context, db database.Querier, eventKey string) (bool, error) {
+func (m *mockInfra) ExistsEventByKey(ctx context.Context, db rdb.Querier, eventKey string) (bool, error) {
 	return false, nil
 }
 
-func (m *mockInfra) ExistsScenarioCompleted(ctx context.Context, db database.Querier, sessionID string, scenarioID *uuid.UUID) (bool, error) {
+func (m *mockInfra) ExistsScenarioCompleted(ctx context.Context, db rdb.Querier, sessionID string, scenarioID *uuid.UUID) (bool, error) {
 	return false, nil
 }
 
-func newSvc(infra IWidgetInfrastructure, db database.Database) *WidgetService {
+func (m *mockInfra) GetFlowByKey(ctx context.Context, db rdb.Querier, projectID uuid.UUID, flowKey string) (*domain.Flow, error) {
+	return m.flowByKeyResp, m.flowByKeyErr
+}
+
+func (m *mockInfra) GetFlowByScenarioID(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (*domain.Flow, error) {
+	return m.flowByScenarioIDResp, m.flowByScenarioIDErr
+}
+
+func (m *mockInfra) GetFlowScenariosWithDetails(ctx context.Context, db rdb.Querier, flowID uuid.UUID) ([]domain.FlowScenarioDetail, error) {
+	return m.flowScenariosResp, m.flowScenariosErr
+}
+
+func newSvc(infra IWidgetInfrastructure, db rdb.Database) *WidgetService {
 	return NewWidgetService(infra, db)
 }
 
@@ -138,9 +166,9 @@ func TestGetScenario_Success(t *testing.T) {
 		publishedScenario: testScenario(),
 		stepsResp:         testSteps(),
 	}
-	svc := newSvc(infra, &mockDB{})
+	svc := newSvc(infra, &mockDB{tx: &mockTx{}})
 
-	scenario, steps, err := svc.GetScenario(context.Background(), "test-key", "/test")
+	scenario, steps, flowID, flowKey, err := svc.GetScenario(context.Background(), "test-key", "/test")
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -151,15 +179,53 @@ func TestGetScenario_Success(t *testing.T) {
 	if len(steps) != 2 {
 		t.Errorf("steps count = %d, want 2", len(steps))
 	}
+	if flowID != nil {
+		t.Errorf("flowID should be nil, got %v", flowID)
+	}
+	if flowKey != nil {
+		t.Errorf("flowKey should be nil, got %v", flowKey)
+	}
+}
+
+func TestGetScenario_WithFlow(t *testing.T) {
+	infra := &mockInfra{
+		projectResp:          testProject(),
+		publishedScenario:    testScenario(),
+		stepsResp:            testSteps(),
+		flowByScenarioIDResp: testFlow(),
+	}
+	svc := newSvc(infra, &mockDB{tx: &mockTx{}})
+
+	scenario, steps, flowID, flowKey, err := svc.GetScenario(context.Background(), "test-key", "/test")
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if scenario.ID != testScenarioID {
+		t.Errorf("scenario ID mismatch")
+	}
+	if len(steps) != 2 {
+		t.Errorf("steps count = %d, want 2", len(steps))
+	}
+	if flowID == nil {
+		t.Error("flowID should not be nil")
+	} else if *flowID != testFlowID {
+		t.Errorf("flowID = %v, want %v", *flowID, testFlowID)
+	}
+	if flowKey == nil {
+		t.Error("flowKey should not be nil")
+	} else if *flowKey != "test-flow" {
+		t.Errorf("flowKey = %v, want test-flow", *flowKey)
+	}
 }
 
 func TestGetScenario_ProjectNotFound(t *testing.T) {
 	infra := &mockInfra{
 		projectErr: domain.ErrProjectNotFound,
 	}
-	svc := newSvc(infra, &mockDB{})
+	svc := newSvc(infra, &mockDB{tx: &mockTx{}})
 
-	_, _, err := svc.GetScenario(context.Background(), "bad-key", "/test")
+	_, _, _, _, err := svc.GetScenario(context.Background(), "bad-key", "/test")
 
 	if !errors.Is(err, domain.ErrProjectNotFound) {
 		t.Errorf("err = %v, want ErrProjectNotFound", err)
@@ -171,9 +237,9 @@ func TestGetScenario_NoPublishedScenario(t *testing.T) {
 		projectResp:  testProject(),
 		publishedErr: domain.ErrNoPublishedScenario,
 	}
-	svc := newSvc(infra, &mockDB{})
+	svc := newSvc(infra, &mockDB{tx: &mockTx{}})
 
-	_, _, err := svc.GetScenario(context.Background(), "test-key", "/test")
+	_, _, _, _, err := svc.GetScenario(context.Background(), "test-key", "/test")
 
 	if !errors.Is(err, domain.ErrNoPublishedScenario) {
 		t.Errorf("err = %v, want ErrNoPublishedScenario", err)

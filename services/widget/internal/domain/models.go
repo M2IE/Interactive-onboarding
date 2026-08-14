@@ -33,4 +33,5 @@ var (
 	ErrMissingScenarioOrStepID = errors.New("either scenario_id or step_id must be provided")
 	ErrInvalidEventType        = errors.New("invalid event type")
 	ErrEventAlreadyExists      = errors.New("event already exists")
+	ErrFlowNotFound            = errors.New("flow not found")
 )

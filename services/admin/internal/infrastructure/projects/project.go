@@ -5,24 +5,24 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/M2IE/Interactive-onboarding/services/admin/queries"
 )
 
 type ProjectInfrastructure struct {
 	q  *queries.Query
-	db database.Database
+	db rdb.Database
 }
 
-func NewProjectInfrastructure(db database.Database, q *queries.Query) *ProjectInfrastructure {
+func NewProjectInfrastructure(db rdb.Database, q *queries.Query) *ProjectInfrastructure {
 	return &ProjectInfrastructure{
 		q:  q,
 		db: db,
 	}
 }
 
-func (p *ProjectInfrastructure) GetByKey(ctx context.Context, db database.Querier, projectKey string) (*domain.Project, error) {
+func (p *ProjectInfrastructure) GetByKey(ctx context.Context, db rdb.Querier, projectKey string) (*domain.Project, error) {
 	row, err := p.q.GetProjectByKey(ctx, p.querier(db), projectKey)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -35,7 +35,7 @@ func (p *ProjectInfrastructure) GetByKey(ctx context.Context, db database.Querie
 	return toDomainProject(&row), nil
 }
 
-func (p *ProjectInfrastructure) querier(db database.Querier) database.Querier {
+func (p *ProjectInfrastructure) querier(db rdb.Querier) rdb.Querier {
 	if db != nil {
 		return db
 	}

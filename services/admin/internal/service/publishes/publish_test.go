@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
 	"github.com/google/uuid"
 )
@@ -41,8 +41,8 @@ func (m *mockTx) QueryContext(context.Context, string, ...any) (*sql.Rows, error
 	return nil, nil
 }
 func (m *mockTx) QueryRowContext(context.Context, string, ...any) *sql.Row { return nil }
-func (m *mockTx) Commit() error   { m.committed = true; return m.commitErr }
-func (m *mockTx) Rollback() error { m.rolledBack = true; return m.rollbackErr }
+func (m *mockTx) Commit() error                                            { m.committed = true; return m.commitErr }
+func (m *mockTx) Rollback() error                                          { m.rolledBack = true; return m.rollbackErr }
 
 type mockDB struct {
 	beginErr error
@@ -57,9 +57,9 @@ func (m *mockDB) QueryContext(context.Context, string, ...any) (*sql.Rows, error
 	return nil, nil
 }
 func (m *mockDB) QueryRowContext(context.Context, string, ...any) *sql.Row { return nil }
-func (m *mockDB) Ping() error  { return nil }
-func (m *mockDB) Close() error { return nil }
-func (m *mockDB) Begin() (database.Tx, error) {
+func (m *mockDB) Ping() error                                              { return nil }
+func (m *mockDB) Close() error                                             { return nil }
+func (m *mockDB) Begin() (rdb.Tx, error) {
 	if m.beginErr != nil {
 		return nil, m.beginErr
 	}
@@ -67,31 +67,31 @@ func (m *mockDB) Begin() (database.Tx, error) {
 }
 
 type mockInfra struct {
-	getScenarioResp    *domain.Scenario
-	getScenarioErr     error
-	createScenarioResp *domain.Scenario
-	createScenarioErr  error
-	updateStatusErr    error
-	archiveErr         error
-	archiveRows        int64
-	copyStepsErr       error
-	createdProjectID   uuid.UUID
-	createdName        string
-	createdURL         string
-	createdStatus      domain.ScenarioStatus
-	updatedStatus      domain.ScenarioStatus
-	archivedProjectID  uuid.UUID
-	archivedStatus     domain.ScenarioStatus
-	archivedURL        string
+	getScenarioResp      *domain.Scenario
+	getScenarioErr       error
+	createScenarioResp   *domain.Scenario
+	createScenarioErr    error
+	updateStatusErr      error
+	archiveErr           error
+	archiveRows          int64
+	copyStepsErr         error
+	createdProjectID     uuid.UUID
+	createdName          string
+	createdURL           string
+	createdStatus        domain.ScenarioStatus
+	updatedStatus        domain.ScenarioStatus
+	archivedProjectID    uuid.UUID
+	archivedStatus       domain.ScenarioStatus
+	archivedURL          string
 	copiedDestScenarioID uuid.UUID
 	copiedSrcScenarioID  uuid.UUID
 }
 
-func (m *mockInfra) GetScenario(ctx context.Context, db database.Querier, id uuid.UUID) (*domain.Scenario, error) {
+func (m *mockInfra) GetScenario(ctx context.Context, db rdb.Querier, id uuid.UUID) (*domain.Scenario, error) {
 	return m.getScenarioResp, m.getScenarioErr
 }
 
-func (m *mockInfra) CreateScenario(ctx context.Context, db database.Querier, projectID uuid.UUID, name, url string, status domain.ScenarioStatus) (*domain.Scenario, error) {
+func (m *mockInfra) CreateScenario(ctx context.Context, db rdb.Querier, projectID uuid.UUID, name, url string, status domain.ScenarioStatus) (*domain.Scenario, error) {
 	m.createdProjectID = projectID
 	m.createdName = name
 	m.createdURL = url
@@ -102,25 +102,25 @@ func (m *mockInfra) CreateScenario(ctx context.Context, db database.Querier, pro
 	return m.createScenarioResp, nil
 }
 
-func (m *mockInfra) UpdateScenarioStatus(ctx context.Context, db database.Querier, id uuid.UUID, status domain.ScenarioStatus) error {
+func (m *mockInfra) UpdateScenarioStatus(ctx context.Context, db rdb.Querier, id uuid.UUID, status domain.ScenarioStatus) error {
 	m.updatedStatus = status
 	return m.updateStatusErr
 }
 
-func (m *mockInfra) ArchiveByProjectAndStatus(ctx context.Context, db database.Querier, projectID uuid.UUID, status domain.ScenarioStatus, url string) (int64, error) {
+func (m *mockInfra) ArchiveByProjectAndStatus(ctx context.Context, db rdb.Querier, projectID uuid.UUID, status domain.ScenarioStatus, url string) (int64, error) {
 	m.archivedProjectID = projectID
 	m.archivedStatus = status
 	m.archivedURL = url
 	return m.archiveRows, m.archiveErr
 }
 
-func (m *mockInfra) CopyStepsToScenario(ctx context.Context, db database.Querier, destScenarioID, srcScenarioID uuid.UUID) error {
+func (m *mockInfra) CopyStepsToScenario(ctx context.Context, db rdb.Querier, destScenarioID, srcScenarioID uuid.UUID) error {
 	m.copiedDestScenarioID = destScenarioID
 	m.copiedSrcScenarioID = srcScenarioID
 	return m.copyStepsErr
 }
 
-func newSvc(infra IPublishInfrastructure, db database.Database) *PublishService {
+func newSvc(infra IPublishInfrastructure, db rdb.Database) *PublishService {
 	return NewPublishService(infra, db)
 }
 
@@ -281,7 +281,7 @@ func TestPublish_UpdateParentFails(t *testing.T) {
 func TestPublish_CreateCloneFails(t *testing.T) {
 	tx := &mockTx{}
 	infra := &mockInfra{
-		getScenarioResp:    testScenario(domain.ScenarioStatusDraft),
+		getScenarioResp:   testScenario(domain.ScenarioStatusDraft),
 		createScenarioErr: errors.New("insert failed"),
 	}
 	svc := newSvc(infra, &mockDB{tx: tx})

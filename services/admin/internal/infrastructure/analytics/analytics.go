@@ -10,8 +10,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/olap"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 	"github.com/M2IE/Interactive-onboarding/pkg/pdfengine"
 	"github.com/M2IE/Interactive-onboarding/pkg/s3"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/domain"
@@ -23,14 +23,14 @@ import (
 
 type AnalyticsInfrastructure struct {
 	q              *queries.Query
-	db             database.Querier
-	ch             driver.Conn
+	db             rdb.Querier
+	ch             olap.Database
 	s3             s3.Client
 	pdf            pdfengine.Engine
 	s3ReportBucket string
 }
 
-func NewAnalyticsInfrastructure(db database.Querier, q *queries.Query, ch driver.Conn, s3 s3.Client, pdf pdfengine.Engine, s3ReportBucket string) *AnalyticsInfrastructure {
+func NewAnalyticsInfrastructure(db rdb.Querier, q *queries.Query, ch olap.Database, s3 s3.Client, pdf pdfengine.Engine, s3ReportBucket string) *AnalyticsInfrastructure {
 	return &AnalyticsInfrastructure{
 		q:              q,
 		db:             db,
@@ -41,77 +41,49 @@ func NewAnalyticsInfrastructure(db database.Querier, q *queries.Query, ch driver
 	}
 }
 
-func (a *AnalyticsInfrastructure) GetScenarioAnalytics(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (*domain.Analytics, error) {
+func (a *AnalyticsInfrastructure) GetScenarioAnalytics(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (*domain.Analytics, error) {
+	scenario, err := a.q.GetScenario(ctx, a.querier(db), scenarioID)
+	if err != nil {
+		return nil, err
+	}
+
 	firstStepID, err := a.q.GetFirstStepID(ctx, a.querier(db), scenarioID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 
-	var totalViews, completed, dismissed uint64
-	err = a.ch.QueryRow(ctx, chq.GetScenarioAnalytics, firstStepID, scenarioID).
-		Scan(&totalViews, &completed, &dismissed)
-
+	result, err := a.q.GetScenarioAnalytics(ctx, a.ch, chq.GetScenarioAnalyticsParams{
+		FirstStepID: firstStepID,
+		ScenarioID:  scenarioID,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &domain.Analytics{
-		TotalViews: int(totalViews),
-		Completed:  int(completed),
-		Dismissed:  int(dismissed),
-	}, nil
+	analytics := toDomainAnalytics(&result)
+	analytics.Name = scenario.Name
+	return analytics, nil
 }
 
-func (a *AnalyticsInfrastructure) ScenarioExists(ctx context.Context, db database.Querier, scenarioID uuid.UUID) (bool, error) {
+func (a *AnalyticsInfrastructure) ScenarioExists(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (bool, error) {
 	return a.q.ScenarioExists(ctx, a.querier(db), scenarioID)
 }
 
-func (a *AnalyticsInfrastructure) GetStepAnalytics(ctx context.Context, db database.Querier, scenarioID uuid.UUID) ([]domain.StepAnalytics, error) {
+func (a *AnalyticsInfrastructure) GetStepAnalytics(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) ([]domain.StepAnalytics, error) {
 	steps, err := a.q.GetStepsByScenario(ctx, a.querier(db), scenarioID)
 	if err != nil {
 		return nil, err
 	}
 
-	type counts struct{ views, completed uint64 }
-	byStep := make(map[uuid.UUID]counts)
-
-	rows, err := a.ch.Query(ctx, chq.GetStepAnalytics, scenarioID)
+	rows, err := a.q.GetStepAnalytics(ctx, a.ch, scenarioID)
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = rows.Close() }()
 
-	for rows.Next() {
-		var stepID *uuid.UUID
-		var views, completed uint64
-		if err := rows.Scan(&stepID, &views, &completed); err != nil {
-			return nil, err
-		}
-		if stepID != nil {
-			byStep[*stepID] = counts{views: views, completed: completed}
-		}
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	result := make([]domain.StepAnalytics, 0, len(steps))
-	for _, s := range steps {
-		c := byStep[s.ID]
-		result = append(result, domain.StepAnalytics{
-			StepID:    s.ID,
-			Title:     s.Title,
-			OrderNum:  int(s.OrderNum),
-			Views:     int(c.views),
-			Completed: int(c.completed),
-		})
-	}
-
-	return result, nil
+	return toDomainStepAnalytics(steps, rows), nil
 }
 
-func (a *AnalyticsInfrastructure) querier(db database.Querier) database.Querier {
+func (a *AnalyticsInfrastructure) querier(db rdb.Querier) rdb.Querier {
 	if db != nil {
 		return db
 	}

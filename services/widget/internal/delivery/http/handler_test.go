@@ -26,13 +26,19 @@ func testSteps() []domain.Step {
 }
 
 type mockWidgetService struct {
-	getScenarioFn  func(ctx context.Context, projectKey, pageUrl string) (*domain.Scenario, []domain.Step, error)
-	processEventFn func(ctx context.Context, sessionID string, eventType domain.EventType, stepID, scenarioID *uuid.UUID, eventKey *string) error
+	getScenarioFn   func(ctx context.Context, projectKey, pageUrl string) (*domain.Scenario, []domain.Step, *uuid.UUID, *string, error)
+	getFlowConfigFn func(ctx context.Context, projectKey, flowKey string) ([]domain.FlowScenarioDetail, *domain.Flow, error)
+	processEventFn  func(ctx context.Context, sessionID string, eventType domain.EventType, stepID, scenarioID *uuid.UUID, eventKey *string) error
 }
 
-func (m *mockWidgetService) GetScenario(ctx context.Context, projectKey, pageUrl string) (*domain.Scenario, []domain.Step, error) {
+func (m *mockWidgetService) GetScenario(ctx context.Context, projectKey, pageUrl string) (*domain.Scenario, []domain.Step, *uuid.UUID, *string, error) {
 	return m.getScenarioFn(ctx, projectKey, pageUrl)
 }
+
+func (m *mockWidgetService) GetFlowConfig(ctx context.Context, projectKey, flowKey string) ([]domain.FlowScenarioDetail, *domain.Flow, error) {
+	return m.getFlowConfigFn(ctx, projectKey, flowKey)
+}
+
 func (m *mockWidgetService) ProcessEvent(ctx context.Context, sessionID string, eventType domain.EventType, stepID, scenarioID *uuid.UUID, eventKey *string) error {
 	return m.processEventFn(ctx, sessionID, eventType, stepID, scenarioID, eventKey)
 }
@@ -41,8 +47,8 @@ func (m *mockWidgetService) ProcessEvent(ctx context.Context, sessionID string, 
 
 func TestGetWidgetScenario_Success(t *testing.T) {
 	svc := &mockWidgetService{
-		getScenarioFn: func(ctx context.Context, projectKey, pageUrl string) (*domain.Scenario, []domain.Step, error) {
-			return testScenario(), testSteps(), nil
+		getScenarioFn: func(ctx context.Context, projectKey, pageUrl string) (*domain.Scenario, []domain.Step, *uuid.UUID, *string, error) {
+			return testScenario(), testSteps(), nil, nil, nil
 		},
 	}
 	h := NewWidgetHandler(svc)
@@ -69,12 +75,16 @@ func TestGetWidgetScenario_Success(t *testing.T) {
 	if r.Scenario.Steps[0].NextUrl == nil || *r.Scenario.Steps[0].NextUrl != "/demo/next" {
 		t.Errorf("step nextUrl mismatch")
 	}
+	// Проверяем, что flow отсутствует
+	if r.Flow != nil {
+		t.Errorf("flow should be nil, got %v", r.Flow)
+	}
 }
 
 func TestGetWidgetScenario_NoPublishedScenario(t *testing.T) {
 	svc := &mockWidgetService{
-		getScenarioFn: func(ctx context.Context, projectKey, pageUrl string) (*domain.Scenario, []domain.Step, error) {
-			return nil, nil, domain.ErrNoPublishedScenario
+		getScenarioFn: func(ctx context.Context, projectKey, pageUrl string) (*domain.Scenario, []domain.Step, *uuid.UUID, *string, error) {
+			return nil, nil, nil, nil, domain.ErrNoPublishedScenario
 		},
 	}
 	h := NewWidgetHandler(svc)
@@ -92,8 +102,8 @@ func TestGetWidgetScenario_NoPublishedScenario(t *testing.T) {
 
 func TestGetWidgetScenario_ProjectNotFound(t *testing.T) {
 	svc := &mockWidgetService{
-		getScenarioFn: func(ctx context.Context, projectKey, pageUrl string) (*domain.Scenario, []domain.Step, error) {
-			return nil, nil, domain.ErrProjectNotFound
+		getScenarioFn: func(ctx context.Context, projectKey, pageUrl string) (*domain.Scenario, []domain.Step, *uuid.UUID, *string, error) {
+			return nil, nil, nil, nil, domain.ErrProjectNotFound
 		},
 	}
 	h := NewWidgetHandler(svc)
@@ -107,12 +117,13 @@ func TestGetWidgetScenario_ProjectNotFound(t *testing.T) {
 	if _, ok := resp.(apiv1.GetWidgetScenario404JSONResponse); !ok {
 		t.Errorf("expected 404, got %T", resp)
 	}
+
 }
 
 func TestGetWidgetScenario_InternalError(t *testing.T) {
 	svc := &mockWidgetService{
-		getScenarioFn: func(ctx context.Context, projectKey, pageUrl string) (*domain.Scenario, []domain.Step, error) {
-			return nil, nil, errors.New("db error")
+		getScenarioFn: func(ctx context.Context, projectKey, pageUrl string) (*domain.Scenario, []domain.Step, *uuid.UUID, *string, error) {
+			return nil, nil, nil, nil, errors.New("db error")
 		},
 	}
 	h := NewWidgetHandler(svc)

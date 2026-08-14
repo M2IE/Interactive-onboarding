@@ -5,6 +5,7 @@ import (
 )
 
 type Analytics struct {
+	Name       string
 	TotalViews int
 	Completed  int
 	Dismissed  int

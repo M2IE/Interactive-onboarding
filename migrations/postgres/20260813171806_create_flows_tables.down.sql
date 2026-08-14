@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS flow_scenario;
+DROP TABLE IF EXISTS flows;

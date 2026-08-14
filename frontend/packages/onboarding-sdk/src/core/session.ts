@@ -1,5 +1,9 @@
 const STORAGE_KEY = 'interactive-onboarding:session-id'
 const OUTCOMES_STORAGE_KEY = 'interactive-onboarding:scenario-outcomes:v1'
+const NAVIGATION_STORAGE_KEY = 'interactive-onboarding:navigation:v1'
+const RESUME_STORAGE_KEY = 'interactive-onboarding:resume:v1'
+export const LINEAR_JOURNEY_STORAGE_KEY =
+  'interactive-onboarding:linear-journeys:v1'
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -7,6 +11,27 @@ type SessionCrypto = Pick<Crypto, 'getRandomValues'> &
   Partial<Pick<Crypto, 'randomUUID'>>
 
 export type ScenarioOutcome = 'completed' | 'dismissed'
+
+export type OnboardingNavigationEntry = {
+  fromPageUrl: string
+  fromScenarioId: string
+  fromStepIndex: number
+  toPageUrl: string
+}
+
+export function resetOnboardingSession() {
+  window.sessionStorage.removeItem(STORAGE_KEY)
+  window.sessionStorage.removeItem(OUTCOMES_STORAGE_KEY)
+  window.sessionStorage.removeItem(NAVIGATION_STORAGE_KEY)
+  window.sessionStorage.removeItem(RESUME_STORAGE_KEY)
+  clearLinearJourneyProgress(window.sessionStorage)
+}
+
+export function clearLinearJourneyProgress(
+  storage: Pick<Storage, 'removeItem'> = window.sessionStorage,
+) {
+  storage.removeItem(LINEAR_JOURNEY_STORAGE_KEY)
+}
 
 export function getOrCreateSessionId() {
   const existing = window.sessionStorage.getItem(STORAGE_KEY)
@@ -71,6 +96,87 @@ export function rememberScenarioOutcome(
   )
 }
 
+export function rememberPageNavigation(entry: OnboardingNavigationEntry) {
+  const history = readNavigationHistory().filter(
+    (item) =>
+      !(
+        normalizePageUrl(item.fromPageUrl) ===
+          normalizePageUrl(entry.fromPageUrl) &&
+        normalizePageUrl(item.toPageUrl) === normalizePageUrl(entry.toPageUrl)
+      ),
+  )
+
+  window.sessionStorage.setItem(
+    NAVIGATION_STORAGE_KEY,
+    JSON.stringify([...history, entry].slice(-20)),
+  )
+}
+
+export function hasPreviousOnboardingPage(pageUrl: string) {
+  return findNavigationIndex(pageUrl) >= 0
+}
+
+export function preparePreviousOnboardingPage(pageUrl: string) {
+  const history = readNavigationHistory()
+  const index = findNavigationIndex(pageUrl, history)
+
+  if (index < 0) {
+    return null
+  }
+
+  const entry = history[index]
+
+  if (!entry) {
+    return null
+  }
+
+  history.splice(index, 1)
+  window.sessionStorage.setItem(
+    NAVIGATION_STORAGE_KEY,
+    JSON.stringify(history),
+  )
+  window.sessionStorage.setItem(
+    RESUME_STORAGE_KEY,
+    JSON.stringify({
+      pageUrl: entry.fromPageUrl,
+      scenarioId: entry.fromScenarioId,
+      stepIndex: entry.fromStepIndex,
+    }),
+  )
+
+  return entry.fromPageUrl
+}
+
+export function consumeScenarioResume(
+  pageUrl: string,
+  scenarioId: string,
+) {
+  const value = window.sessionStorage.getItem(RESUME_STORAGE_KEY)
+
+  if (!value) {
+    return null
+  }
+
+  try {
+    const parsed = JSON.parse(value) as Record<string, unknown>
+
+    if (
+      normalizePageUrl(String(parsed.pageUrl ?? '')) !==
+        normalizePageUrl(pageUrl) ||
+      parsed.scenarioId !== scenarioId ||
+      typeof parsed.stepIndex !== 'number'
+    ) {
+      return null
+    }
+
+    window.sessionStorage.removeItem(RESUME_STORAGE_KEY)
+    return parsed.stepIndex
+  } catch {
+    window.sessionStorage.removeItem(RESUME_STORAGE_KEY)
+    return null
+  }
+}
+
 function readScenarioOutcomes(): Array<{
   scenarioId: string
   outcome: ScenarioOutcome
@@ -107,4 +213,55 @@ function isScenarioOutcome(
     typeof item.scenarioId === 'string' &&
     (item.outcome === 'completed' || item.outcome === 'dismissed')
   )
+}
+
+function readNavigationHistory(): OnboardingNavigationEntry[] {
+  const value = window.sessionStorage.getItem(NAVIGATION_STORAGE_KEY)
+
+  if (!value) {
+    return []
+  }
+
+  try {
+    const parsed = JSON.parse(value) as unknown
+
+    return Array.isArray(parsed) ? parsed.filter(isNavigationEntry) : []
+  } catch {
+    return []
+  }
+}
+
+function findNavigationIndex(
+  pageUrl: string,
+  history = readNavigationHistory(),
+) {
+  const normalizedPageUrl = normalizePageUrl(pageUrl)
+
+  return history.findLastIndex(
+    (item) => normalizePageUrl(item.toPageUrl) === normalizedPageUrl,
+  )
+}
+
+function isNavigationEntry(value: unknown): value is OnboardingNavigationEntry {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const item = value as Record<string, unknown>
+
+  return (
+    typeof item.fromPageUrl === 'string' &&
+    typeof item.fromScenarioId === 'string' &&
+    typeof item.fromStepIndex === 'number' &&
+    typeof item.toPageUrl === 'string'
+  )
+}
+
+function normalizePageUrl(value: string) {
+  try {
+    const url = new URL(value, window.location.origin)
+    return `${url.pathname}${url.search}`
+  } catch {
+    return value
+  }
 }

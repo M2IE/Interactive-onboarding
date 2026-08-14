@@ -12,6 +12,7 @@ The frontend must demonstrate three connected surfaces:
 - Admin panel for creating, editing, publishing and analyzing onboarding scenarios.
 - Test classifieds site under `/demo/*`.
 - Embeddable onboarding SDK/widget that can be connected to a host web app.
+- Journey Map with an analytics-backed, non-persistent Live Session preview.
 
 The widget is universal. Admin-created scenario configs are dynamic. Do not
 hardcode final onboarding behavior directly into demo UI components.
@@ -35,8 +36,10 @@ This frontend uses npm workspaces:
 ```text
 frontend/
 ├── apps/
+│   ├── extension/
 │   └── web/
 ├── packages/
+│   ├── element-selector/
 │   ├── onboarding-sdk/
 │   ├── shared/
 │   └── ui/
@@ -69,6 +72,53 @@ Layer import rule:
 
 Keep route components thin. A page should compose widgets/features and delegate
 logic to hooks or model files.
+
+Journey topology is a pure feature model. It must not depend on React Flow,
+Redux UI components or browser transports. `widgets/journey-studio` composes
+the independent `journey-map` and `live-session` features.
+
+Live Session uses a versioned message contract from `packages/shared` and a
+browser transport adapter from `apps/web/src/shared/api`. BroadcastChannel is
+the current adapter, not the domain contract; a later WebSocket or SSE adapter
+must not require changes to Journey or Live Session UI. Preview analytics must
+never be sent to Widget API or persisted in mock analytics.
+
+### `apps/extension`
+
+`apps/extension` is a Chrome Manifest V3 application with three isolated
+runtimes:
+
+```text
+apps/extension/src/
+├── background/   # service worker, injection and tab lifecycle
+├── content/      # DOM picker and in-page SDK preview
+├── sidepanel/    # React composition entrypoint
+├── features/     # editor workflows, hooks, model and API adapters
+├── entities/     # extension draft and settings models
+└── shared/       # typed messages, Chrome adapters and storage
+```
+
+The Side Panel follows the same FSD dependency direction as `apps/web`.
+Background and content entrypoints are runtime boundaries: they must not import
+Side Panel UI or web application modules. Cross-runtime communication must use
+the typed `ExtensionMessage` union.
+
+Use `chrome.storage.local` for durable connection settings and
+`chrome.storage.session` for per-tab draft/editor state. Service-worker globals
+are not durable state. The extension may create and update drafts, but publishing
+remains owned by the admin SPA.
+
+The content script must not collect input values, page HTML or text content.
+Preview uses an in-memory `OnboardingApiClient`, strips `nextUrl` and does not
+send analytics. Keep the extension on `activeTab`; do not add permanent
+`<all_urls>` access.
+
+### `packages/element-selector`
+
+This package contains pure DOM selector heuristics shared by the extension
+picker and its tests. It must not import Chrome APIs, React, SDK runtime code or
+application business logic. A selector is automatically accepted only when it
+matches exactly one element.
 
 ### `packages/onboarding-sdk`
 
@@ -122,6 +172,9 @@ Use Redux Toolkit for application state in `apps/web`:
 The SDK package can keep small internal React state for widget runtime, but
 business state and persisted scenario/event data must live behind API clients or
 shared contracts.
+
+SDK event observers such as `onEvent` are public integration points. Observer
+failures must be isolated from widget navigation and API analytics delivery.
 
 ## UI And Business Logic Separation
 
@@ -238,6 +291,11 @@ Useful examples:
 - Widget emits `target_not_found` when selector does not match any element.
 - Analytics funnel counts views and completions per step.
 
+Playwright lives in `frontend/e2e` as an additional browser-level quality gate.
+Keep Jest + RTL as the required unit/integration test stack. Run web E2E with
+`npm run e2e` and the unpacked Manifest V3 smoke test with
+`npm run e2e:extension`.
+
 ## Routing
 
 Current routes:
@@ -246,6 +304,7 @@ Current routes:
 /
 /admin
 /admin/analytics
+/admin/journey
 /demo/profile
 /demo/new
 /demo/new/transport
@@ -343,6 +402,8 @@ Validated on 2026-08-09:
   backend-compatible UUIDs even in insecure LAN HTTP contexts.
 - The production frontend is built by `frontend/Dockerfile`; the root gateway
   serves the SPA and proxies `/api/v1/admin/*` and `/api/v1/widget/*`.
+- FSD direction, SDK isolation, extension runtime boundaries and Journey model
+  purity are enforced by `npm run architecture:check` as part of frontend CI.
 
 Treat regressions from this snapshot as architectural debt to fix before
 expanding product surface area.
@@ -361,6 +422,7 @@ Before handing off frontend changes, run:
 npm run typecheck
 npm run lint
 npm run build
+npm run architecture:check
 ```
 
 When tests are added, also run:
@@ -374,6 +436,16 @@ When SDK packaging or its public API changes, also run:
 ```bash
 npm run sdk:pack
 ```
+
+When extension code changes, also run:
+
+```bash
+npm run build:extension
+```
+
+Then load `apps/extension/dist` through Chrome's Load unpacked flow and verify
+picker cancellation, local preview, draft save, step reorder and the admin
+deep-link. The Docker image intentionally contains only the web SPA.
 
 SDK releases are handled by
 `.github/workflows/publish-onboarding-sdk.yml` through npm Trusted Publishing.

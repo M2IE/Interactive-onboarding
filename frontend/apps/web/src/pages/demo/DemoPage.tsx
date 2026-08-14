@@ -3,21 +3,46 @@ import type { OnboardingApiClient } from '@m2ie/onboarding-sdk'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { ClassifiedShell } from "@/widgets/classified-shell/ClassifiedShell";
 import { appRoutes } from '@/shared/config/routes'
+import {
+  DemoCompletionDialog,
+  useDemoCompletion,
+} from '@/features/demo-completion'
+import { useLiveSessionPublisher } from '@/features/live-session'
 
 type DemoPageProps = {
+  analyticsEnabled: boolean
   onboardingClient: OnboardingApiClient
   projectKey: string
 }
 
 export function DemoPage({
+  analyticsEnabled,
   onboardingClient,
   projectKey,
 }: DemoPageProps) {
   const location = useLocation()
   const navigate = useNavigate()
+  const completion = useDemoCompletion()
+  const liveSessionId = new URLSearchParams(location.search).get('liveSession')
+  const live = useLiveSessionPublisher(liveSessionId, onboardingClient)
+
+  const navigateOnboarding = (url: string) => {
+    if (!liveSessionId) {
+      navigate(url)
+      return
+    }
+    const destination = new URL(url, window.location.origin)
+    destination.searchParams.set('liveSession', liveSessionId)
+    navigate(`${destination.pathname}${destination.search}`)
+  }
 
   return (
     <>
+      {!analyticsEnabled && (
+        <aside className="demo-preview-banner" role="status">
+          Тестовый режим — события аналитики не записываются
+        </aside>
+      )}
       <ClassifiedShell>
         <Routes>
           <Route element={<ProfileScreen />} path="profile" />
@@ -32,10 +57,18 @@ export function DemoPage({
       </ClassifiedShell>
 
       <OnboardingProvider
-        apiClient={onboardingClient}
-        navigate={navigate}
+        apiClient={live.onboardingClient}
+        key={`${completion.runId}:${liveSessionId ?? 'standard'}`}
+        navigate={navigateOnboarding}
+        onComplete={liveSessionId ? undefined : completion.completeDemo}
+        onEvent={liveSessionId ? live.onEvent : completion.handleOnboardingEvent}
         pageUrl={location.pathname}
         projectKey={projectKey}
+      />
+      <DemoCompletionDialog
+        outcome={completion.outcome}
+        onRepeat={completion.repeatDemo}
+        onReturnHome={completion.returnHome}
       />
     </>
   );
@@ -45,8 +78,8 @@ function ProfileScreen() {
   return (
     <main className="classified-page classified-page--profile">
       <aside className="profile-sidebar">
-        <div className="profile-avatar">E</div>
-        <h1>EL</h1>
+        <div className="profile-avatar">МВ</div>
+        <h1>Марина Волкова</h1>
         <p>
           <strong>0,0</strong> Нет отзывов
         </p>
@@ -238,7 +271,7 @@ function AutoFormScreen() {
         <input placeholder="₽" />
         <h2>Контакты</h2>
         <input placeholder="Ваш email" />
-        <input defaultValue="8 912 583-99-19" />
+        <input inputMode="tel" placeholder="Номер телефона" type="tel" />
         <div className="radio-list">
           <label>
             <input defaultChecked name="contact" type="radio" /> Звонки и

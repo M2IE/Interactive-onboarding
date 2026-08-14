@@ -17,6 +17,8 @@ export type UpdateAdminScenarioRequest =
   components['schemas']['UpdateScenarioRequest']
 export type CreateAdminStepRequest = components['schemas']['CreateStepRequest']
 export type UpdateAdminStepRequest = components['schemas']['UpdateStepRequest']
+export type ReorderAdminStepsRequest =
+  components['schemas']['ReorderStepsRequest']
 
 type ScenarioList = components['schemas']['ScenarioList']
 type AnalyticsReportResponse =
@@ -45,6 +47,10 @@ export type AdminApiClient = {
     request: UpdateAdminStepRequest,
   ) => Promise<AdminStep>
   deleteStep: (scenarioId: string, stepId: string) => Promise<void>
+  reorderSteps: (
+    scenarioId: string,
+    request: ReorderAdminStepsRequest,
+  ) => Promise<void>
   getAnalytics: (scenarioId: string) => Promise<AdminAnalytics>
   generateReport: (scenarioId: string) => Promise<string>
   resolveReportDownloadUrl: (
@@ -161,6 +167,14 @@ export function createAdminApiClient({
         fetchClient,
         `${baseUrl}/admin/scenarios/${encodeURIComponent(scenarioId)}/steps/${encodeURIComponent(stepId)}`,
         { method: 'DELETE' },
+      )
+    },
+
+    async reorderSteps(scenarioId, request) {
+      await requestVoid(
+        fetchClient,
+        `${baseUrl}/admin/scenarios/${encodeURIComponent(scenarioId)}/steps/order`,
+        jsonRequest('PUT', request),
       )
     },
 

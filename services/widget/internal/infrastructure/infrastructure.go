@@ -1,25 +1,31 @@
 package infrastructure
 
 import (
-	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/M2IE/Interactive-onboarding/pkg/database"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/olap"
+	"github.com/M2IE/Interactive-onboarding/pkg/database/rdb"
 
-	repositories "github.com/M2IE/Interactive-onboarding/services/widget/internal/infrastructure/repository"
+	clickhouse "github.com/M2IE/Interactive-onboarding/services/widget/internal/infrastructure/event_clickhouse"
+	"github.com/M2IE/Interactive-onboarding/services/widget/internal/infrastructure/flows"
+	"github.com/M2IE/Interactive-onboarding/services/widget/internal/infrastructure/projects"
+	"github.com/M2IE/Interactive-onboarding/services/widget/internal/infrastructure/scenarios"
+	"github.com/M2IE/Interactive-onboarding/services/widget/internal/infrastructure/steps"
 	"github.com/M2IE/Interactive-onboarding/services/widget/queries"
 )
 
 type WidgetInfrastructure struct {
-	*repositories.ProjectRepository
-	*repositories.ScenarioRepository
-	*repositories.StepRepository
-	*repositories.EventClickHouseRepository
+	*projects.ProjectRepository
+	*scenarios.ScenarioRepository
+	*steps.StepRepository
+	*clickhouse.EventRepository
+	*flows.FlowRepository
 }
 
-func NewWidgetInfrastructure(db database.Querier, q *queries.Query, chConn driver.Conn) *WidgetInfrastructure {
+func NewWidgetInfrastructure(db rdb.Database, q *queries.Query, chConn olap.Database) *WidgetInfrastructure {
 	return &WidgetInfrastructure{
-		ProjectRepository:         repositories.NewProjectRepository(db, q),
-		ScenarioRepository:        repositories.NewScenarioRepository(db, q),
-		StepRepository:            repositories.NewStepRepository(db, q),
-		EventClickHouseRepository: repositories.NewEventClickHouseRepository(chConn),
+		ProjectRepository:  projects.NewProjectRepository(db, q),
+		ScenarioRepository: scenarios.NewScenarioRepository(db, q),
+		StepRepository:     steps.NewStepRepository(db, q),
+		EventRepository:    clickhouse.NewEventRepository(chConn, q),
+		FlowRepository:     flows.NewFlowRepository(db, q),
 	}
 }
