@@ -14,6 +14,8 @@ const (
 	INVALIDPARAMETER     ErrorResponseErrorCode = "INVALID_PARAMETER"
 	INVALIDREQUEST       ErrorResponseErrorCode = "INVALID_REQUEST"
 	MISSINGREQUIREDFIELD ErrorResponseErrorCode = "MISSING_REQUIRED_FIELD"
+	NOTFOUND             ErrorResponseErrorCode = "NOT_FOUND"
+	PROJECTNOTFOUND      ErrorResponseErrorCode = "PROJECT_NOT_FOUND"
 	SCENARIONOTFOUND     ErrorResponseErrorCode = "SCENARIO_NOT_FOUND"
 	SESSIONNOTFOUND      ErrorResponseErrorCode = "SESSION_NOT_FOUND"
 )
@@ -30,6 +32,10 @@ func (e ErrorResponseErrorCode) Valid() bool {
 	case INVALIDREQUEST:
 		return true
 	case MISSINGREQUIREDFIELD:
+		return true
+	case NOTFOUND:
+		return true
+	case PROJECTNOTFOUND:
 		return true
 	case SCENARIONOTFOUND:
 		return true
@@ -91,7 +97,10 @@ type ErrorResponseErrorCode string
 type FlowConfigItem struct {
 	OrderNum   int                `json:"orderNum"`
 	ScenarioId openapi_types.UUID `json:"scenarioId"`
-	Url        string             `json:"url"`
+
+	// StepCount Количество шагов опубликованного сценария.
+	StepCount int    `json:"stepCount"`
+	Url       string `json:"url"`
 }
 
 // InternalErrorResponse defines model for InternalErrorResponse.
@@ -176,10 +185,10 @@ type WidgetEventRequestType string
 type WidgetScenarioResponse struct {
 	// Flow Информация о потоке, если сценарий входит в какой-либо flow
 	Flow *struct {
-		FlowId  *openapi_types.UUID `json:"flowId,omitempty"`
-		FlowKey *string             `json:"flowKey,omitempty"`
+		FlowId  openapi_types.UUID `json:"flowId"`
+		FlowKey string             `json:"flowKey"`
 	} `json:"flow,omitempty"`
-	Scenario *Scenario `json:"scenario,omitempty"`
+	Scenario Scenario `json:"scenario"`
 }
 
 // GetWidgetConfigParams defines parameters for GetWidgetConfig.

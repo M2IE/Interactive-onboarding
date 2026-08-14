@@ -193,11 +193,16 @@ components:
 
     WidgetScenarioResponse:
       type: object
+      required:
+        - scenario
       properties:
         scenario:
           $ref: '#/components/schemas/Scenario'
         flow:
           type: object
+          required:
+            - flowId
+            - flowKey
           properties:
             flowId:
               type: string
@@ -245,6 +250,7 @@ components:
         - scenarioId
         - url
         - orderNum
+        - stepCount
       properties:
         scenarioId:
           type: string
@@ -254,6 +260,10 @@ components:
         orderNum:
           type: integer
           minimum: 1
+        stepCount:
+          type: integer
+          minimum: 0
+          description: Количество шагов опубликованного сценария.
 
     WidgetConfigResponse:
       type: object
@@ -287,6 +297,8 @@ components:
                 - INVALID_PARAMETER
                 - INVALID_BODY
                 - SCENARIO_NOT_FOUND
+                - PROJECT_NOT_FOUND
+                - NOT_FOUND
                 - SESSION_NOT_FOUND
                 - INVALID_EVENT_TYPE
                 - MISSING_REQUIRED_FIELD
