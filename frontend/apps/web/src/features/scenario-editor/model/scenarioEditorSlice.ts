@@ -8,11 +8,16 @@ import type {
   OnboardingStep,
 } from '@m2ie/onboarding-sdk'
 import type { ScenarioRepositoryServices } from '../api/types'
+import {
+  groupScenarioVersions,
+  isSameLogicalScenario,
+} from './scenarioVersions'
 
 type ScenarioEditorOperation =
   | 'load'
   | 'create'
   | 'add_step'
+  | 'delete_step'
   | 'save'
   | 'publish'
   | 'unpublish'
@@ -85,6 +90,21 @@ export const addScenarioStep = createAsyncThunk<
   }
 })
 
+export const deleteScenarioStep = createAsyncThunk<
+  OnboardingScenario,
+  { scenario: OnboardingScenario; stepId: string },
+  ThunkConfig
+>(
+  'scenarioEditor/deleteStep',
+  async ({ scenario, stepId }, { extra, rejectWithValue }) => {
+    try {
+      return await extra.scenarioRepository.deleteStep(scenario, stepId)
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error))
+    }
+  },
+)
+
 export const saveScenario = createAsyncThunk<
   OnboardingScenario,
   OnboardingScenario,
@@ -136,7 +156,7 @@ export const resetScenarios = createAsyncThunk<
 export function buildInitialScenarioEditorState(
   scenarios: OnboardingScenario[] = [],
 ): ScenarioEditorState {
-  const firstScenario = scenarios[0]
+  const firstScenario = groupScenarioVersions(scenarios)[0]?.primary
 
   return {
     scenarios,
@@ -232,6 +252,27 @@ const scenarioEditorSlice = createSlice({
       .addCase(addScenarioStep.rejected, (state, action) => {
         setError(state, 'add_step', action.payload)
       })
+      .addCase(deleteScenarioStep.pending, (state) => {
+        state.workflow = { status: 'loading', operation: 'delete_step' }
+      })
+      .addCase(deleteScenarioStep.fulfilled, (state, action) => {
+        const deletedIndex = action.meta.arg.scenario.steps.findIndex(
+          (step) => step.id === action.meta.arg.stepId,
+        )
+        const wasSelected = state.selectedStepId === action.meta.arg.stepId
+
+        replaceScenario(state, action.payload)
+        if (wasSelected) {
+          state.selectedStepId =
+            action.payload.steps[
+              Math.min(deletedIndex, action.payload.steps.length - 1)
+            ]?.id
+        }
+        state.workflow = { status: 'ready' }
+      })
+      .addCase(deleteScenarioStep.rejected, (state, action) => {
+        setError(state, 'delete_step', action.payload)
+      })
       .addCase(saveScenario.pending, (state) => {
         state.workflow = { status: 'loading', operation: 'save' }
       })
@@ -248,7 +289,8 @@ const scenarioEditorSlice = createSlice({
       })
       .addCase(publishScenario.fulfilled, (state, action) => {
         removeSupersededPublishedScenario(state, action.payload)
-        replaceScenario(state, action.payload)
+        upsertScenario(state, action.payload)
+        state.selectedScenarioId = action.meta.arg.id
         clearDirty(state, action.meta.arg.id)
         clearDirty(state, action.payload.id)
         state.workflow = {
@@ -263,8 +305,7 @@ const scenarioEditorSlice = createSlice({
         state.workflow = { status: 'loading', operation: 'unpublish' }
       })
       .addCase(unpublishScenario.fulfilled, (state, action) => {
-        removeArchivedScenarioCopies(state, action.payload)
-        replaceScenario(state, action.payload)
+        reconcileUnpublishedScenario(state, action.payload, action.meta.arg)
         clearDirty(state, action.meta.arg.id)
         clearDirty(state, action.payload.id)
         state.workflow = { status: 'ready' }
@@ -307,7 +348,7 @@ function replaceWorkspace(
   const selected = scenarios.find(
     (scenario) => scenario.id === state.selectedScenarioId,
   )
-  const nextSelected = selected ?? scenarios[0]
+  const nextSelected = selected ?? groupScenarioVersions(scenarios)[0]?.primary
 
   state.scenarios = scenarios
   state.selectedScenarioId = nextSelected?.id
@@ -320,17 +361,24 @@ function replaceScenario(
   state: ScenarioEditorState,
   scenario: OnboardingScenario,
 ) {
+  upsertScenario(state, scenario)
+
+  state.selectedScenarioId = scenario.id
+  if (!scenario.steps.some((step) => step.id === state.selectedStepId)) {
+    state.selectedStepId = scenario.steps[0]?.id
+  }
+}
+
+function upsertScenario(
+  state: ScenarioEditorState,
+  scenario: OnboardingScenario,
+) {
   const index = state.scenarios.findIndex((item) => item.id === scenario.id)
 
   if (index === -1) {
     state.scenarios.unshift(scenario)
   } else {
     state.scenarios[index] = scenario
-  }
-
-  state.selectedScenarioId = scenario.id
-  if (!scenario.steps.some((step) => step.id === state.selectedStepId)) {
-    state.selectedStepId = scenario.steps[0]?.id
   }
 }
 
@@ -347,16 +395,30 @@ function removeSupersededPublishedScenario(
   )
 }
 
-function removeArchivedScenarioCopies(
+function reconcileUnpublishedScenario(
   state: ScenarioEditorState,
   scenario: OnboardingScenario,
+  previousPublished: OnboardingScenario,
 ) {
   state.scenarios = state.scenarios.filter(
-    (item) =>
-      item.id === scenario.id ||
-      item.projectId !== scenario.projectId ||
-      item.url !== scenario.url,
+    (item) => item.id !== previousPublished.id,
   )
+
+  if (scenario.status === 'draft') {
+    state.scenarios = state.scenarios.filter(
+      (item) =>
+        item.status !== 'draft' || !isSameLogicalScenario(item, scenario),
+    )
+  }
+
+  upsertScenario(state, scenario)
+  const editableDraft = state.scenarios.find(
+    (item) =>
+      item.status === 'draft' && isSameLogicalScenario(item, scenario),
+  )
+  const selected = editableDraft ?? scenario
+  state.selectedScenarioId = selected.id
+  state.selectedStepId = selected.steps[0]?.id
 }
 
 function setError(

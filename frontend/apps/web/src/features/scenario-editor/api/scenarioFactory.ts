@@ -13,8 +13,8 @@ export function createScenarioDraft(now = new Date()): OnboardingScenario {
     id,
     projectId: defaultScenario.projectId,
     projectKey: defaultScenario.projectKey,
-    flowKey: id,
-    flowOrder: 1,
+    flowKey: '',
+    flowOrder: 0,
     name: 'Новый сценарий онбординга',
     description: '',
     url: `/demo/custom-${timestamp}`,
@@ -41,5 +41,19 @@ export function createScenarioStep(
     body: 'Опишите, какую проблему пользователя решает эта подсказка.',
     placement: 'right',
     completion: 'next_button',
+  }
+}
+
+export function removeScenarioStep(
+  scenario: OnboardingScenario,
+  stepId: string,
+): OnboardingScenario {
+  return {
+    ...scenario,
+    updatedAt: new Date().toISOString(),
+    steps: scenario.steps
+      .filter((step) => step.id !== stepId)
+      .toSorted((left, right) => left.order - right.order)
+      .map((step, index) => ({ ...step, order: index + 1 })),
   }
 }

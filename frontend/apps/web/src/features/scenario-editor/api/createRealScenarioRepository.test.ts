@@ -26,8 +26,15 @@ describe('real scenario repository', () => {
             url: '/demo/profile',
             status: 'archived',
           },
+          {
+            id: 'scenario-draft',
+            projectId: 'project-1',
+            name: 'Editable profile',
+            url: '/demo/profile',
+            status: 'draft',
+          },
         ],
-        total: 2,
+        total: 3,
       },
       '/api/v1/admin/scenarios/scenario-1': {
         id: 'scenario-1',
@@ -62,6 +69,45 @@ describe('real scenario repository', () => {
           },
         ],
       },
+      '/api/v1/admin/scenarios/scenario-draft': {
+        id: 'scenario-draft',
+        projectId: 'project-1',
+        name: 'Editable profile',
+        url: '/demo/profile',
+        status: 'draft',
+        steps: [
+          {
+            id: 'step-draft',
+            orderNum: 1,
+            selector: '[data-onboarding-id="profile-create-button"]',
+            title: 'Editable start',
+            body: 'Draft copy',
+          },
+        ],
+      },
+      '/api/v1/admin/flows?projectId=project-1': [
+        {
+          id: 'flow-1',
+          projectId: 'project-1',
+          name: 'First listing',
+          flowKey: 'first-listing',
+        },
+      ],
+      '/api/v1/admin/flows/flow-1': {
+        id: 'flow-1',
+        projectId: 'project-1',
+        name: 'First listing',
+        flowKey: 'first-listing',
+        scenarios: [
+          {
+            scenarioId: 'scenario-1',
+            orderNum: 1,
+            name: 'Profile',
+            url: '/demo/profile',
+            status: 'published',
+          },
+        ],
+      },
     })
     const repository = createRealScenarioRepository({
       apiBaseUrl: '/api/v1',
@@ -74,6 +120,9 @@ describe('real scenario repository', () => {
     expect(scenarios).toEqual([
       expect.objectContaining({
         id: 'scenario-1',
+        flowId: 'flow-1',
+        flowKey: 'first-listing',
+        flowOrder: 1,
         projectKey: 'interactive-onboarding',
         status: 'published',
         steps: [expect.objectContaining({ nextUrl: '/demo/new' })],
@@ -82,6 +131,13 @@ describe('real scenario repository', () => {
         id: 'scenario-archived',
         status: 'archived',
         steps: [expect.objectContaining({ id: 'step-archived' })],
+      }),
+      expect.objectContaining({
+        id: 'scenario-draft',
+        flowId: 'flow-1',
+        flowKey: 'first-listing',
+        flowOrder: 1,
+        status: 'draft',
       }),
     ])
   })
@@ -116,6 +172,7 @@ describe('real scenario repository', () => {
         id: 'published-1',
         status: 'published',
       },
+      'GET /api/v1/admin/flows?projectId=project-1': [],
     })
     const repository = createRealScenarioRepository({
       apiBaseUrl: '/api/v1',
@@ -143,6 +200,7 @@ describe('real scenario repository', () => {
         ...toAdminScenario(published),
         status: 'draft',
       },
+      'GET /api/v1/admin/flows?projectId=project-1': [],
     })
     const repository = createRealScenarioRepository({
       apiBaseUrl: '/api/v1',
@@ -159,6 +217,38 @@ describe('real scenario repository', () => {
     expect(fetchClient).toHaveBeenCalledWith(
       '/api/v1/admin/scenarios/published-1/unpublish',
       { method: 'POST' },
+    )
+  })
+
+  it('deletes a draft step without discarding other local edits', async () => {
+    const firstStep = createDraft().steps[0]
+    const draft = {
+      ...createDraft(),
+      name: 'Unsaved local name',
+      steps: [
+        firstStep,
+        { ...firstStep, id: 'step-2', order: 2, title: 'Second step' },
+      ],
+    }
+    const fetchClient = createMethodRouter({
+      'DELETE /api/v1/admin/scenarios/draft-1/steps/step-1': undefined,
+    })
+    const repository = createRealScenarioRepository({
+      apiBaseUrl: '/api/v1',
+      projectId: 'project-1',
+      projectKey: 'interactive-onboarding',
+      fetchClient,
+    })
+
+    const updated = await repository.deleteStep(draft, 'step-1')
+
+    expect(updated.name).toBe('Unsaved local name')
+    expect(updated.steps).toEqual([
+      expect.objectContaining({ id: 'step-2', order: 1 }),
+    ])
+    expect(fetchClient).toHaveBeenCalledWith(
+      '/api/v1/admin/scenarios/draft-1/steps/step-1',
+      { method: 'DELETE' },
     )
   })
 })

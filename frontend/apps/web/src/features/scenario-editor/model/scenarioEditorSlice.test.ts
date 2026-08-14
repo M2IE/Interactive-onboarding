@@ -4,6 +4,7 @@ import { defaultScenario } from '@/entities/scenario/defaultScenario'
 import {
   addScenarioStep,
   buildInitialScenarioEditorState,
+  deleteScenarioStep,
   publishScenario,
   scenarioEditorReducer,
   unpublishScenario,
@@ -12,6 +13,23 @@ import {
 } from './scenarioEditorSlice'
 
 describe('scenarioEditorReducer', () => {
+  it('selects the editable draft when the API returns draft and published copies', () => {
+    const published = {
+      ...cloneScenario(),
+      id: 'published-id',
+      status: 'published' as const,
+    }
+    const draft = {
+      ...cloneScenario(),
+      id: 'draft-id',
+      status: 'draft' as const,
+    }
+
+    const state = buildInitialScenarioEditorState([published, draft])
+
+    expect(state.selectedScenarioId).toBe('draft-id')
+  })
+
   it('marks a published scenario as draft when a step changes', () => {
     const scenario = cloneScenario()
     const state = buildInitialScenarioEditorState([scenario])
@@ -85,7 +103,7 @@ describe('scenarioEditorReducer', () => {
       'published-v2',
       'draft-id',
     ])
-    expect(nextState.selectedScenarioId).toBe('published-v2')
+    expect(nextState.selectedScenarioId).toBe('draft-id')
   })
 
   it('turns the published scenario into the only editable draft after unpublish', () => {
@@ -145,6 +163,42 @@ describe('scenarioEditorReducer', () => {
     expect(addedStep && 'primaryActionLabel' in addedStep).toBe(false)
     expect(addedStep && 'backActionLabel' in addedStep).toBe(false)
     expect(addedStep && 'pagePath' in addedStep).toBe(false)
+  })
+
+  it('selects a neighboring step after deleting from a draft', () => {
+    const firstStep = cloneScenario().steps[0]
+    const scenario = {
+      ...cloneScenario(),
+      status: 'draft' as const,
+      steps: [
+        firstStep,
+        { ...firstStep, id: 'step-2', order: 2 },
+        { ...firstStep, id: 'step-3', order: 3 },
+      ],
+    }
+    const state = {
+      ...buildInitialScenarioEditorState([scenario]),
+      selectedStepId: 'step-2',
+    }
+    const updated = {
+      ...scenario,
+      steps: [firstStep, { ...firstStep, id: 'step-3', order: 2 }],
+    }
+
+    const nextState = scenarioEditorReducer(
+      state,
+      deleteScenarioStep.fulfilled(
+        updated,
+        'request-delete',
+        { scenario, stepId: 'step-2' },
+      ),
+    )
+
+    expect(nextState.scenarios[0].steps.map((step) => step.order)).toEqual([
+      1, 2,
+    ])
+    expect(nextState.selectedStepId).toBe('step-3')
+    expect(nextState.workflow).toEqual({ status: 'ready' })
   })
 
   it('stores a custom page path on the scenario', () => {
