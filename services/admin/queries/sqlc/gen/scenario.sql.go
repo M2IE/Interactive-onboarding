@@ -84,6 +84,36 @@ func (q *Queries) GetScenario(ctx context.Context, db DBTX, id uuid.UUID) (Scena
 	return i, err
 }
 
+const getScenarioByProjectURLAndStatus = `-- name: GetScenarioByProjectURLAndStatus :one
+SELECT id, project_id, name, url, status, created_at, updated_at
+FROM scenario
+WHERE project_id = $1 AND url = $2 AND status = $3
+ORDER BY updated_at DESC
+LIMIT 1
+FOR UPDATE
+`
+
+type GetScenarioByProjectURLAndStatusParams struct {
+	ProjectID uuid.UUID      `db:"project_id"`
+	Url       string         `db:"url"`
+	Status    ScenarioStatus `db:"status"`
+}
+
+func (q *Queries) GetScenarioByProjectURLAndStatus(ctx context.Context, db DBTX, arg GetScenarioByProjectURLAndStatusParams) (Scenario, error) {
+	row := db.QueryRowContext(ctx, getScenarioByProjectURLAndStatus, arg.ProjectID, arg.Url, arg.Status)
+	var i Scenario
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Url,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getScenarioStatus = `-- name: GetScenarioStatus :one
 SELECT status FROM scenario WHERE id = $1
 `

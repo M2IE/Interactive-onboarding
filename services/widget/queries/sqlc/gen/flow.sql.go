@@ -59,10 +59,18 @@ func (q *Queries) GetFlowByScenarioID(ctx context.Context, db DBTX, scenarioID u
 }
 
 const getFlowScenariosWithDetails = `-- name: GetFlowScenariosWithDetails :many
-SELECT fs.scenario_id, fs.order_num, s.name, s.url, s.status
+SELECT fs.scenario_id,
+       fs.order_num,
+       s.name,
+       s.url,
+       s.status,
+       COUNT(st.id)::int AS step_count
 FROM flow_scenario fs
 JOIN scenario s ON s.id = fs.scenario_id
+LEFT JOIN step st ON st.scenario_id = s.id
 WHERE fs.flow_id = $1
+  AND s.status = 'published'
+GROUP BY fs.scenario_id, fs.order_num, s.name, s.url, s.status
 ORDER BY fs.order_num
 `
 
@@ -72,6 +80,7 @@ type GetFlowScenariosWithDetailsRow struct {
 	Name       string         `db:"name"`
 	Url        string         `db:"url"`
 	Status     ScenarioStatus `db:"status"`
+	StepCount  int32          `db:"step_count"`
 }
 
 func (q *Queries) GetFlowScenariosWithDetails(ctx context.Context, db DBTX, flowID uuid.UUID) ([]GetFlowScenariosWithDetailsRow, error) {
@@ -89,6 +98,7 @@ func (q *Queries) GetFlowScenariosWithDetails(ctx context.Context, db DBTX, flow
 			&i.Name,
 			&i.Url,
 			&i.Status,
+			&i.StepCount,
 		); err != nil {
 			return nil, err
 		}

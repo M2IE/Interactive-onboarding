@@ -1,6 +1,14 @@
 -- name: GetScenario :one
 SELECT * FROM scenario WHERE id = $1 FOR UPDATE;
 
+-- name: GetScenarioByProjectURLAndStatus :one
+SELECT *
+FROM scenario
+WHERE project_id = $1 AND url = $2 AND status = $3
+ORDER BY updated_at DESC
+LIMIT 1
+FOR UPDATE;
+
 -- name: ScenarioExists :one
 SELECT EXISTS(SELECT 1 FROM scenario WHERE id = $1) AS exists;
 

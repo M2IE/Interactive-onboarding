@@ -271,12 +271,16 @@ func (h *FlowHandler) AddScenarioToFlow(ctx context.Context, request apiv1.AddSc
 					Message string                       `json:"message"`
 				}{Code: apiv1.FLOWNOTFOUND, Message: err.Error()},
 			}, nil
-		case errors.Is(err, domain.ErrScenarioAlreadyInFlow):
+		case errors.Is(err, domain.ErrScenarioAlreadyInFlow), errors.Is(err, domain.ErrScenarioProjectMismatch):
+			code := apiv1.SCENARIOALREADYINFLOW
+			if errors.Is(err, domain.ErrScenarioProjectMismatch) {
+				code = apiv1.SCENARIOPROJECTMISMATCH
+			}
 			return apiv1.AddScenarioToFlow422JSONResponse{
 				Error: struct {
 					Code    apiv1.ErrorResponseErrorCode `json:"code"`
 					Message string                       `json:"message"`
-				}{Code: apiv1.SCENARIOALREADYINFLOW, Message: err.Error()},
+				}{Code: code, Message: err.Error()},
 			}, nil
 		default:
 			return apiv1.AddScenarioToFlow500JSONResponse{
