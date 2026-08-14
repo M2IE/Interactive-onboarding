@@ -180,6 +180,103 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/flows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List flows */
+        get: operations["listFlows"];
+        put?: never;
+        /** Create flow */
+        post: operations["createFlow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/flows/{flowId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flowId: string;
+            };
+            cookie?: never;
+        };
+        /** Get flow by ID */
+        get: operations["getFlow"];
+        put?: never;
+        post?: never;
+        /** Delete flow */
+        delete: operations["deleteFlow"];
+        options?: never;
+        head?: never;
+        /** Update flow */
+        patch: operations["updateFlow"];
+        trace?: never;
+    };
+    "/admin/flows/{flowId}/scenarios": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flowId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add scenario to flow */
+        post: operations["addScenarioToFlow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/flows/{flowId}/scenarios/{scenarioId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flowId: string;
+                scenarioId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove scenario from flow */
+        delete: operations["removeScenarioFromFlow"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/flows/{flowId}/scenarios/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flowId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Reorder scenarios in flow */
+        put: operations["reorderFlowScenarios"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -187,7 +284,7 @@ export interface components {
         ErrorResponse: {
             error: {
                 /** @enum {string} */
-                code: "INVALID_REQUEST" | "INVALID_PARAMETER" | "INVALID_BODY" | "SCENARIO_NOT_FOUND" | "STEP_NOT_FOUND" | "PROJECT_NOT_FOUND" | "SCENARIO_ALREADY_PUBLISHED" | "SCENARIO_ALREADY_UNPUBLISHED" | "SCENARIO_HAS_NO_STEPS" | "SCENARIO_STATE_CONFLICT" | "STEP_ORDER_CONFLICT" | "INVALID_SCENARIO_NAME" | "INVALID_SCENARIO_URL" | "INVALID_STEP_SELECTOR" | "INVALID_STEP_TITLE" | "INVALID_STEP_BODY";
+                code: "INVALID_REQUEST" | "INVALID_PARAMETER" | "INVALID_BODY" | "SCENARIO_NOT_FOUND" | "STEP_NOT_FOUND" | "PROJECT_NOT_FOUND" | "FLOW_NOT_FOUND" | "SCENARIO_NOT_IN_FLOW" | "SCENARIO_ALREADY_PUBLISHED" | "SCENARIO_ALREADY_UNPUBLISHED" | "SCENARIO_HAS_NO_STEPS" | "SCENARIO_STATE_CONFLICT" | "STEP_ORDER_CONFLICT" | "FLOW_KEY_ALREADY_EXISTS" | "SCENARIO_ALREADY_IN_FLOW" | "SCENARIO_PROJECT_MISMATCH" | "INVALID_SCENARIO_NAME" | "INVALID_SCENARIO_URL" | "INVALID_STEP_SELECTOR" | "INVALID_STEP_TITLE" | "INVALID_STEP_BODY" | "INVALID_FLOW_KEY" | "FLOW_ORDER_CONFLICT" | "DUPLICATE_ORDER";
                 message: string;
             };
         };
@@ -303,6 +400,62 @@ export interface components {
             body?: string;
             /** @description URL для перехода после завершения шага (опционально) */
             nextUrl?: string;
+        };
+        Flow: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            name: string;
+            description?: string | null;
+            /** @description Уникальный ключ потока */
+            flowKey: string;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        CreateFlowRequest: {
+            /** Format: uuid */
+            projectId: string;
+            name: string;
+            description?: string;
+            /** @description Опциональный уникальный ключ. Если не передан, будет сгенерирован автоматически. */
+            flowKey?: string;
+        };
+        UpdateFlowRequest: {
+            name?: string;
+            description?: string | null;
+        };
+        AddScenarioToFlowRequest: {
+            /** Format: uuid */
+            scenarioId: string;
+            orderNum: number;
+        };
+        FlowScenarioItem: {
+            /** Format: uuid */
+            scenarioId: string;
+            orderNum: number;
+            name: string;
+            url: string;
+            status: components["schemas"]["ScenarioStatus"];
+        };
+        FlowDetails: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            name: string;
+            description?: string | null;
+            flowKey: string;
+            /** Format: date-time */
+            createdAt?: string;
+            scenarios: components["schemas"]["FlowScenarioItem"][];
+        };
+        ReorderFlowScenariosRequest: {
+            scenarios: {
+                /** Format: uuid */
+                scenarioId: string;
+                orderNum: number;
+            }[];
         };
     };
     responses: never;
@@ -974,6 +1127,432 @@ export interface operations {
             };
             /** @description Не найден */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalErrorResponse"];
+                };
+            };
+        };
+    };
+    listFlows: {
+        parameters: {
+            query: {
+                projectId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of flows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Flow"][];
+                };
+            };
+            /** @description Неверный запрос */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalErrorResponse"];
+                };
+            };
+        };
+    };
+    createFlow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFlowRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Flow"];
+                };
+            };
+            /** @description Неверный запрос */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Конфликт FlowKey */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка валидации */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalErrorResponse"];
+                };
+            };
+        };
+    };
+    getFlow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flowId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Flow details with scenarios */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlowDetails"];
+                };
+            };
+            /** @description Неверный запрос */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Не найден */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteFlow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flowId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Ошибка при запросе */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Не найден */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalErrorResponse"];
+                };
+            };
+        };
+    };
+    updateFlow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flowId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateFlowRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Flow"];
+                };
+            };
+            /** @description Ошибка при запросе */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Не найден */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Не прошёл валидацию */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalErrorResponse"];
+                };
+            };
+        };
+    };
+    addScenarioToFlow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flowId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddScenarioToFlowRequest"];
+            };
+        };
+        responses: {
+            /** @description Added */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Неверный запрос */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Flow or scenario not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Не прошёл валидацию (например, дублирующийся order_num) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalErrorResponse"];
+                };
+            };
+        };
+    };
+    removeScenarioFromFlow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flowId: string;
+                scenarioId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Ошибка при запросе */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Flow or scenario not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalErrorResponse"];
+                };
+            };
+        };
+    };
+    reorderFlowScenarios: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flowId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderFlowScenariosRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Неверный запрос */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Flow not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Не прошёл валидацию (дублирующиеся order_num и т.д.) */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

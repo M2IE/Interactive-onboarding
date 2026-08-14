@@ -11,6 +11,10 @@ import (
 
 type IPublishInfrastructure interface {
 	GetScenario(ctx context.Context, db rdb.Querier, id uuid.UUID) (*domain.Scenario, error)
+	GetScenarioByProjectURLAndStatus(ctx context.Context, db rdb.Querier, projectID uuid.UUID, url string, status domain.ScenarioStatus) (*domain.Scenario, error)
+	GetFlowMembership(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (*domain.FlowScenario, error)
+	DetachScenarioFromFlow(ctx context.Context, db rdb.Querier, flowID, scenarioID uuid.UUID) error
+	AttachScenarioToFlow(ctx context.Context, db rdb.Querier, flowID, scenarioID uuid.UUID, orderNum int) error
 	CreateScenario(ctx context.Context, db rdb.Querier, projectID uuid.UUID, name, url string, status domain.ScenarioStatus) (*domain.Scenario, error)
 	UpdateScenarioStatus(ctx context.Context, db rdb.Querier, id uuid.UUID, status domain.ScenarioStatus) error
 	ArchiveByProjectAndStatus(ctx context.Context, db rdb.Querier, projectID uuid.UUID, status domain.ScenarioStatus, url string) (int64, error)
@@ -50,6 +54,28 @@ func (s *PublishService) Publish(ctx context.Context, scenarioID uuid.UUID) (res
 		return nil, domain.ErrScenarioAlreadyPublished
 	}
 
+	parentMembership, err := s.infra.GetFlowMembership(ctx, tx, parent.ID)
+	if err != nil {
+		return nil, err
+	}
+	previousPublished, err := s.infra.GetScenarioByProjectURLAndStatus(
+		ctx,
+		tx,
+		parent.ProjectID,
+		parent.URL,
+		domain.ScenarioStatusPublished,
+	)
+	if err != nil {
+		return nil, err
+	}
+	var previousMembership *domain.FlowScenario
+	if previousPublished != nil {
+		previousMembership, err = s.infra.GetFlowMembership(ctx, tx, previousPublished.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Archive old "published" scenario
 	_, err = s.infra.ArchiveByProjectAndStatus(ctx, tx, parent.ProjectID, domain.ScenarioStatusPublished, parent.URL)
 	if err != nil {
@@ -80,6 +106,24 @@ func (s *PublishService) Publish(ctx context.Context, scenarioID uuid.UUID) (res
 	err = s.infra.CopyStepsToScenario(ctx, tx, published.ID, parent.ID)
 	if err != nil {
 		return nil, err
+	}
+
+	membership := parentMembership
+	if membership == nil {
+		membership = previousMembership
+	}
+	for _, current := range []*domain.FlowScenario{parentMembership, previousMembership} {
+		if current == nil {
+			continue
+		}
+		if err = s.infra.DetachScenarioFromFlow(ctx, tx, current.FlowID, current.ScenarioID); err != nil {
+			return nil, err
+		}
+	}
+	if membership != nil {
+		if err = s.infra.AttachScenarioToFlow(ctx, tx, membership.FlowID, published.ID, membership.OrderNum); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {

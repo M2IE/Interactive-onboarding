@@ -5,7 +5,11 @@ import {
   writeScenarios,
 } from '@/entities/scenario/api/mockOnboardingApi'
 import type { ScenarioRepository } from './types'
-import { createScenarioDraft, createScenarioStep } from './scenarioFactory'
+import {
+  createScenarioDraft,
+  createScenarioStep,
+  removeScenarioStep,
+} from './scenarioFactory'
 
 export function createMockScenarioRepository(): ScenarioRepository {
   return {
@@ -32,6 +36,12 @@ export function createMockScenarioRepository(): ScenarioRepository {
           createScenarioStep(scenario.versionId, nextOrder),
         ],
       }
+      storeScenario(updated)
+      return updated
+    },
+
+    async deleteStep(scenario, stepId) {
+      const updated = removeScenarioStep(scenario, stepId)
       storeScenario(updated)
       return updated
     },

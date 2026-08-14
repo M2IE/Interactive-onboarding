@@ -87,10 +87,14 @@ export function getPublishedConfig({
   const stepOffset = flowScenarios
     .filter((item) => item.flowOrder < scenario.flowOrder)
     .reduce((total, item) => total + item.steps.length, 0)
+  const scenarioIndex = flowScenarios.findIndex((item) => item.id === scenario.id)
+  const previousScenario = flowScenarios[scenarioIndex - 1]
+  const nextScenario = flowScenarios[scenarioIndex + 1]
 
   return {
     projectKey: scenario.projectKey,
     flowKey: scenario.flowKey,
+    flowOrder: scenario.flowOrder,
     scenarioId: scenario.id,
     scenarioName: scenario.name,
     version: scenario.version,
@@ -101,6 +105,22 @@ export function getPublishedConfig({
       (total, item) => total + item.steps.length,
       0,
     ),
+    previousPage: previousScenario
+      ? {
+          scenarioId: previousScenario.id,
+          pageUrl: previousScenario.url,
+          flowOrder: previousScenario.flowOrder,
+          stepCount: previousScenario.steps.length,
+        }
+      : undefined,
+    nextPage: nextScenario
+      ? {
+          scenarioId: nextScenario.id,
+          pageUrl: nextScenario.url,
+          flowOrder: nextScenario.flowOrder,
+          stepCount: nextScenario.steps.length,
+        }
+      : undefined,
     steps,
   }
 }

@@ -3,13 +3,11 @@ package http
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 
 	apiv1 "github.com/M2IE/Interactive-onboarding/gen/rest/v1/go/widget"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/domain"
 	"github.com/google/uuid"
-	"github.com/oapi-codegen/runtime/types"
 )
 
 type IWidgetService interface {
@@ -66,7 +64,7 @@ func (h *WidgetHandler) GetWidgetScenario(ctx context.Context, request apiv1.Get
 
 	// Формируем ответ
 	response := apiv1.GetWidgetScenario200JSONResponse{
-		Scenario: &apiv1.Scenario{
+		Scenario: apiv1.Scenario{
 			Id:    scenario.ID,
 			Name:  scenario.Name,
 			Steps: stepDTOs,
@@ -74,16 +72,13 @@ func (h *WidgetHandler) GetWidgetScenario(ctx context.Context, request apiv1.Get
 	}
 
 	// Если сценарий принадлежит потоку, добавляем информацию о потоке
-	fmt.Println(flowID, flowKey)
 	if flowID != nil && flowKey != nil {
-		fmt.Println(flowID, flowKey)
-		flowIDVal := types.UUID(*flowID)
 		response.Flow = &struct {
-			FlowId  *types.UUID `json:"flowId,omitempty"`
-			FlowKey *string     `json:"flowKey,omitempty"`
+			FlowId  uuid.UUID `json:"flowId"`
+			FlowKey string    `json:"flowKey"`
 		}{
-			FlowId:  &flowIDVal,
-			FlowKey: flowKey,
+			FlowId:  *flowID,
+			FlowKey: *flowKey,
 		}
 	}
 
@@ -130,6 +125,7 @@ func (h *WidgetHandler) GetWidgetConfig(ctx context.Context, request apiv1.GetWi
 			ScenarioId: sc.ScenarioID,
 			Url:        sc.URL,
 			OrderNum:   sc.OrderNum,
+			StepCount:  sc.StepCount,
 		}
 	}
 

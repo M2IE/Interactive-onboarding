@@ -53,9 +53,9 @@ services.
 ## Journey Map and Live Session
 
 Open `/admin/journey` to inspect the published onboarding journey. The map
-connects page-local scenarios through the `nextUrl` of their steps, highlights
-missing destinations and loads per-scenario analytics without blocking the
-topology.
+connects page-local scenarios through the ordered flows returned by Admin API.
+It treats `nextUrl` as a consistency check, highlights mismatches and loads
+per-scenario analytics without blocking the topology.
 
 Live Session opens the demo in an embedded desktop or mobile viewport. Start
 from the detected entry point or a selected scenario and follow SDK events on

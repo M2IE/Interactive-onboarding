@@ -259,7 +259,7 @@ describe('OnboardingWidget', () => {
     )
   })
 
-  it('shows global linear progress from the HTTP page-local contract', async () => {
+  it('shows global progress from the backend flow contract', async () => {
     createTarget('profile')
     createTarget('category')
     const scenarios = new Map([
@@ -270,11 +270,38 @@ describe('OnboardingWidget', () => {
     ])
     const fetchClient = jest.fn<typeof fetch>(async (input) => {
       const url = new URL(String(input), 'https://onboarding.test')
+
+      if (url.pathname.endsWith('/widget/config')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            flowId: 'first-listing-id',
+            flowKey: 'first-listing',
+            scenarios: [
+              { scenarioId: 'profile', url: '/demo/profile', orderNum: 1, stepCount: 1 },
+              { scenarioId: 'category', url: '/demo/new', orderNum: 2, stepCount: 1 },
+              { scenarioId: 'transport', url: '/demo/transport', orderNum: 3, stepCount: 1 },
+              { scenarioId: 'auto', url: '/demo/auto', orderNum: 4, stepCount: 3 },
+            ],
+          }),
+        } as Response
+      }
+
       const scenario = scenarios.get(url.searchParams.get('pageUrl') ?? '')
       return {
         ok: Boolean(scenario),
         status: scenario ? 200 : 404,
-        json: async () => scenario ? { scenario } : undefined,
+        json: async () =>
+          scenario
+            ? {
+                scenario,
+                flow: {
+                  flowId: 'first-listing-id',
+                  flowKey: 'first-listing',
+                },
+              }
+            : undefined,
       } as Response
     })
     const apiClient = createHttpOnboardingClient({
@@ -510,6 +537,45 @@ describe('OnboardingWidget', () => {
     expect(await screen.findByText('Profile step')).toBeTruthy()
   })
 
+  it('returns through backend flow metadata without local navigation history', async () => {
+    createTarget('category-button')
+    const navigate = jest.fn<(url: string) => void>()
+    const categoryStep = createStep({
+      id: 'category-step',
+      selector: '[data-onboarding-id="category-button"]',
+      title: 'Category step',
+    })
+    const config = {
+      ...createConfig(categoryStep, '/demo/new'),
+      flowKey: 'first-listing',
+      flowOrder: 2,
+      stepOffset: 1,
+      totalSteps: 6,
+      previousPage: {
+        scenarioId: 'scenario-profile',
+        pageUrl: '/demo/profile',
+        flowOrder: 1,
+        stepCount: 1,
+      },
+    }
+    const apiClient = createApiClient(
+      categoryStep,
+      jest.fn<OnboardingApiClient['getConfig']>().mockResolvedValue(config),
+    )
+
+    render(
+      <OnboardingWidget
+        apiClient={apiClient}
+        navigate={navigate}
+        pageUrl="/demo/new"
+        projectKey="avito-demo"
+      />,
+    )
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Назад' }))
+    expect(navigate).toHaveBeenCalledWith('/demo/profile')
+  })
+
   it('does not show a completed scenario again in the same session', async () => {
     createTarget('create-button')
     const apiClient = createApiClient(createStep())
@@ -631,6 +697,7 @@ function createConfig(
   return {
     projectKey: 'avito-demo',
     flowKey: `flow-${step.id}`,
+    flowOrder: 1,
     scenarioId: `scenario-${step.id}`,
     scenarioName: 'Сценарий',
     version: 1,

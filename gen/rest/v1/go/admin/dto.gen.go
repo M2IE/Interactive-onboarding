@@ -31,6 +31,7 @@ const (
 	SCENARIOHASNOSTEPS         ErrorResponseErrorCode = "SCENARIO_HAS_NO_STEPS"
 	SCENARIONOTFOUND           ErrorResponseErrorCode = "SCENARIO_NOT_FOUND"
 	SCENARIONOTINFLOW          ErrorResponseErrorCode = "SCENARIO_NOT_IN_FLOW"
+	SCENARIOPROJECTMISMATCH    ErrorResponseErrorCode = "SCENARIO_PROJECT_MISMATCH"
 	SCENARIOSTATECONFLICT      ErrorResponseErrorCode = "SCENARIO_STATE_CONFLICT"
 	STEPNOTFOUND               ErrorResponseErrorCode = "STEP_NOT_FOUND"
 	STEPORDERCONFLICT          ErrorResponseErrorCode = "STEP_ORDER_CONFLICT"
@@ -78,6 +79,8 @@ func (e ErrorResponseErrorCode) Valid() bool {
 	case SCENARIONOTFOUND:
 		return true
 	case SCENARIONOTINFLOW:
+		return true
+	case SCENARIOPROJECTMISMATCH:
 		return true
 	case SCENARIOSTATECONFLICT:
 		return true

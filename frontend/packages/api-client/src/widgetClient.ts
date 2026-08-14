@@ -8,6 +8,8 @@ import {
 
 export type WidgetScenarioResponse =
   components['schemas']['WidgetScenarioResponse']
+export type WidgetFlowConfigResponse =
+  components['schemas']['WidgetConfigResponse']
 export type WidgetEventRequest = components['schemas']['WidgetEventRequest']
 
 export type WidgetScenarioRequest = {
@@ -15,10 +17,18 @@ export type WidgetScenarioRequest = {
   pageUrl: string
 }
 
+export type WidgetFlowConfigRequest = {
+  projectKey: string
+  flowKey: string
+}
+
 export type WidgetApiClient = {
   getScenario: (
     request: WidgetScenarioRequest,
   ) => Promise<WidgetScenarioResponse | null>
+  getFlowConfig: (
+    request: WidgetFlowConfigRequest,
+  ) => Promise<WidgetFlowConfigResponse | null>
   postEvent: (event: WidgetEventRequest) => Promise<void>
 }
 
@@ -45,6 +55,20 @@ export function createWidgetApiClient({
         `${baseUrl}/widget/scenario?${params}`,
         undefined,
         [204, 404],
+      )
+    },
+
+    async getFlowConfig(request) {
+      const params = new URLSearchParams({
+        projectKey: request.projectKey,
+        flowKey: request.flowKey,
+      })
+
+      return requestJson<WidgetFlowConfigResponse>(
+        fetchClient,
+        `${baseUrl}/widget/config?${params}`,
+        undefined,
+        [404],
       )
     },
 

@@ -830,6 +830,7 @@ components:
                 - STEP_ORDER_CONFLICT
                 - FLOW_KEY_ALREADY_EXISTS
                 - SCENARIO_ALREADY_IN_FLOW
+                - SCENARIO_PROJECT_MISMATCH
 
                 # HTTP 422
                 - INVALID_SCENARIO_NAME

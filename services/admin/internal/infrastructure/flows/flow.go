@@ -89,6 +89,17 @@ func (r *FlowInfrastructure) GetFlowByKey(ctx context.Context, db rdb.Querier, p
 	return toDomainFlow(&row), nil
 }
 
+func (r *FlowInfrastructure) GetFlowByScenarioID(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (*domain.Flow, error) {
+	row, err := r.q.GetFlowByScenarioID(ctx, r.querier(db), scenarioID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, domain.ErrFlowNotFound
+		}
+		return nil, err
+	}
+	return toDomainFlow(&row), nil
+}
+
 // UpdateFlow
 func (r *FlowInfrastructure) UpdateFlow(ctx context.Context, db rdb.Querier, flow *domain.Flow) error {
 	err := r.q.UpdateFlow(ctx, r.querier(db), gen.UpdateFlowParams{

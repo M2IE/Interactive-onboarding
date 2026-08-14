@@ -59,6 +59,7 @@ func (r *FlowRepository) GetFlowScenariosWithDetails(ctx context.Context, db rdb
 			Name:       row.Name,
 			URL:        row.Url,
 			Status:     domain.ScenarioStatus(row.Status),
+			StepCount:  int(row.StepCount),
 		}
 	}
 	return items, nil

@@ -67,28 +67,55 @@ func (m *mockDB) Begin() (rdb.Tx, error) {
 }
 
 type mockInfra struct {
-	getScenarioResp      *domain.Scenario
-	getScenarioErr       error
-	createScenarioResp   *domain.Scenario
-	createScenarioErr    error
-	updateStatusErr      error
-	archiveErr           error
-	archiveRows          int64
-	copyStepsErr         error
-	createdProjectID     uuid.UUID
-	createdName          string
-	createdURL           string
-	createdStatus        domain.ScenarioStatus
-	updatedStatus        domain.ScenarioStatus
-	archivedProjectID    uuid.UUID
-	archivedStatus       domain.ScenarioStatus
-	archivedURL          string
-	copiedDestScenarioID uuid.UUID
-	copiedSrcScenarioID  uuid.UUID
+	getScenarioResp       *domain.Scenario
+	getScenarioErr        error
+	createScenarioResp    *domain.Scenario
+	createScenarioErr     error
+	updateStatusErr       error
+	archiveErr            error
+	archiveRows           int64
+	copyStepsErr          error
+	createdProjectID      uuid.UUID
+	createdName           string
+	createdURL            string
+	createdStatus         domain.ScenarioStatus
+	updatedStatus         domain.ScenarioStatus
+	archivedProjectID     uuid.UUID
+	archivedStatus        domain.ScenarioStatus
+	archivedURL           string
+	copiedDestScenarioID  uuid.UUID
+	copiedSrcScenarioID   uuid.UUID
+	publishedScenarioResp *domain.Scenario
+	publishedScenarioErr  error
+	memberships           map[uuid.UUID]*domain.FlowScenario
+	removedMemberships    []domain.FlowScenario
+	addedMembership       *domain.FlowScenario
 }
 
 func (m *mockInfra) GetScenario(ctx context.Context, db rdb.Querier, id uuid.UUID) (*domain.Scenario, error) {
 	return m.getScenarioResp, m.getScenarioErr
+}
+
+func (m *mockInfra) GetScenarioByProjectURLAndStatus(context.Context, rdb.Querier, uuid.UUID, string, domain.ScenarioStatus) (*domain.Scenario, error) {
+	return m.publishedScenarioResp, m.publishedScenarioErr
+}
+
+func (m *mockInfra) GetFlowMembership(_ context.Context, _ rdb.Querier, scenarioID uuid.UUID) (*domain.FlowScenario, error) {
+	return m.memberships[scenarioID], nil
+}
+
+func (m *mockInfra) DetachScenarioFromFlow(_ context.Context, _ rdb.Querier, flowID, scenarioID uuid.UUID) error {
+	m.removedMemberships = append(m.removedMemberships, domain.FlowScenario{
+		FlowID: flowID, ScenarioID: scenarioID,
+	})
+	return nil
+}
+
+func (m *mockInfra) AttachScenarioToFlow(_ context.Context, _ rdb.Querier, flowID, scenarioID uuid.UUID, orderNum int) error {
+	m.addedMembership = &domain.FlowScenario{
+		FlowID: flowID, ScenarioID: scenarioID, OrderNum: orderNum,
+	}
+	return nil
 }
 
 func (m *mockInfra) CreateScenario(ctx context.Context, db rdb.Querier, projectID uuid.UUID, name, url string, status domain.ScenarioStatus) (*domain.Scenario, error) {
@@ -152,6 +179,36 @@ func TestPublish_Success(t *testing.T) {
 	}
 	if infra.copiedSrcScenarioID != draft.ID {
 		t.Error("steps were not copied from parent")
+	}
+}
+
+func TestPublish_TransfersFlowMembershipToPublishedCopy(t *testing.T) {
+	tx := &mockTx{}
+	draft := testScenario(domain.ScenarioStatusDraft)
+	clone := &domain.Scenario{ID: uuid.New(), ProjectID: testProjectID, Status: domain.ScenarioStatusPublished}
+	flowID := uuid.New()
+	infra := &mockInfra{
+		getScenarioResp:    draft,
+		createScenarioResp: clone,
+		memberships: map[uuid.UUID]*domain.FlowScenario{
+			draft.ID: {FlowID: flowID, ScenarioID: draft.ID, OrderNum: 2},
+		},
+	}
+	svc := newSvc(infra, &mockDB{tx: tx})
+
+	_, err := svc.Publish(context.Background(), draft.ID)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if infra.addedMembership == nil {
+		t.Fatal("flow membership was not transferred")
+	}
+	if infra.addedMembership.ScenarioID != clone.ID || infra.addedMembership.FlowID != flowID || infra.addedMembership.OrderNum != 2 {
+		t.Errorf("unexpected transferred membership: %+v", infra.addedMembership)
+	}
+	if len(infra.removedMemberships) != 1 || infra.removedMemberships[0].ScenarioID != draft.ID {
+		t.Errorf("source membership was not removed: %+v", infra.removedMemberships)
 	}
 }
 

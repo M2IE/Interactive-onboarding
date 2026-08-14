@@ -41,9 +41,10 @@ type FlowWithScenarios struct {
 }
 
 var (
-	ErrFlowNotFound          = errors.New("flow not found")
-	ErrFlowKeyExists         = errors.New("flow key already exists in this project")
-	ErrScenarioNotInFlow     = errors.New("scenario not in flow")
-	ErrScenarioAlreadyInFlow = errors.New("scenario already in flow")
-	ErrInvalidOrder          = errors.New("invalid order number")
+	ErrFlowNotFound            = errors.New("flow not found")
+	ErrFlowKeyExists           = errors.New("flow key already exists in this project")
+	ErrScenarioNotInFlow       = errors.New("scenario not in flow")
+	ErrScenarioAlreadyInFlow   = errors.New("scenario already in flow")
+	ErrScenarioProjectMismatch = errors.New("scenario and flow belong to different projects")
+	ErrInvalidOrder            = errors.New("invalid order number")
 )

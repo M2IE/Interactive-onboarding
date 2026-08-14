@@ -143,8 +143,7 @@ export function AdminPage({ apiMode }: AdminPageProps) {
                 Сохранить
               </Button>
             )}
-            {isScenarios &&
-              (editor.isPublished ? (
+            {isScenarios && editor.hasPublishedVersion && (
                 <Button
                   disabled={editor.isBusy}
                   icon={<EyeOff aria-hidden="true" size={17} />}
@@ -153,7 +152,8 @@ export function AdminPage({ apiMode }: AdminPageProps) {
                 >
                   Снять с публикации
                 </Button>
-              ) : !editor.isArchived ? (
+            )}
+            {isScenarios && !editor.isPublished && !editor.isArchived && (
                 <Button
                   disabled={
                     editor.isBusy || editor.validation?.status === 'invalid'
@@ -162,9 +162,11 @@ export function AdminPage({ apiMode }: AdminPageProps) {
                   onClick={editor.publishActiveScenario}
                   variant="primary"
                 >
-                  Опубликовать
+                  {editor.hasPublishedVersion
+                    ? 'Обновить публикацию'
+                    : 'Опубликовать'}
                 </Button>
-              ) : null)}
+            )}
           </div>}
         </header>
 
@@ -208,11 +210,12 @@ export function AdminPage({ apiMode }: AdminPageProps) {
           <ScenarioEditor
             activeScenario={editor.activeScenario}
             activeStep={editor.activeStep}
-            scenarios={editor.scenarios}
+            scenarioGroups={editor.scenarioGroups}
             readOnly={editor.isReadOnly}
             showExtendedFields={apiMode === 'mock'}
             validation={editor.validation}
             onAddStep={editor.addStep}
+            onDeleteStep={editor.deleteActiveStep}
             onOpenDemo={() =>
               navigate(editor.activeScenario?.url ?? appRoutes.demo.profile)
             }

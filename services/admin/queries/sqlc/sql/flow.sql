@@ -19,6 +19,17 @@ SELECT id, project_id, name, description, flow_key, created_at
 FROM flows
 WHERE project_id = $1 AND flow_key = $2;
 
+-- name: GetFlowByScenarioID :one
+SELECT f.id, f.project_id, f.name, f.description, f.flow_key, f.created_at
+FROM flows f
+JOIN flow_scenario fs ON fs.flow_id = f.id
+WHERE fs.scenario_id = $1;
+
+-- name: GetFlowScenarioMembership :one
+SELECT flow_id, scenario_id, order_num
+FROM flow_scenario
+WHERE scenario_id = $1;
+
 -- name: UpdateFlow :exec
 UPDATE flows
 SET name = $1, description = $2
