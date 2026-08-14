@@ -1,9 +1,8 @@
 const STORAGE_KEY = 'interactive-onboarding:session-id'
 const OUTCOMES_STORAGE_KEY = 'interactive-onboarding:scenario-outcomes:v1'
+const FLOW_OUTCOMES_STORAGE_KEY = 'interactive-onboarding:flow-outcomes:v1'
 const NAVIGATION_STORAGE_KEY = 'interactive-onboarding:navigation:v1'
 const RESUME_STORAGE_KEY = 'interactive-onboarding:resume:v1'
-export const LINEAR_JOURNEY_STORAGE_KEY =
-  'interactive-onboarding:linear-journeys:v1'
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -22,15 +21,9 @@ export type OnboardingNavigationEntry = {
 export function resetOnboardingSession() {
   window.sessionStorage.removeItem(STORAGE_KEY)
   window.sessionStorage.removeItem(OUTCOMES_STORAGE_KEY)
+  window.sessionStorage.removeItem(FLOW_OUTCOMES_STORAGE_KEY)
   window.sessionStorage.removeItem(NAVIGATION_STORAGE_KEY)
   window.sessionStorage.removeItem(RESUME_STORAGE_KEY)
-  clearLinearJourneyProgress(window.sessionStorage)
-}
-
-export function clearLinearJourneyProgress(
-  storage: Pick<Storage, 'removeItem'> = window.sessionStorage,
-) {
-  storage.removeItem(LINEAR_JOURNEY_STORAGE_KEY)
 }
 
 export function getOrCreateSessionId() {
@@ -96,6 +89,18 @@ export function rememberScenarioOutcome(
   )
 }
 
+export function hasFlowOutcome(flowKey: string) {
+  return readFlowOutcomes().includes(flowKey)
+}
+
+export function rememberFlowOutcome(flowKey: string) {
+  const outcomes = readFlowOutcomes().filter((item) => item !== flowKey)
+  window.sessionStorage.setItem(
+    FLOW_OUTCOMES_STORAGE_KEY,
+    JSON.stringify([...outcomes, flowKey]),
+  )
+}
+
 export function rememberPageNavigation(entry: OnboardingNavigationEntry) {
   const history = readNavigationHistory().filter(
     (item) =>
@@ -147,6 +152,18 @@ export function preparePreviousOnboardingPage(pageUrl: string) {
   return entry.fromPageUrl
 }
 
+export function prepareFlowPreviousPage(
+  pageUrl: string,
+  scenarioId: string,
+  stepIndex: number,
+) {
+  window.sessionStorage.setItem(
+    RESUME_STORAGE_KEY,
+    JSON.stringify({ pageUrl, scenarioId, stepIndex }),
+  )
+  return pageUrl
+}
+
 export function consumeScenarioResume(
   pageUrl: string,
   scenarioId: string,
@@ -195,6 +212,23 @@ function readScenarioOutcomes(): Array<{
     }
 
     return parsed.filter(isScenarioOutcome)
+  } catch {
+    return []
+  }
+}
+
+function readFlowOutcomes(): string[] {
+  const value = window.sessionStorage.getItem(FLOW_OUTCOMES_STORAGE_KEY)
+
+  if (!value) {
+    return []
+  }
+
+  try {
+    const parsed = JSON.parse(value) as unknown
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === 'string')
+      : []
   } catch {
     return []
   }

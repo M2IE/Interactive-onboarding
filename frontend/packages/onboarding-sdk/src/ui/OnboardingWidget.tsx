@@ -18,12 +18,14 @@ import type {
 } from "../types/contracts";
 import {
   consumeScenarioResume,
-  clearLinearJourneyProgress,
   getOrCreateSessionId,
+  hasFlowOutcome,
   hasScenarioOutcome,
   hasPreviousOnboardingPage,
+  prepareFlowPreviousPage,
   preparePreviousOnboardingPage,
   rememberPageNavigation,
+  rememberFlowOutcome,
   rememberScenarioOutcome,
 } from "../core/session";
 import {
@@ -251,6 +253,11 @@ export function OnboardingWidget({
         nextConfig.scenarioId,
       );
 
+      if (hasFlowOutcome(nextConfig.flowKey)) {
+        setConfigState({ status: "empty", pageUrl: resolvedPageUrl });
+        return;
+      }
+
       if (resumeIndex === null && hasScenarioOutcome(nextConfig.scenarioId)) {
         setConfigState({ status: "empty", pageUrl: resolvedPageUrl });
         return;
@@ -404,7 +411,8 @@ export function OnboardingWidget({
   const isLastPageStep = activeIndex === config.steps.length - 1;
   const isCompleting = stepActionState.status === "completing";
   const canGoBackToPreviousPage =
-    activeIndex === 0 && hasPreviousOnboardingPage(resolvedPageUrl);
+    activeIndex === 0 &&
+    (hasPreviousOnboardingPage(resolvedPageUrl) || Boolean(config.previousPage));
   const highlightStyle = getHighlightStyle(target.rect);
   const tooltipStyle = getTooltipStyle(
     renderedStep,
@@ -419,7 +427,11 @@ export function OnboardingWidget({
 
     const completionEvent = track("step_completed", renderedStep);
 
-    if (renderedStep.nextUrl) {
+    const transitionUrl = isLastPageStep
+      ? renderedConfig.nextPage?.pageUrl ?? renderedStep.nextUrl
+      : undefined;
+
+    if (transitionUrl) {
       setStepActionState({ status: "completing", stepId: renderedStep.id });
       setPageTransitionState({ status: "navigating" });
       await completionEvent;
@@ -428,7 +440,7 @@ export function OnboardingWidget({
         fromPageUrl: resolvedPageUrl,
         fromScenarioId: renderedConfig.scenarioId,
         fromStepIndex: activeIndex,
-        toPageUrl: renderedStep.nextUrl,
+        toPageUrl: transitionUrl,
       });
 
       if (isLastPageStep) {
@@ -439,9 +451,9 @@ export function OnboardingWidget({
       setStepActionState({ status: "idle" });
 
       if (navigate) {
-        navigate(renderedStep.nextUrl);
+        navigate(transitionUrl);
       } else {
-        window.location.assign(renderedStep.nextUrl);
+        window.location.assign(transitionUrl);
       }
       return;
     }
@@ -451,7 +463,7 @@ export function OnboardingWidget({
     if (isLastPageStep) {
       await track("scenario_completed");
       rememberScenarioOutcome(renderedConfig.scenarioId, "completed");
-      clearLinearJourneyProgress();
+      rememberFlowOutcome(renderedConfig.flowKey);
     }
 
     if (!isLastPageStep) {
@@ -466,7 +478,7 @@ export function OnboardingWidget({
   function skipScenario() {
     void track("scenario_dismissed", renderedStep);
     rememberScenarioOutcome(renderedConfig.scenarioId, "dismissed");
-    clearLinearJourneyProgress();
+    rememberFlowOutcome(renderedConfig.flowKey);
     setConfigState({ status: "empty", pageUrl: resolvedPageUrl });
   }
 
@@ -476,7 +488,15 @@ export function OnboardingWidget({
       return;
     }
 
-    const previousPageUrl = preparePreviousOnboardingPage(resolvedPageUrl);
+    const previousPageUrl =
+      preparePreviousOnboardingPage(resolvedPageUrl) ??
+      (renderedConfig.previousPage
+        ? prepareFlowPreviousPage(
+            renderedConfig.previousPage.pageUrl,
+            renderedConfig.previousPage.scenarioId,
+            Math.max(renderedConfig.previousPage.stepCount - 1, 0),
+          )
+        : null);
 
     if (!previousPageUrl) {
       return;

@@ -4,7 +4,6 @@ import type {
   WidgetConfig,
   WidgetConfigRequest,
 } from '../types/contracts'
-import { createLinearJourneyResolver } from './linearJourneyResolver'
 
 export type FetchClient = typeof fetch
 
@@ -29,7 +28,24 @@ type BackendStep = {
 }
 
 type WidgetScenarioResponse = {
-  scenario?: BackendScenario
+  scenario: BackendScenario
+  flow?: {
+    flowId: string
+    flowKey: string
+  }
+}
+
+type BackendFlowConfigItem = {
+  scenarioId: string
+  url: string
+  orderNum: number
+  stepCount: number
+}
+
+type BackendFlowConfigResponse = {
+  flowId: string
+  flowKey: string
+  scenarios: BackendFlowConfigItem[]
 }
 
 export function createHttpOnboardingClient({
@@ -37,9 +53,9 @@ export function createHttpOnboardingClient({
   fetchClient = fetch,
 }: HttpOnboardingClientOptions): OnboardingApiClient {
   const normalizedBaseUrl = apiBaseUrl.replace(/\/$/, '')
-  const loadConfig = async (
+  const loadScenario = async (
     request: WidgetConfigRequest,
-  ): Promise<WidgetConfig | null> => {
+  ): Promise<WidgetScenarioResponse | null> => {
     const params = new URLSearchParams({
       projectKey: request.projectKey,
       pageUrl: request.pageUrl,
@@ -50,25 +66,35 @@ export function createHttpOnboardingClient({
       undefined,
       [204, 404],
     )
-    const scenario = response?.scenario
-
-    if (!scenario || scenario.steps.length === 0) {
+    if (!response?.scenario || response.scenario.steps.length === 0) {
       return null
     }
 
-    return mapWidgetConfig(request, scenario)
+    return response
   }
-  const resolveLinearJourney = createLinearJourneyResolver({ loadConfig })
 
   return {
     async getConfig(request: WidgetConfigRequest): Promise<WidgetConfig | null> {
-      const config = await loadConfig(request)
+      const response = await loadScenario(request)
 
-      if (!config) {
+      if (!response) {
         return null
       }
 
-      return resolveLinearJourney(request, config)
+      if (!response.flow) {
+        return mapWidgetConfig(request, response.scenario)
+      }
+
+      const params = new URLSearchParams({
+        projectKey: request.projectKey,
+        flowKey: response.flow.flowKey,
+      })
+      const flowConfig = await requestJson<BackendFlowConfigResponse>(
+        fetchClient,
+        `${normalizedBaseUrl}/widget/config?${params}`,
+      )
+
+      return mapFlowWidgetConfig(request, response, flowConfig)
     },
 
     async trackEvent(event: OnboardingEventPayload): Promise<void> {
@@ -103,17 +129,32 @@ export function createHttpOnboardingClient({
 function mapWidgetConfig(
   request: WidgetConfigRequest,
   scenario: BackendScenario,
+  progress?: {
+    flowId: string
+    flowKey: string
+    current: BackendFlowConfigItem
+    previous?: BackendFlowConfigItem
+    next?: BackendFlowConfigItem
+    stepOffset: number
+    totalSteps: number
+  },
 ): WidgetConfig {
   return {
     projectKey: request.projectKey,
-    flowKey: scenario.id,
+    flowId: progress?.flowId,
+    flowKey: progress?.flowKey ?? scenario.id,
+    flowOrder: progress?.current.orderNum ?? 1,
     scenarioId: scenario.id,
     scenarioName: scenario.name,
     version: 1,
     versionId: scenario.id,
     pageUrl: request.pageUrl,
-    stepOffset: 0,
-    totalSteps: scenario.steps.length,
+    stepOffset: progress?.stepOffset ?? 0,
+    totalSteps: progress?.totalSteps ?? scenario.steps.length,
+    previousPage: progress?.previous
+      ? mapFlowPage(progress.previous)
+      : undefined,
+    nextPage: progress?.next ? mapFlowPage(progress.next) : undefined,
     steps: scenario.steps
       .toSorted((left, right) => left.orderNum - right.orderNum)
       .map((step) => ({
@@ -127,6 +168,52 @@ function mapWidgetConfig(
         completion: 'next_button',
         nextUrl: step.nextUrl,
       })),
+  }
+}
+
+function mapFlowWidgetConfig(
+  request: WidgetConfigRequest,
+  response: WidgetScenarioResponse,
+  flowConfig: BackendFlowConfigResponse | null,
+) {
+  if (!flowConfig || flowConfig.flowId !== response.flow?.flowId) {
+    return mapWidgetConfig(request, response.scenario)
+  }
+
+  const scenarios = flowConfig.scenarios.toSorted(
+    (left, right) => left.orderNum - right.orderNum,
+  )
+  const currentIndex = scenarios.findIndex(
+    (item) => item.scenarioId === response.scenario.id,
+  )
+  const current = scenarios[currentIndex]
+
+  if (!current) {
+    return mapWidgetConfig(request, response.scenario)
+  }
+
+  return mapWidgetConfig(request, response.scenario, {
+    flowId: flowConfig.flowId,
+    flowKey: flowConfig.flowKey,
+    current,
+    previous: scenarios[currentIndex - 1],
+    next: scenarios[currentIndex + 1],
+    stepOffset: scenarios
+      .slice(0, currentIndex)
+      .reduce((total, item) => total + item.stepCount, 0),
+    totalSteps: scenarios.reduce(
+      (total, item) => total + item.stepCount,
+      0,
+    ),
+  })
+}
+
+function mapFlowPage(item: BackendFlowConfigItem) {
+  return {
+    scenarioId: item.scenarioId,
+    pageUrl: item.url,
+    flowOrder: item.orderNum,
+    stepCount: item.stepCount,
   }
 }
 

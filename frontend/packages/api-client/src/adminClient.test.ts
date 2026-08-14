@@ -88,6 +88,42 @@ describe('Admin API client', () => {
       },
     )
   })
+
+  it('loads flows and sends their complete scenario order', async () => {
+    const fetchClient = createFetch([], 204)
+    const client = createAdminApiClient({
+      apiBaseUrl: '/api/v1',
+      fetchClient,
+    })
+
+    await client.listFlows('project-1')
+    await client.reorderFlowScenarios('flow-1', {
+      scenarios: [
+        { scenarioId: 'scenario-2', orderNum: 1 },
+        { scenarioId: 'scenario-1', orderNum: 2 },
+      ],
+    })
+
+    expect(fetchClient).toHaveBeenNthCalledWith(
+      1,
+      '/api/v1/admin/flows?projectId=project-1',
+      undefined,
+    )
+    expect(fetchClient).toHaveBeenNthCalledWith(
+      2,
+      '/api/v1/admin/flows/flow-1/scenarios/order',
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scenarios: [
+            { scenarioId: 'scenario-2', orderNum: 1 },
+            { scenarioId: 'scenario-1', orderNum: 2 },
+          ],
+        }),
+      },
+    )
+  })
 })
 
 function createFetch(body: unknown, status = 200) {
