@@ -99,12 +99,19 @@ func main() {
 		},
 	}
 
+	publishedScenarioIDs := make([]uuid.UUID, 0, len(scenarios))
 	for _, s := range scenarios {
-		if err := ensureScenarioPair(ctx, db, chConn, projectID, s); err != nil {
+		publishedScenarioID, err := ensureScenarioPair(ctx, db, chConn, projectID, s)
+		if err != nil {
 			slog.Error("failed to seed scenario", "url", s.url, "error", err)
 			os.Exit(1)
 		}
+		publishedScenarioIDs = append(publishedScenarioIDs, publishedScenarioID)
 		slog.Info("scenario pair ready", "url", s.url)
+	}
+	if err := ensureFlow(ctx, db, projectID, publishedScenarioIDs); err != nil {
+		slog.Error("failed to seed flow", "error", err)
+		os.Exit(1)
 	}
 
 	slog.Info("seed completed successfully")
@@ -124,32 +131,65 @@ func ensureProject(ctx context.Context, db rdb.Database) (uuid.UUID, error) {
 	return id, nil
 }
 
-func ensureScenarioPair(ctx context.Context, db rdb.Database, ch olap.Database, projectID uuid.UUID, def scenarioDef) error {
+func ensureScenarioPair(ctx context.Context, db rdb.Database, ch olap.Database, projectID uuid.UUID, def scenarioDef) (uuid.UUID, error) {
 	if _, err := db.ExecContext(ctx,
 		`DELETE FROM scenario WHERE project_id = $1 AND url = $2`,
 		projectID, def.url,
 	); err != nil {
-		return fmt.Errorf("delete previous seed: %w", err)
+		return uuid.Nil, fmt.Errorf("delete previous seed: %w", err)
 	}
 
 	_, _, err := createScenario(ctx, db, projectID, def.name, def.url, "draft", def.steps)
 	if err != nil {
-		return fmt.Errorf("create draft: %w", err)
+		return uuid.Nil, fmt.Errorf("create draft: %w", err)
 	}
 
 	pubID, stepIDs, err := createScenario(ctx, db, projectID, def.name, def.url, "published", def.steps)
 	if err != nil {
-		return fmt.Errorf("create published: %w", err)
+		return uuid.Nil, fmt.Errorf("create published: %w", err)
 	}
 
 	if len(stepIDs) < 2 {
-		return nil
+		return pubID, nil
 	}
 
 	if err := seedEvents(ctx, ch, projectID, pubID, stepIDs); err != nil {
-		return fmt.Errorf("seed events: %w", err)
+		return uuid.Nil, fmt.Errorf("seed events: %w", err)
 	}
 	slog.Info("events seeded", "scenario_id", pubID, "url", def.url)
+	return pubID, nil
+}
+
+func ensureFlow(ctx context.Context, db rdb.Database, projectID uuid.UUID, scenarioIDs []uuid.UUID) error {
+	var flowID uuid.UUID
+	err := db.QueryRowContext(ctx,
+		`INSERT INTO flows (project_id, name, description, flow_key)
+		 VALUES ($1, $2, $3, $4)
+		 ON CONFLICT (project_id, flow_key)
+		 DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description
+		 RETURNING id`,
+		projectID,
+		"Первое размещение объявления",
+		"Путь от пустого профиля до публикации автомобиля",
+		"first-listing",
+	).Scan(&flowID)
+	if err != nil {
+		return fmt.Errorf("upsert flow: %w", err)
+	}
+
+	if _, err := db.ExecContext(ctx, `DELETE FROM flow_scenario WHERE flow_id = $1`, flowID); err != nil {
+		return fmt.Errorf("clear flow scenarios: %w", err)
+	}
+	for index, scenarioID := range scenarioIDs {
+		if _, err := db.ExecContext(ctx,
+			`INSERT INTO flow_scenario (flow_id, scenario_id, order_num) VALUES ($1, $2, $3)`,
+			flowID,
+			scenarioID,
+			index+1,
+		); err != nil {
+			return fmt.Errorf("add scenario to flow: %w", err)
+		}
+	}
 	return nil
 }
 

@@ -7,6 +7,7 @@ import type {
 import {
   Badge,
   Button,
+  Dialog,
   IconButton,
   ResizablePanel,
   ResizableWorkspace,
@@ -27,10 +28,15 @@ import {
   Search,
   Smartphone,
   Sparkles,
+  Trash2,
   Workflow,
 } from 'lucide-react'
 import { useMediaQuery } from '@/shared/hooks/useMediaQuery'
 import type { ScenarioValidation } from '../model/scenarioValidation'
+import {
+  isSameLogicalScenario,
+  type ScenarioVersionGroup,
+} from '../model/scenarioVersions'
 
 const placementOptions: Array<{
   label: string
@@ -63,13 +69,14 @@ const scenarioStatusPresentation: Record<
 }
 
 type ScenarioEditorProps = {
-  scenarios: OnboardingScenario[]
+  scenarioGroups: ScenarioVersionGroup[]
   activeScenario?: OnboardingScenario
   activeStep?: OnboardingStep
   readOnly?: boolean
   showExtendedFields?: boolean
   validation?: ScenarioValidation
   onAddStep: () => void
+  onDeleteStep: () => void
   onOpenDemo: () => void
   onSelectScenario: (scenarioId: string) => void
   onSelectStep: (stepId: string) => void
@@ -82,13 +89,14 @@ type ScenarioEditorProps = {
 }
 
 export function ScenarioEditor({
-  scenarios,
+  scenarioGroups,
   activeScenario,
   activeStep,
   readOnly = false,
   showExtendedFields = true,
   validation,
   onAddStep,
+  onDeleteStep,
   onOpenDemo,
   onSelectScenario,
   onSelectStep,
@@ -101,18 +109,6 @@ export function ScenarioEditor({
     return null
   }
 
-  if (!activeStep) {
-    return (
-      <section className="editor-state">
-        <h2>В сценарии пока нет шагов</h2>
-        <p>Добавьте первую подсказку и укажите элемент страницы.</p>
-        <Button disabled={readOnly} onClick={onAddStep}>
-          Добавить шаг
-        </Button>
-      </section>
-    )
-  }
-
   const registry = (
     <TabsContent
       className="scenario-registry"
@@ -122,7 +118,7 @@ export function ScenarioEditor({
       <ScenarioRegistry
         activeScenario={activeScenario}
         onSelectScenario={onSelectScenario}
-        scenarios={scenarios}
+        scenarioGroups={scenarioGroups}
       />
     </TabsContent>
   )
@@ -147,12 +143,17 @@ export function ScenarioEditor({
           onAddStep={onAddStep}
           onSelectStep={onSelectStep}
         />
-        <StepForm
-          activeStep={activeStep}
-          readOnly={readOnly}
-          showExtendedFields={showExtendedFields}
-          onUpdateStep={onUpdateStep}
-        />
+        {activeStep ? (
+          <StepForm
+            activeStep={activeStep}
+            readOnly={readOnly}
+            showExtendedFields={showExtendedFields}
+            onUpdateStep={onUpdateStep}
+            onDeleteStep={onDeleteStep}
+          />
+        ) : (
+          <EmptyStepEditor readOnly={readOnly} onAddStep={onAddStep} />
+        )}
       </div>
     </TabsContent>
   )
@@ -162,11 +163,15 @@ export function ScenarioEditor({
       forceMount
       value="preview"
     >
-      <ScenarioPreview
-        activeStep={activeStep}
-        status={activeScenario.status}
-        onOpenDemo={onOpenDemo}
-      />
+      {activeStep ? (
+        <ScenarioPreview
+          activeStep={activeStep}
+          status={activeScenario.status}
+          onOpenDemo={onOpenDemo}
+        />
+      ) : (
+        <EmptyStepEditor readOnly={readOnly} onAddStep={onAddStep} />
+      )}
     </TabsContent>
   )
 
@@ -274,13 +279,13 @@ function ScenarioValidationPanel({
 }
 
 type ScenarioRegistryProps = {
-  scenarios: OnboardingScenario[]
+  scenarioGroups: ScenarioVersionGroup[]
   activeScenario: OnboardingScenario
   onSelectScenario: (scenarioId: string) => void
 }
 
 function ScenarioRegistry({
-  scenarios,
+  scenarioGroups,
   activeScenario,
   onSelectScenario,
 }: ScenarioRegistryProps) {
@@ -288,29 +293,32 @@ function ScenarioRegistry({
   const [statusFilter, setStatusFilter] =
     useState<ScenarioStatusFilter>('active')
   const normalizedQuery = query.trim().toLocaleLowerCase('ru')
-  const filteredScenarios = useMemo(
-    () =>
-      scenarios.filter((scenario) => {
-        const matchesStatus =
-          statusFilter === 'all' ||
-          (statusFilter === 'archived'
-            ? scenario.status === 'archived'
-            : scenario.status !== 'archived')
-        const matchesQuery = `${scenario.name} ${scenario.url}`
-          .toLocaleLowerCase('ru')
-          .includes(normalizedQuery)
+  const filteredScenarios = useMemo(() => {
+    return scenarioGroups.flatMap((group) => {
+      const scenario =
+        statusFilter === 'archived'
+          ? group.archived[0]
+          : statusFilter === 'active'
+            ? group.draft ?? group.published
+            : group.primary
+      const matchesQuery = [group.draft, group.published, ...group.archived]
+        .filter((item): item is OnboardingScenario => Boolean(item))
+        .some((item) =>
+          `${item.name} ${item.url}`
+            .toLocaleLowerCase('ru')
+            .includes(normalizedQuery),
+        )
 
-        return matchesStatus && matchesQuery
-      }),
-    [normalizedQuery, scenarios, statusFilter],
-  )
+      return scenario && matchesQuery ? [{ group, scenario }] : []
+    })
+  }, [normalizedQuery, scenarioGroups, statusFilter])
 
   return (
     <section className="scenario-registry__inner">
       <div className="workspace-section-header">
         <div>
           <h2>Сценарии</h2>
-          <span>{filteredScenarios.length} сценариев</span>
+          <span>{formatScenarioCount(filteredScenarios.length)}</span>
         </div>
       </div>
 
@@ -354,10 +362,14 @@ function ScenarioRegistry({
       </label>
 
       <div className="scenario-list">
-        {filteredScenarios.map((scenario) => (
+        {filteredScenarios.map(({ group, scenario }) => (
           <button
-            className={scenario.id === activeScenario.id ? 'is-active' : undefined}
-            key={scenario.id}
+            className={
+              isSameLogicalScenario(scenario, activeScenario)
+                ? 'is-active'
+                : undefined
+            }
+            key={group.key}
             onClick={() => onSelectScenario(scenario.id)}
             type="button"
           >
@@ -367,10 +379,24 @@ function ScenarioRegistry({
             <span className="scenario-list__content">
               <strong>{scenario.name}</strong>
               <small>{scenario.url}</small>
-              <ScenarioStatusBadge
-                className="scenario-status"
-                status={scenario.status}
-              />
+              <span className="scenario-statuses">
+                {statusFilter === 'archived' ? (
+                  <ScenarioStatusBadge status="archived" />
+                ) : (
+                  <>
+                    {group.published && (
+                      <ScenarioStatusBadge status="published" />
+                    )}
+                    {group.draft && <ScenarioStatusBadge status="draft" />}
+                    {!group.draft && !group.published && (
+                      <ScenarioStatusBadge status="archived" />
+                    )}
+                  </>
+                )}
+                {statusFilter === 'archived' && group.archived.length > 1 && (
+                  <small>{group.archived.length} версий</small>
+                )}
+              </span>
             </span>
           </button>
         ))}
@@ -432,6 +458,20 @@ function ScenarioMetaForm({
             }
           />
         </label>
+        <label>
+          <span>Пользовательский путь</span>
+          <input
+            disabled
+            value={(scenario.flowName ?? scenario.flowKey) || 'Не добавлен в путь'}
+          />
+        </label>
+        <label>
+          <span>Позиция в пути</span>
+          <input
+            disabled
+            value={scenario.flowOrder > 0 ? String(scenario.flowOrder) : '—'}
+          />
+        </label>
         {showExtendedFields && (
           <label className="scenario-meta__description">
             <span>Описание</span>
@@ -451,7 +491,7 @@ function ScenarioMetaForm({
 
 type StepTimelineProps = {
   activeScenario: OnboardingScenario
-  activeStep: OnboardingStep
+  activeStep?: OnboardingStep
   readOnly: boolean
   onAddStep: () => void
   onSelectStep: (stepId: string) => void
@@ -487,7 +527,7 @@ function StepTimeline({
       <div className="steps-timeline">
         {orderedSteps.map((step) => (
           <button
-            className={step.id === activeStep.id ? 'is-active' : undefined}
+            className={step.id === activeStep?.id ? 'is-active' : undefined}
             key={step.id}
             onClick={() => onSelectStep(step.id)}
             type="button"
@@ -506,11 +546,30 @@ function StepTimeline({
   )
 }
 
+function EmptyStepEditor({
+  readOnly,
+  onAddStep,
+}: {
+  readOnly: boolean
+  onAddStep: () => void
+}) {
+  return (
+    <section className="editor-state editor-state--embedded">
+      <h2>В сценарии пока нет шагов</h2>
+      <p>Добавьте первую подсказку и укажите элемент страницы.</p>
+      <Button disabled={readOnly} onClick={onAddStep}>
+        Добавить шаг
+      </Button>
+    </section>
+  )
+}
+
 type StepFormProps = {
   activeStep: OnboardingStep
   readOnly: boolean
   showExtendedFields: boolean
   onUpdateStep: (patch: Partial<OnboardingStep>) => void
+  onDeleteStep: () => void
 }
 
 function StepForm({
@@ -518,7 +577,10 @@ function StepForm({
   readOnly,
   showExtendedFields,
   onUpdateStep,
+  onDeleteStep,
 }: StepFormProps) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+
   return (
     <section className="step-inspector">
       <div className="workspace-section-header workspace-section-header--compact">
@@ -526,7 +588,37 @@ function StepForm({
           <h2>Инспектор шага</h2>
           <span>Шаг {activeStep.order}</span>
         </div>
+        <IconButton
+          disabled={readOnly}
+          icon={<Trash2 aria-hidden="true" size={17} />}
+          label="Удалить шаг"
+          onClick={() => setDeleteDialogOpen(true)}
+          variant="danger"
+        />
       </div>
+
+      <Dialog
+        description="Подсказка будет удалена из черновика. Остальные шаги автоматически перенумеруются."
+        onOpenChange={setDeleteDialogOpen}
+        open={deleteDialogOpen}
+        title={`Удалить шаг ${activeStep.order}?`}
+      >
+        <div className="scenario-delete-dialog__actions">
+          <Button onClick={() => setDeleteDialogOpen(false)} variant="ghost">
+            Отмена
+          </Button>
+          <Button
+            icon={<Trash2 aria-hidden="true" size={17} />}
+            onClick={() => {
+              setDeleteDialogOpen(false)
+              onDeleteStep()
+            }}
+            variant="danger"
+          >
+            Удалить шаг
+          </Button>
+        </div>
+      </Dialog>
 
       <div className="step-form">
         <label>
@@ -705,4 +797,16 @@ function ScenarioStatusBadge({
       {presentation.label}
     </Badge>
   )
+}
+
+function formatScenarioCount(count: number) {
+  const lastTwoDigits = count % 100
+  const lastDigit = count % 10
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+    return `${count} сценариев`
+  }
+  if (lastDigit === 1) return `${count} сценарий`
+  if (lastDigit >= 2 && lastDigit <= 4) return `${count} сценария`
+  return `${count} сценариев`
 }

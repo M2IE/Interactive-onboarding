@@ -41,6 +41,39 @@ describe('Widget API client', () => {
     ).resolves.toBeNull()
   })
 
+  it('requests an ordered flow config by project and flow key', async () => {
+    const fetchClient = createFetch({
+      status: 200,
+      body: {
+        flowId: 'flow-1',
+        flowKey: 'first-listing',
+        scenarios: [
+          {
+            scenarioId: 'scenario-1',
+            url: '/demo/profile',
+            orderNum: 1,
+            stepCount: 2,
+          },
+        ],
+      },
+    })
+    const client = createWidgetApiClient({
+      apiBaseUrl: '/api/v1',
+      fetchClient,
+    })
+
+    const result = await client.getFlowConfig({
+      projectKey: 'avito demo',
+      flowKey: 'first listing',
+    })
+
+    expect(result?.scenarios[0]).toMatchObject({ stepCount: 2 })
+    expect(fetchClient).toHaveBeenCalledWith(
+      '/api/v1/widget/config?projectKey=avito+demo&flowKey=first+listing',
+      undefined,
+    )
+  })
+
   it('throws a typed error for an unexpected API response', async () => {
     const client = createWidgetApiClient({
       apiBaseUrl: '/api/v1',

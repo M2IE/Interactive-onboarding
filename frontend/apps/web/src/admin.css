@@ -643,10 +643,21 @@
   white-space: nowrap;
 }
 
-.scenario-list .scenario-status {
-  background: transparent;
+.scenario-statuses {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
   justify-self: start;
-  padding: 1px 0;
+}
+
+.scenario-list .scenario-statuses .ui-badge {
+  padding: 2px 6px;
+}
+
+.scenario-list .scenario-statuses small {
+  overflow: visible;
+  white-space: nowrap;
 }
 
 .scenario-list-empty {
@@ -654,6 +665,13 @@
   font-size: 13px;
   padding: 24px;
   text-align: center;
+}
+
+.scenario-delete-dialog__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding-top: 18px;
 }
 
 .scenario-editor-surface {
@@ -1250,6 +1268,12 @@
 
 .editor-state--error {
   border-color: #f3b6b0;
+}
+
+.editor-state--embedded {
+  align-self: start;
+  margin: 24px;
+  max-width: none;
 }
 
 .report-status--error {

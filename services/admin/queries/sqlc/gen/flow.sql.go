@@ -127,6 +127,40 @@ func (q *Queries) GetFlowByKey(ctx context.Context, db DBTX, arg GetFlowByKeyPar
 	return i, err
 }
 
+const getFlowByScenarioID = `-- name: GetFlowByScenarioID :one
+SELECT f.id, f.project_id, f.name, f.description, f.flow_key, f.created_at
+FROM flows f
+JOIN flow_scenario fs ON fs.flow_id = f.id
+WHERE fs.scenario_id = $1
+`
+
+func (q *Queries) GetFlowByScenarioID(ctx context.Context, db DBTX, scenarioID uuid.UUID) (Flow, error) {
+	row := db.QueryRowContext(ctx, getFlowByScenarioID, scenarioID)
+	var i Flow
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.Name,
+		&i.Description,
+		&i.FlowKey,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getFlowScenarioMembership = `-- name: GetFlowScenarioMembership :one
+SELECT flow_id, scenario_id, order_num
+FROM flow_scenario
+WHERE scenario_id = $1
+`
+
+func (q *Queries) GetFlowScenarioMembership(ctx context.Context, db DBTX, scenarioID uuid.UUID) (FlowScenario, error) {
+	row := db.QueryRowContext(ctx, getFlowScenarioMembership, scenarioID)
+	var i FlowScenario
+	err := row.Scan(&i.FlowID, &i.ScenarioID, &i.OrderNum)
+	return i, err
+}
+
 const getFlowScenarios = `-- name: GetFlowScenarios :many
 SELECT fs.flow_id, fs.scenario_id, fs.order_num,
        s.id, s.project_id, s.name, s.url, s.status, s.created_at, s.updated_at

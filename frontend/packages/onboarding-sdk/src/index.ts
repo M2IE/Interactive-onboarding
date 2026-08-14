@@ -99,6 +99,7 @@ export type {
   StepPlacement,
   WidgetConfig,
   WidgetConfigRequest,
+  WidgetFlowPage,
 } from './types/contracts'
 
 function unmount(root: Root, container: HTMLDivElement) {

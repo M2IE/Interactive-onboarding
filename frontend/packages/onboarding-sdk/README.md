@@ -147,10 +147,11 @@ selectors are likely to break after layout changes.
 
 ## Built-in HTTP client contract
 
-`createHttpOnboardingClient` makes two requests:
+`createHttpOnboardingClient` uses three Widget API endpoints:
 
 ```text
 GET  {apiBaseUrl}/widget/scenario?projectKey=...&pageUrl=...
+GET  {apiBaseUrl}/widget/config?projectKey=...&flowKey=...
 POST {apiBaseUrl}/widget/event
 ```
 
@@ -164,16 +165,17 @@ are surfaced and never replaced with mock data.
 
 ### Cross-page progress
 
-When the API returns page-local scenarios, the HTTP client follows the
-`nextUrl` of each page's final step through the same Widget endpoint. For a
-linear journey, the SDK can therefore display global progress such as
-`Step 2 of 6` without requiring a separate flow response from the backend.
+`GET /widget/scenario` returns the page-local scenario and its `flowKey` when
+the scenario belongs to a journey. The client then loads the ordered flow from
+`GET /widget/config`. Each flow item contains the scenario URL, order and step
+count, so the SDK can display global progress such as `Step 2 of 6`, navigate to
+the next page and return to the previous page without discovering topology from
+`nextUrl`.
 
-The resolved page sequence is cached in `sessionStorage` for the current SDK
-session and cleared when the journey is completed, dismissed, or reset. Cycles,
-multiple transitions from one page, excessive depth, and failed look-ahead
-requests safely fall back to page-local progress. Branch-aware totals still
-require an explicit flow contract from the backend.
+The server flow is the source of truth for cross-page order. `nextUrl` remains
+a standalone-scenario fallback and an authoring hint. `sessionStorage` keeps
+only tab-scoped outcomes, exact return positions and the anonymous session ID;
+it does not cache or infer journey topology.
 
 If the host application uses a different API contract, provide an adapter:
 

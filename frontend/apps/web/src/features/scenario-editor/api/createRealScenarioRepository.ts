@@ -1,5 +1,6 @@
 import {
   createAdminApiClient,
+  type AdminFlowDetails,
   type AdminProject,
   type AdminScenarioWithSteps,
   type FetchClient,
@@ -9,7 +10,11 @@ import type {
   OnboardingStep,
 } from '@m2ie/onboarding-sdk'
 import type { ScenarioRepository } from './types'
-import { createScenarioDraft, createScenarioStep } from './scenarioFactory'
+import {
+  createScenarioDraft,
+  createScenarioStep,
+  removeScenarioStep,
+} from './scenarioFactory'
 
 type RealScenarioRepositoryOptions = {
   apiBaseUrl: string
@@ -40,8 +45,28 @@ export function createRealScenarioRepository({
       getProject(),
       apiClient.getScenario(scenarioId),
     ])
+    const flow = await findScenarioFlow(project.id, scenario)
 
-    return mapScenario(project, scenario)
+    return mapScenario(project, scenario, flow)
+  }
+
+  async function listFlowDetails(projectId: string) {
+    const flows = await apiClient.listFlows(projectId)
+    return Promise.all(flows.map((flow) => apiClient.getFlow(flow.id)))
+  }
+
+  async function findScenarioFlow(
+    projectId: string,
+    scenario: AdminScenarioWithSteps,
+  ) {
+    const flows = await listFlowDetails(projectId)
+    return flows.find((flow) =>
+      flow.scenarios.some(
+        (item) =>
+          item.scenarioId === scenario.id ||
+          (scenario.status === 'draft' && item.url === scenario.url),
+      ),
+    )
   }
 
   async function saveScenario(scenario: OnboardingScenario) {
@@ -65,12 +90,23 @@ export function createRealScenarioRepository({
 
   async function listScenarios() {
     const project = await getProject()
-    const scenarios = await apiClient.listScenarios(project.id)
+    const [scenarios, flows] = await Promise.all([
+      apiClient.listScenarios(project.id),
+      listFlowDetails(project.id),
+    ])
 
     return Promise.all(
-      scenarios.map(async (scenario) =>
-        mapScenario(project, await apiClient.getScenario(scenario.id)),
-      ),
+      scenarios.map(async (scenario) => {
+        const details = await apiClient.getScenario(scenario.id)
+        const flow = flows.find((item) =>
+          item.scenarios.some(
+            (member) =>
+              member.scenarioId === scenario.id ||
+              (details.status === 'draft' && member.url === details.url),
+          ),
+        )
+        return mapScenario(project, details, flow)
+      }),
     )
   }
 
@@ -112,6 +148,11 @@ export function createRealScenarioRepository({
       return getScenario(scenario.id)
     },
 
+    async deleteStep(scenario, stepId) {
+      await apiClient.deleteStep(scenario.id, stepId)
+      return removeScenarioStep(scenario, stepId)
+    },
+
     saveScenario,
 
     async publishScenario(scenario) {
@@ -134,15 +175,23 @@ export function createRealScenarioRepository({
 function mapScenario(
   project: AdminProject,
   scenario: AdminScenarioWithSteps,
+  flow?: AdminFlowDetails,
 ): OnboardingScenario {
   const versionId = scenario.id
+  const membership = flow?.scenarios.find(
+    (item) =>
+      item.scenarioId === scenario.id ||
+      (scenario.status === 'draft' && item.url === scenario.url),
+  )
 
   return {
     id: scenario.id,
     projectId: scenario.projectId,
     projectKey: project.projectKey,
-    flowKey: scenario.id,
-    flowOrder: 1,
+    flowId: flow?.id,
+    flowName: flow?.name,
+    flowKey: flow?.flowKey ?? '',
+    flowOrder: membership?.orderNum ?? 0,
     name: scenario.name,
     description: '',
     url: scenario.url,

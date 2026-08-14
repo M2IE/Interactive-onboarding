@@ -3,9 +3,12 @@ import {
   consumeScenarioResume,
   createSessionId,
   getOrCreateSessionId,
+  hasFlowOutcome,
   hasPreviousOnboardingPage,
   preparePreviousOnboardingPage,
+  prepareFlowPreviousPage,
   rememberPageNavigation,
+  rememberFlowOutcome,
   resetOnboardingSession,
 } from './session'
 
@@ -88,5 +91,18 @@ describe('onboarding session', () => {
     })
 
     expect(hasPreviousOnboardingPage('/new?source=profile')).toBe(true)
+  })
+
+  it('stores a backend flow outcome for the rest of the tab session', () => {
+    expect(hasFlowOutcome('first-listing')).toBe(false)
+    rememberFlowOutcome('first-listing')
+    expect(hasFlowOutcome('first-listing')).toBe(true)
+  })
+
+  it('prepares a previous flow page without relying on local navigation history', () => {
+    expect(
+      prepareFlowPreviousPage('/profile', 'scenario-profile', 2),
+    ).toBe('/profile')
+    expect(consumeScenarioResume('/profile', 'scenario-profile')).toBe(2)
   })
 })

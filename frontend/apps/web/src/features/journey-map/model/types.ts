@@ -22,7 +22,13 @@ export type JourneyEdge = {
 
 export type JourneyDiagnostic = {
   id: string
-  kind: 'multiple_roots' | 'unreachable' | 'cycle' | 'self_loop' | 'missing_target'
+  kind:
+    | 'multiple_roots'
+    | 'unreachable'
+    | 'cycle'
+    | 'self_loop'
+    | 'missing_target'
+    | 'transition_mismatch'
   message: string
   nodeIds: string[]
 }

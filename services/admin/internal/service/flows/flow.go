@@ -2,6 +2,7 @@ package flows
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -16,6 +17,7 @@ type IFlowInfrastructure interface {
 	GetFlowByID(ctx context.Context, db rdb.Querier, id uuid.UUID) (*domain.Flow, error)
 	GetFlowByProject(ctx context.Context, db rdb.Querier, projectID uuid.UUID) ([]domain.Flow, error)
 	GetFlowByKey(ctx context.Context, db rdb.Querier, projectID uuid.UUID, key string) (*domain.Flow, error)
+	GetFlowByScenarioID(ctx context.Context, db rdb.Querier, scenarioID uuid.UUID) (*domain.Flow, error)
 	UpdateFlow(ctx context.Context, db rdb.Querier, flow *domain.Flow) error
 	DeleteFlow(ctx context.Context, db rdb.Querier, id uuid.UUID) error
 	AddScenarioToFlow(ctx context.Context, db rdb.Querier, flowID, scenarioID uuid.UUID, orderNum int) error
@@ -164,7 +166,11 @@ func (s *FlowService) DeleteFlow(ctx context.Context, flowID uuid.UUID) error {
 	return tx.Commit()
 }
 
-func (s *FlowService) AddScenarioToFlow(ctx context.Context, flowID, scenarioID uuid.UUID, orderNum int) error {
+func (s *FlowService) AddScenarioToFlow(ctx context.Context, flowID, scenarioID uuid.UUID, orderNum int) (err error) {
+	if orderNum < 1 {
+		return domain.ErrInvalidOrder
+	}
+
 	tx, err := s.txManager.Begin()
 	if err != nil {
 		return err
@@ -178,14 +184,25 @@ func (s *FlowService) AddScenarioToFlow(ctx context.Context, flowID, scenarioID 
 	}()
 
 	// Проверяем существование потока
-	_, err = s.infra.GetFlowByID(ctx, tx, flowID)
+	flow, err := s.infra.GetFlowByID(ctx, tx, flowID)
 	if err != nil {
 		return err
 	}
 	// Проверяем существование сценария
-	_, err = s.infra.Get(ctx, tx, scenarioID)
+	scenario, err := s.infra.Get(ctx, tx, scenarioID)
 	if err != nil {
 		return err
+	}
+	if flow.ProjectID != scenario.ProjectID {
+		return domain.ErrScenarioProjectMismatch
+	}
+
+	existingFlow, existingFlowErr := s.infra.GetFlowByScenarioID(ctx, tx, scenarioID)
+	if existingFlowErr != nil && !errors.Is(existingFlowErr, domain.ErrFlowNotFound) {
+		return existingFlowErr
+	}
+	if existingFlow != nil {
+		return domain.ErrScenarioAlreadyInFlow
 	}
 
 	scenarios, err := s.infra.GetFlowScenarios(ctx, tx, flowID)

@@ -13,6 +13,7 @@ export function createPreviewApiClient(
   const config: WidgetConfig = {
     projectKey: preview.projectKey,
     flowKey: scenarioId,
+    flowOrder: 1,
     scenarioId,
     scenarioName: 'Extension preview',
     version: 1,

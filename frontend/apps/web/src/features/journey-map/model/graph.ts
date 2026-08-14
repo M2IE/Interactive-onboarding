@@ -35,7 +35,39 @@ export function buildJourneyGraph(source: OnboardingScenario[]): JourneyGraph {
   const edgeGroups = new Map<string, JourneyEdge>()
   const diagnostics: JourneyDiagnostic[] = []
 
+  const flowGroups = groupFlowNodes(
+    nodes.filter(hasScenario).filter((node) => Boolean(node.scenario.flowKey)),
+  )
+
+  for (const flowNodes of flowGroups.values()) {
+    const ordered = flowNodes.toSorted(
+      (left, right) => left.scenario.flowOrder - right.scenario.flowOrder,
+    )
+
+    ordered.forEach((node, index) => {
+      const next = ordered[index + 1]
+      if (!next) return
+
+      addEdge(edgeGroups, node, next, node.scenario.steps.at(-1)?.title ?? 'Переход')
+
+      const configuredUrl = node.scenario.steps.at(-1)?.nextUrl
+      if (
+        configuredUrl &&
+        normalizeJourneyPath(configuredUrl) !== next.path
+      ) {
+        diagnostics.push({
+          id: `transition-mismatch:${node.id}`,
+          kind: 'transition_mismatch',
+          message: `Переход из «${node.name}» настроен на ${normalizeJourneyPath(configuredUrl)}, но порядок потока ведёт на ${next.path}.`,
+          nodeIds: [node.id, next.id],
+        })
+      }
+    })
+  }
+
   for (const node of nodes.filter(hasScenario)) {
+    if (node.scenario.flowKey) continue
+
     for (const step of node.scenario.steps) {
       if (!step.nextUrl) continue
 
@@ -66,20 +98,7 @@ export function buildJourneyGraph(source: OnboardingScenario[]): JourneyGraph {
         })
       }
 
-      const groupKey = `${node.id}->${target.id}`
-      const existing = edgeGroups.get(groupKey)
-      if (existing) {
-        existing.count += 1
-        existing.stepTitles.push(step.title)
-      } else {
-        edgeGroups.set(groupKey, {
-          id: groupKey,
-          source: node.id,
-          target: target.id,
-          count: 1,
-          stepTitles: [step.title],
-        })
-      }
+      addEdge(edgeGroups, node, target, step.title)
 
       if (node.id === target.id) {
         diagnostics.push({
@@ -134,6 +153,40 @@ export function buildJourneyGraph(source: OnboardingScenario[]): JourneyGraph {
   }
 
   return { nodes, edges, rootIds, diagnostics: deduplicateDiagnostics(diagnostics) }
+}
+
+function groupFlowNodes(nodes: Array<JourneyNode & { scenario: OnboardingScenario }>) {
+  const groups = new Map<string, Array<JourneyNode & { scenario: OnboardingScenario }>>()
+
+  for (const node of nodes) {
+    const key = node.scenario.flowId ?? node.scenario.flowKey
+    groups.set(key, [...(groups.get(key) ?? []), node])
+  }
+
+  return groups
+}
+
+function addEdge(
+  edgeGroups: Map<string, JourneyEdge>,
+  source: JourneyNode,
+  target: JourneyNode,
+  stepTitle: string,
+) {
+  const groupKey = `${source.id}->${target.id}`
+  const existing = edgeGroups.get(groupKey)
+  if (existing) {
+    existing.count += 1
+    existing.stepTitles.push(stepTitle)
+    return
+  }
+
+  edgeGroups.set(groupKey, {
+    id: groupKey,
+    source: source.id,
+    target: target.id,
+    count: 1,
+    stepTitles: [stepTitle],
+  })
 }
 
 function hasScenario(node: JourneyNode): node is JourneyNode & { scenario: OnboardingScenario } {

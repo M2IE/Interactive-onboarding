@@ -21,4 +21,5 @@ type FlowScenarioDetail struct {
 	Name       string
 	URL        string
 	Status     ScenarioStatus
+	StepCount  int
 }

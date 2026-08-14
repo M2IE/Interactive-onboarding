@@ -46,6 +46,7 @@ describe('HTTP onboarding client adapter', () => {
 
     expect(config).toMatchObject({
       flowKey: 'scenario-1',
+      flowOrder: 1,
       scenarioId: 'scenario-1',
       version: 1,
       versionId: 'scenario-1',
@@ -146,7 +147,7 @@ describe('HTTP onboarding client adapter', () => {
     })
   })
 
-  it('resolves global progress through page-local nextUrl scenarios', async () => {
+  it('resolves global progress and adjacent pages from the backend flow config', async () => {
     const scenarios = new Map([
       ['/profile', createBackendScenario('profile', 1, '/new')],
       ['/new', createBackendScenario('new', 1, '/transport')],
@@ -155,11 +156,35 @@ describe('HTTP onboarding client adapter', () => {
     ])
     const fetchClient = jest.fn<typeof fetch>(async (input) => {
       const url = new URL(String(input), 'https://onboarding.test')
+
+      if (url.pathname.endsWith('/widget/config')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            flowId: 'flow-id',
+            flowKey: 'first-listing',
+            scenarios: [
+              { scenarioId: 'profile', url: '/profile', orderNum: 1, stepCount: 1 },
+              { scenarioId: 'new', url: '/new', orderNum: 2, stepCount: 1 },
+              { scenarioId: 'transport', url: '/transport', orderNum: 3, stepCount: 1 },
+              { scenarioId: 'auto', url: '/auto', orderNum: 4, stepCount: 3 },
+            ],
+          }),
+        } as Response
+      }
+
       const scenario = scenarios.get(url.searchParams.get('pageUrl') ?? '')
       return {
         ok: Boolean(scenario),
         status: scenario ? 200 : 404,
-        json: async () => scenario ? { scenario } : undefined,
+        json: async () =>
+          scenario
+            ? {
+                scenario,
+                flow: { flowId: 'flow-id', flowKey: 'first-listing' },
+              }
+            : undefined,
       } as Response
     })
     const client = createHttpOnboardingClient({
@@ -178,9 +203,21 @@ describe('HTTP onboarding client adapter', () => {
       sessionId: 'linear-session',
     })
 
-    expect(profile).toMatchObject({ stepOffset: 0, totalSteps: 6 })
-    expect(auto).toMatchObject({ stepOffset: 3, totalSteps: 6 })
-    expect(fetchClient).toHaveBeenCalledTimes(5)
+    expect(profile).toMatchObject({
+      flowId: 'flow-id',
+      flowKey: 'first-listing',
+      flowOrder: 1,
+      stepOffset: 0,
+      totalSteps: 6,
+      nextPage: { scenarioId: 'new', pageUrl: '/new' },
+    })
+    expect(auto).toMatchObject({
+      flowOrder: 4,
+      stepOffset: 3,
+      totalSteps: 6,
+      previousPage: { scenarioId: 'transport', pageUrl: '/transport' },
+    })
+    expect(fetchClient).toHaveBeenCalledTimes(4)
   })
 })
 

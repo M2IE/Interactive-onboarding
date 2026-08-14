@@ -11,8 +11,16 @@ WHERE fs.scenario_id = $1
 LIMIT 1;
 
 -- name: GetFlowScenariosWithDetails :many
-SELECT fs.scenario_id, fs.order_num, s.name, s.url, s.status
+SELECT fs.scenario_id,
+       fs.order_num,
+       s.name,
+       s.url,
+       s.status,
+       COUNT(st.id)::int AS step_count
 FROM flow_scenario fs
 JOIN scenario s ON s.id = fs.scenario_id
+LEFT JOIN step st ON st.scenario_id = s.id
 WHERE fs.flow_id = $1
+  AND s.status = 'published'
+GROUP BY fs.scenario_id, fs.order_num, s.name, s.url, s.status
 ORDER BY fs.order_num;

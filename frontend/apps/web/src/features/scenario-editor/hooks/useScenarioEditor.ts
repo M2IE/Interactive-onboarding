@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import type { ThunkDispatch, UnknownAction } from '@reduxjs/toolkit'
 import type { OnboardingStep } from '@m2ie/onboarding-sdk'
 import { useDispatch, useSelector } from 'react-redux'
@@ -6,6 +6,7 @@ import type { ScenarioRepositoryServices } from '../api/types'
 import {
   addScenarioStep,
   createScenario,
+  deleteScenarioStep,
   loadScenarios,
   publishScenario,
   resetScenarios,
@@ -25,6 +26,10 @@ import {
 } from '../model/selectors'
 import { resolveScenarioDeepLink } from '../model/deepLink'
 import { validateScenario } from '../model/scenarioValidation'
+import {
+  findPublishedVersion,
+  groupScenarioVersions,
+} from '../model/scenarioVersions'
 import { useUnsavedChanges } from '@/shared/hooks/useUnsavedChanges'
 
 type ScenarioEditorRootState = {
@@ -83,6 +88,13 @@ export function useScenarioEditor(
   }, [activeScenario?.id, deepLinkResolution, dispatch, enabled])
 
   const isPublished = activeScenario?.status === 'published'
+  const publishedVersion = activeScenario
+    ? findPublishedVersion(scenarios, activeScenario)
+    : undefined
+  const scenarioGroups = useMemo(
+    () => groupScenarioVersions(scenarios),
+    [scenarios],
+  )
   const isArchived = activeScenario?.status === 'archived'
   const isReadOnly = isPublished || isArchived
   const isDirty = activeScenario
@@ -100,7 +112,9 @@ export function useScenarioEditor(
     isDirty,
     isArchived,
     isPublished,
+    hasPublishedVersion: Boolean(publishedVersion),
     isReadOnly,
+    scenarioGroups,
     scenarios,
     workflow,
     validation,
@@ -119,6 +133,16 @@ export function useScenarioEditor(
         void dispatch(createScenario())
       }
     },
+    deleteActiveStep: () => {
+      if (activeScenario && activeStep && !isReadOnly) {
+        void dispatch(
+          deleteScenarioStep({
+            scenario: activeScenario,
+            stepId: activeStep.id,
+          }),
+        )
+      }
+    },
     publishActiveScenario: () => {
       if (
         activeScenario &&
@@ -129,8 +153,8 @@ export function useScenarioEditor(
       }
     },
     unpublishActiveScenario: () => {
-      if (activeScenario && isPublished) {
-        void dispatch(unpublishScenario(activeScenario))
+      if (publishedVersion) {
+        void dispatch(unpublishScenario(publishedVersion))
       }
     },
     reloadScenarios: () => {

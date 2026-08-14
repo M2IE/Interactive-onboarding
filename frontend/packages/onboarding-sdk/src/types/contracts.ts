@@ -30,6 +30,8 @@ export type OnboardingScenario = {
   id: string
   projectId: string
   projectKey: string
+  flowId?: string
+  flowName?: string
   flowKey: string
   flowOrder: number
   name: string
@@ -53,7 +55,9 @@ export type WidgetConfigRequest = {
 
 export type WidgetConfig = {
   projectKey: string
+  flowId?: string
   flowKey: string
+  flowOrder: number
   scenarioId: string
   scenarioName: string
   version: number
@@ -61,7 +65,16 @@ export type WidgetConfig = {
   pageUrl: string
   stepOffset: number
   totalSteps: number
+  previousPage?: WidgetFlowPage
+  nextPage?: WidgetFlowPage
   steps: OnboardingStep[]
+}
+
+export type WidgetFlowPage = {
+  scenarioId: string
+  pageUrl: string
+  flowOrder: number
+  stepCount: number
 }
 
 export type OnboardingEventPayload = {

@@ -19,6 +19,12 @@ export type CreateAdminStepRequest = components['schemas']['CreateStepRequest']
 export type UpdateAdminStepRequest = components['schemas']['UpdateStepRequest']
 export type ReorderAdminStepsRequest =
   components['schemas']['ReorderStepsRequest']
+export type AdminFlow = components['schemas']['Flow']
+export type AdminFlowDetails = components['schemas']['FlowDetails']
+export type CreateAdminFlowRequest = components['schemas']['CreateFlowRequest']
+export type UpdateAdminFlowRequest = components['schemas']['UpdateFlowRequest']
+export type ReorderAdminFlowScenariosRequest =
+  components['schemas']['ReorderFlowScenariosRequest']
 
 type ScenarioList = components['schemas']['ScenarioList']
 type AnalyticsReportResponse =
@@ -37,6 +43,27 @@ export type AdminApiClient = {
   ) => Promise<AdminScenario>
   publishScenario: (scenarioId: string) => Promise<AdminScenario>
   unpublishScenario: (scenarioId: string) => Promise<void>
+  listFlows: (projectId: string) => Promise<AdminFlow[]>
+  getFlow: (flowId: string) => Promise<AdminFlowDetails>
+  createFlow: (request: CreateAdminFlowRequest) => Promise<AdminFlow>
+  updateFlow: (
+    flowId: string,
+    request: UpdateAdminFlowRequest,
+  ) => Promise<AdminFlow>
+  deleteFlow: (flowId: string) => Promise<void>
+  addScenarioToFlow: (
+    flowId: string,
+    scenarioId: string,
+    orderNum: number,
+  ) => Promise<void>
+  removeScenarioFromFlow: (
+    flowId: string,
+    scenarioId: string,
+  ) => Promise<void>
+  reorderFlowScenarios: (
+    flowId: string,
+    request: ReorderAdminFlowScenariosRequest,
+  ) => Promise<void>
   createStep: (
     scenarioId: string,
     request: CreateAdminStepRequest,
@@ -139,6 +166,74 @@ export function createAdminApiClient({
         fetchClient,
         `${baseUrl}/admin/scenarios/${encodeURIComponent(scenarioId)}/unpublish`,
         { method: 'POST' },
+      )
+    },
+
+    async listFlows(projectId) {
+      const params = new URLSearchParams({ projectId })
+      return (
+        (await requestJson<AdminFlow[]>(
+          fetchClient,
+          `${baseUrl}/admin/flows?${params}`,
+        )) ?? []
+      )
+    },
+
+    async getFlow(flowId) {
+      const result = await requestJson<AdminFlowDetails>(
+        fetchClient,
+        `${baseUrl}/admin/flows/${encodeURIComponent(flowId)}`,
+      )
+      return requireResult(result, 'Flow API returned an empty response')
+    },
+
+    async createFlow(request) {
+      const result = await requestJson<AdminFlow>(
+        fetchClient,
+        `${baseUrl}/admin/flows`,
+        jsonRequest('POST', request),
+      )
+      return requireResult(result, 'Flow API returned an empty response')
+    },
+
+    async updateFlow(flowId, request) {
+      const result = await requestJson<AdminFlow>(
+        fetchClient,
+        `${baseUrl}/admin/flows/${encodeURIComponent(flowId)}`,
+        jsonRequest('PATCH', request),
+      )
+      return requireResult(result, 'Flow API returned an empty response')
+    },
+
+    async deleteFlow(flowId) {
+      await requestVoid(
+        fetchClient,
+        `${baseUrl}/admin/flows/${encodeURIComponent(flowId)}`,
+        { method: 'DELETE' },
+      )
+    },
+
+    async addScenarioToFlow(flowId, scenarioId, orderNum) {
+      await requestVoid(
+        fetchClient,
+        `${baseUrl}/admin/flows/${encodeURIComponent(flowId)}/scenarios`,
+        jsonRequest('POST', { scenarioId, orderNum }),
+      )
+    },
+
+    async removeScenarioFromFlow(flowId, scenarioId) {
+      await requestVoid(
+        fetchClient,
+        `${baseUrl}/admin/flows/${encodeURIComponent(flowId)}/scenarios/${encodeURIComponent(scenarioId)}`,
+        { method: 'DELETE' },
+      )
+    },
+
+    async reorderFlowScenarios(flowId, request) {
+      await requestVoid(
+        fetchClient,
+        `${baseUrl}/admin/flows/${encodeURIComponent(flowId)}/scenarios/order`,
+        jsonRequest('PUT', request),
       )
     },
 

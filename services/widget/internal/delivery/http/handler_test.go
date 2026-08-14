@@ -63,9 +63,6 @@ func TestGetWidgetScenario_Success(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected 200, got %T", resp)
 	}
-	if r.Scenario == nil {
-		t.Fatal("scenario is nil")
-	}
 	if len(r.Scenario.Steps) != 1 {
 		t.Errorf("steps count = %d, want 1", len(r.Scenario.Steps))
 	}
@@ -78,6 +75,57 @@ func TestGetWidgetScenario_Success(t *testing.T) {
 	// Проверяем, что flow отсутствует
 	if r.Flow != nil {
 		t.Errorf("flow should be nil, got %v", r.Flow)
+	}
+}
+
+func TestGetWidgetScenario_IncludesFlowMetadata(t *testing.T) {
+	flowID := uuid.MustParse("850e8400-e29b-41d4-a716-446655440003")
+	flowKey := "first-listing"
+	svc := &mockWidgetService{
+		getScenarioFn: func(context.Context, string, string) (*domain.Scenario, []domain.Step, *uuid.UUID, *string, error) {
+			return testScenario(), testSteps(), &flowID, &flowKey, nil
+		},
+	}
+	h := NewWidgetHandler(svc)
+
+	response, err := h.GetWidgetScenario(context.Background(), apiv1.GetWidgetScenarioRequestObject{
+		Params: apiv1.GetWidgetScenarioParams{ProjectKey: "test-key", PageUrl: "/test"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	result := response.(apiv1.GetWidgetScenario200JSONResponse)
+	if result.Flow == nil || result.Flow.FlowId != flowID || result.Flow.FlowKey != flowKey {
+		t.Fatalf("unexpected flow metadata: %+v", result.Flow)
+	}
+}
+
+func TestGetWidgetConfig_IncludesPublishedStepCounts(t *testing.T) {
+	flow := &domain.Flow{
+		ID:      uuid.MustParse("850e8400-e29b-41d4-a716-446655440003"),
+		FlowKey: "first-listing",
+	}
+	svc := &mockWidgetService{
+		getFlowConfigFn: func(context.Context, string, string) ([]domain.FlowScenarioDetail, *domain.Flow, error) {
+			return []domain.FlowScenarioDetail{{
+				ScenarioID: _scenarioID,
+				OrderNum:   1,
+				URL:        "/test",
+				StepCount:  3,
+			}}, flow, nil
+		},
+	}
+	h := NewWidgetHandler(svc)
+
+	response, err := h.GetWidgetConfig(context.Background(), apiv1.GetWidgetConfigRequestObject{
+		Params: apiv1.GetWidgetConfigParams{ProjectKey: "test-key", FlowKey: "first-listing"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	result := response.(apiv1.GetWidgetConfig200JSONResponse)
+	if len(result.Scenarios) != 1 || result.Scenarios[0].StepCount != 3 {
+		t.Fatalf("unexpected flow scenarios: %+v", result.Scenarios)
 	}
 }
 

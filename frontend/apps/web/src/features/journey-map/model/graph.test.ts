@@ -17,26 +17,25 @@ describe('journey graph', () => {
     expect(graph.rootIds).toEqual(['scenario-first-listing-profile'])
   })
 
-  it('aggregates branches to the same destination', () => {
+  it('builds flow edges by backend order even without nextUrl', () => {
     const source = patchScenario(defaultScenarios[0], {
-      steps: [
-        defaultScenarios[0].steps[0],
-        { ...defaultScenarios[0].steps[0], id: 'second', title: 'Second' },
-      ],
+      steps: [{ ...defaultScenarios[0].steps[0], nextUrl: undefined }],
     })
     const graph = buildJourneyGraph([source, defaultScenarios[1]])
 
     expect(graph.edges.find((edge) => edge.source === source.id)).toMatchObject({
-      count: 2,
-      stepTitles: expect.arrayContaining(['Second']),
+      target: defaultScenarios[1].id,
+      count: 1,
     })
   })
 
   it('creates diagnostics for missing targets, multiple roots and cycles', () => {
     const missing = patchScenario(defaultScenarios[0], {
+      flowKey: '',
+      flowOrder: 0,
       steps: [{ ...defaultScenarios[0].steps[0], nextUrl: '/unknown' }],
     })
-    const isolated = patchScenario(defaultScenarios[1], { id: 'isolated', url: '/isolated', steps: [] })
+    const isolated = patchScenario(defaultScenarios[1], { id: 'isolated', flowKey: '', flowOrder: 0, url: '/isolated', steps: [] })
     const graph = buildJourneyGraph([missing, isolated])
 
     expect(graph.diagnostics.map((item) => item.kind)).toEqual(
@@ -45,9 +44,13 @@ describe('journey graph', () => {
     expect(graph.nodes.some((node) => node.kind === 'missing')).toBe(true)
 
     const first = patchScenario(defaultScenarios[0], {
+      flowKey: '',
+      flowOrder: 0,
       steps: [{ ...defaultScenarios[0].steps[0], nextUrl: '/second' }],
     })
     const second = patchScenario(defaultScenarios[1], {
+      flowKey: '',
+      flowOrder: 0,
       url: '/second',
       steps: [{ ...defaultScenarios[1].steps[0], nextUrl: first.url }],
     })

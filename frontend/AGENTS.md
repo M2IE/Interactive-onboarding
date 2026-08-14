@@ -316,8 +316,9 @@ testable. Do not duplicate route constants across pages and scenario configs;
 keep them in `shared/config/routes.ts`.
 
 One published scenario belongs to one page URL. The scenario owns its `url`;
-steps inherit that page and must not duplicate `pagePath` or `pageId`. A larger
-user journey can group page-local scenarios with `flowKey` and `flowOrder`.
+steps inherit that page and must not duplicate `pagePath` or `pageId`. Admin API
+flows are the source of truth for grouping and ordering page-local scenarios.
+Do not infer production topology by recursively following `step.nextUrl`.
 
 ## SDK Contract
 
@@ -391,8 +392,9 @@ Validated on 2026-08-09:
   by `projectKey + pageUrl`.
 - Demo navigation uses React Router without document reloads. The SDK delegates
   cross-page transitions to the host navigation adapter and keeps a full-page
-  fallback for non-SPA integrations. Before following a step's `nextUrl`, it
-  awaits `step_completed` and blocks repeated actions during the handoff.
+  fallback for non-SPA integrations. It awaits `step_completed` before using
+  the next URL from Widget flow config and blocks repeated actions during the
+  handoff. `nextUrl` is only a fallback for a standalone scenario.
 - Admin scenarios, steps, publication, widget config/events, analytics and PDF
   reports use the generated MVP OpenAPI contracts through `packages/api-client`.
 - The SDK injects isolated `.onboarding-sdk*` styles, has no Radix/UI-package
