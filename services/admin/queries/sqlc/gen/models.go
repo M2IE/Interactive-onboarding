@@ -56,6 +56,21 @@ func (ns NullScenarioStatus) Value() (driver.Value, error) {
 	return string(ns.ScenarioStatus), nil
 }
 
+type Flow struct {
+	ID          uuid.UUID      `db:"id"`
+	ProjectID   uuid.UUID      `db:"project_id"`
+	Name        string         `db:"name"`
+	Description sql.NullString `db:"description"`
+	FlowKey     string         `db:"flow_key"`
+	CreatedAt   time.Time      `db:"created_at"`
+}
+
+type FlowScenario struct {
+	FlowID     uuid.UUID `db:"flow_id"`
+	ScenarioID uuid.UUID `db:"scenario_id"`
+	OrderNum   int32     `db:"order_num"`
+}
+
 type Project struct {
 	ID         uuid.UUID `db:"id"`
 	Name       string    `db:"name"`

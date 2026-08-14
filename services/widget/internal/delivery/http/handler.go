@@ -3,15 +3,18 @@ package http
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 
 	apiv1 "github.com/M2IE/Interactive-onboarding/gen/rest/v1/go/widget"
 	"github.com/M2IE/Interactive-onboarding/services/widget/internal/domain"
 	"github.com/google/uuid"
+	"github.com/oapi-codegen/runtime/types"
 )
 
 type IWidgetService interface {
-	GetScenario(ctx context.Context, projectKey, pageUrl string) (*domain.Scenario, []domain.Step, error)
+	GetScenario(ctx context.Context, projectKey, pageUrl string) (*domain.Scenario, []domain.Step, *uuid.UUID, *string, error)
+	GetFlowConfig(ctx context.Context, projectKey, flowKey string) ([]domain.FlowScenarioDetail, *domain.Flow, error)
 	ProcessEvent(ctx context.Context, sessionID string, eventType domain.EventType, stepID, scenarioID *uuid.UUID, eventKey *string) error
 }
 type WidgetHandler struct {
@@ -27,7 +30,7 @@ func (h *WidgetHandler) GetWidgetScenario(ctx context.Context, request apiv1.Get
 	projectKey := request.Params.ProjectKey
 	pageUrl := request.Params.PageUrl
 
-	scenario, steps, err := h.service.GetScenario(ctx, projectKey, pageUrl)
+	scenario, steps, flowID, flowKey, err := h.service.GetScenario(ctx, projectKey, pageUrl)
 	if err != nil {
 		switch {
 		case errors.Is(err, domain.ErrProjectNotFound):
@@ -61,12 +64,79 @@ func (h *WidgetHandler) GetWidgetScenario(ctx context.Context, request apiv1.Get
 		}
 	}
 
-	return apiv1.GetWidgetScenario200JSONResponse{
+	// Формируем ответ
+	response := apiv1.GetWidgetScenario200JSONResponse{
 		Scenario: &apiv1.Scenario{
 			Id:    scenario.ID,
 			Name:  scenario.Name,
 			Steps: stepDTOs,
 		},
+	}
+
+	// Если сценарий принадлежит потоку, добавляем информацию о потоке
+	fmt.Println(flowID, flowKey)
+	if flowID != nil && flowKey != nil {
+		fmt.Println(flowID, flowKey)
+		flowIDVal := types.UUID(*flowID)
+		response.Flow = &struct {
+			FlowId  *types.UUID `json:"flowId,omitempty"`
+			FlowKey *string     `json:"flowKey,omitempty"`
+		}{
+			FlowId:  &flowIDVal,
+			FlowKey: flowKey,
+		}
+	}
+
+	return response, nil
+}
+
+// GetWidgetConfig обрабатывает GET /widget/config
+func (h *WidgetHandler) GetWidgetConfig(ctx context.Context, request apiv1.GetWidgetConfigRequestObject) (apiv1.GetWidgetConfigResponseObject, error) {
+	projectKey := request.Params.ProjectKey
+	flowKey := request.Params.FlowKey
+
+	if projectKey == "" || flowKey == "" {
+		return apiv1.GetWidgetConfig400JSONResponse{
+			Error: struct {
+				Code    apiv1.ErrorResponseErrorCode `json:"code"`
+				Message string                       `json:"message"`
+			}{Code: "INVALID_PARAMETER", Message: "projectKey and flowKey are required"},
+		}, nil
+	}
+
+	scenarios, flow, err := h.service.GetFlowConfig(ctx, projectKey, flowKey)
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrProjectNotFound), errors.Is(err, domain.ErrFlowNotFound):
+			return apiv1.GetWidgetConfig404JSONResponse{
+				Error: struct {
+					Code    apiv1.ErrorResponseErrorCode `json:"code"`
+					Message string                       `json:"message"`
+				}{Code: "NOT_FOUND", Message: err.Error()},
+			}, nil
+		default:
+			slog.Error("get widget config: internal error", "error", err)
+			return apiv1.GetWidgetConfig500JSONResponse{Error: struct {
+				Code    apiv1.InternalErrorResponseErrorCode `json:"code"`
+				Message string                               `json:"message"`
+			}{Code: "INTERNAL_ERROR", Message: "internal server error"}}, nil
+		}
+	}
+
+	// Преобразуем в DTO
+	items := make([]apiv1.FlowConfigItem, len(scenarios))
+	for i, sc := range scenarios {
+		items[i] = apiv1.FlowConfigItem{
+			ScenarioId: sc.ScenarioID,
+			Url:        sc.URL,
+			OrderNum:   sc.OrderNum,
+		}
+	}
+
+	return apiv1.GetWidgetConfig200JSONResponse{
+		FlowId:    flow.ID,
+		FlowKey:   flow.FlowKey,
+		Scenarios: items,
 	}, nil
 }
 

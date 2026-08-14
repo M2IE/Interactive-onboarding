@@ -95,7 +95,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InternalErrorResponse'
-
+                
+  /widget/config:
+    get:
+      summary: Получить конфигурацию потока
+      description: Возвращает список сценариев в порядке их следования в потоке
+      tags:
+        - Widget
+      operationId: getWidgetConfig
+      parameters:
+        - name: projectKey
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Ключ проекта
+        - name: flowKey
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Ключ потока (flow_key)
+      responses:
+        '200':
+          description: Список сценариев с порядковыми номерами
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WidgetConfigResponse'
+        '400':
+          description: Некорректные параметры
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Проект или поток не найден
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500':
+          description: Внутренняя ошибка
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InternalErrorResponse' }
 components:
   parameters: {}
   schemas:
@@ -154,6 +196,15 @@ components:
       properties:
         scenario:
           $ref: '#/components/schemas/Scenario'
+        flow:
+          type: object
+          properties:
+            flowId:
+              type: string
+              format: uuid
+            flowKey:
+              type: string
+          description: Информация о потоке, если сценарий входит в какой-либо flow
 
     WidgetEventRequest:
       type: object
@@ -188,6 +239,38 @@ components:
           type: string
           description: Уникальный ключ события. Если не передан, бекенд сгенерирует сам.
 
+    FlowConfigItem:
+      type: object
+      required:
+        - scenarioId
+        - url
+        - orderNum
+      properties:
+        scenarioId:
+          type: string
+          format: uuid
+        url:
+          type: string
+        orderNum:
+          type: integer
+          minimum: 1
+
+    WidgetConfigResponse:
+      type: object
+      required:
+        - flowId
+        - flowKey
+        - scenarios
+      properties:
+        flowId:
+          type: string
+          format: uuid
+        flowKey:
+          type: string
+        scenarios:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlowConfigItem'
     ErrorResponse:
       type: object
       required:

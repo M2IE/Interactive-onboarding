@@ -6,6 +6,7 @@ import (
 	"github.com/M2IE/Interactive-onboarding/pkg/pdfengine"
 	"github.com/M2IE/Interactive-onboarding/pkg/s3"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/infrastructure/analytics"
+	"github.com/M2IE/Interactive-onboarding/services/admin/internal/infrastructure/flows"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/infrastructure/projects"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/infrastructure/publishes"
 	"github.com/M2IE/Interactive-onboarding/services/admin/internal/infrastructure/scenarios"
@@ -19,6 +20,7 @@ type Infrastructure struct {
 	*scenarios.ScenarioInfrastructure
 	*steps.StepsInfrastructure
 	*projects.ProjectInfrastructure
+	*flows.FlowInfrastructure
 }
 
 func NewInfrastructure(db rdb.Database, q *queries.Query, ch olap.Database, s3 s3.Client, pdf pdfengine.Engine, s3ReportBucket string) *Infrastructure {
@@ -28,5 +30,6 @@ func NewInfrastructure(db rdb.Database, q *queries.Query, ch olap.Database, s3 s
 		StepsInfrastructure:     steps.NewStepsInfrastructure(db, q),
 		ScenarioInfrastructure:  scenarios.NewScenarioInfrastructure(db, q),
 		ProjectInfrastructure:   projects.NewProjectInfrastructure(db, q),
+		FlowInfrastructure:      flows.NewFlowInfrastructure(db, q),
 	}
 }

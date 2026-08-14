@@ -17,6 +17,9 @@ import (
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// GetWidgetConfig Получить конфигурацию потока
+	// (GET /widget/config)
+	GetWidgetConfig(w http.ResponseWriter, r *http.Request, params GetWidgetConfigParams)
 	// PostWidgetEvent Отправить событие
 	// (POST /widget/event)
 	PostWidgetEvent(w http.ResponseWriter, r *http.Request)
@@ -28,6 +31,12 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// GetWidgetConfig Получить конфигурацию потока
+// (GET /widget/config)
+func (_ Unimplemented) GetWidgetConfig(w http.ResponseWriter, r *http.Request, params GetWidgetConfigParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // PostWidgetEvent Отправить событие
 // (POST /widget/event)
@@ -49,6 +58,52 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// GetWidgetConfig operation middleware
+func (siw *ServerInterfaceWrapper) GetWidgetConfig(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetWidgetConfigParams
+
+	// ------------- Required query parameter "projectKey" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "projectKey", r.URL.Query(), &params.ProjectKey, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "projectKey"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "flowKey" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "flowKey", r.URL.Query(), &params.FlowKey, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "flowKey"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "flowKey", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetWidgetConfig(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // PostWidgetEvent operation middleware
 func (siw *ServerInterfaceWrapper) PostWidgetEvent(w http.ResponseWriter, r *http.Request) {
@@ -229,8 +284,75 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/widget/event", wrapper.PostWidgetEvent)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/widget/config", wrapper.GetWidgetConfig)
+	})
 
 	return r
+}
+
+type GetWidgetConfigRequestObject struct {
+	Params GetWidgetConfigParams
+}
+
+type GetWidgetConfigResponseObject interface {
+	VisitGetWidgetConfigResponse(w http.ResponseWriter) error
+}
+
+type GetWidgetConfig200JSONResponse WidgetConfigResponse
+
+func (response GetWidgetConfig200JSONResponse) VisitGetWidgetConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWidgetConfig400JSONResponse ErrorResponse
+
+func (response GetWidgetConfig400JSONResponse) VisitGetWidgetConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWidgetConfig404JSONResponse ErrorResponse
+
+func (response GetWidgetConfig404JSONResponse) VisitGetWidgetConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWidgetConfig500JSONResponse InternalErrorResponse
+
+func (response GetWidgetConfig500JSONResponse) VisitGetWidgetConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 type PostWidgetEventRequestObject struct {
@@ -379,6 +501,9 @@ func (response GetWidgetScenario500JSONResponse) VisitGetWidgetScenarioResponse(
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// GetWidgetConfig Получить конфигурацию потока
+	// (GET /widget/config)
+	GetWidgetConfig(ctx context.Context, request GetWidgetConfigRequestObject) (GetWidgetConfigResponseObject, error)
 	// PostWidgetEvent Отправить событие
 	// (POST /widget/event)
 	PostWidgetEvent(ctx context.Context, request PostWidgetEventRequestObject) (PostWidgetEventResponseObject, error)
@@ -424,6 +549,32 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// GetWidgetConfig operation middleware
+func (sh *strictHandler) GetWidgetConfig(w http.ResponseWriter, r *http.Request, params GetWidgetConfigParams) {
+	var request GetWidgetConfigRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetWidgetConfig(ctx, request.(GetWidgetConfigRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetWidgetConfig")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetWidgetConfigResponseObject); ok {
+		if err := validResponse.VisitGetWidgetConfigResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // PostWidgetEvent operation middleware
